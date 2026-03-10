@@ -1,0 +1,6 @@
+C:\魔法環境シミュ\Temp\bin\Debug\Assembly-CSharp.dll
+C:\魔法環境シミュ\Temp\bin\Debug\Assembly-CSharp.pdb
+C:\魔法環境シミュ\obj\Debug\Assembly-CSharp.csproj.AssemblyReference.cache
+C:\魔法環境シミュ\obj\Debug\Assembly-CSharp.csproj.CoreCompileInputs.cache
+C:\魔法環境シミュ\obj\Debug\Assembly-CSharp.dll
+C:\魔法環境シミュ\obj\Debug\Assembly-CSharp.pdb
