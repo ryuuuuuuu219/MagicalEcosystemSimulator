@@ -47,13 +47,15 @@ public partial class WorldUIManager : MonoBehaviour
     Texture2D waveTexture;
     Color32[] pixelBuffer;
     int stateViewPage = 0;
-    const int stateViewPageCount = 5;
+    const int stateViewPageCount = 4;
     string currentHerbivoreDnaCode = string.Empty;
     Button herbivoreDnaCopyButton;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
 
     void Update()
     {
+        UpdateVirtualGauges();
+
         if (currentTarget != null)
         {
             Vector3 currentPos = mainCamera.transform.rotation * Vector3.forward * 20f;
@@ -95,6 +97,9 @@ public partial class WorldUIManager : MonoBehaviour
 
         if (UI_freq != null && !StatusinfoUIlist.Contains(UI_freq.gameObject))
             StatusinfoUIlist.Add(UI_freq.gameObject);
+
+        InitializeVirtualGaugeCanvas();
+        UpdateVirtualGaugeVisibility();
 
         foreach (var c in UIlist)
         {
@@ -208,11 +213,13 @@ public partial class WorldUIManager : MonoBehaviour
         if (currentTarget.TryGetComponent<herbivoreBehaviour>(out var herbivore))
         {
             statusText += "\nhealth:" + herbivore.health.ToString("F1");
+            statusText += "\nenergy:" + herbivore.energy.ToString("F1");
             statusText += "\ndead:" + herbivore.IsDead;
         }
         else if (currentTarget.TryGetComponent<predatorBehaviour>(out var predator))
         {
             statusText += "\nhealth:" + predator.health.ToString("F1");
+            statusText += "\nenergy:" + predator.energy.ToString("F1");
             statusText += "\ndead:" + predator.IsDead;
         }
 

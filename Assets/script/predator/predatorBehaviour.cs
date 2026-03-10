@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -64,6 +64,10 @@ public class predatorBehaviour : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         bodyResource = GetComponent<Resource>();
         resourceDispenser = ResourceDispenser.Instance != null ? ResourceDispenser.Instance : FindFirstObjectByType<ResourceDispenser>();
+        var gauge = GetComponent<CreatureVirtualGauge>();
+        if (gauge == null)
+            gauge = gameObject.AddComponent<CreatureVirtualGauge>();
+        gauge.Initialize(this);
         health = maxHealth;
         energy = maxEnergy;
     }

@@ -99,30 +99,30 @@ public partial class WorldUIManager
             switch (page)
             {
                 case 0:
-                    waveGenes = hb.genome.visionWaves;
-                    pageTitle = "visionWaves";
+                    pageTitle = "state weights";
                     currentHerbivoreDnaCode = string.Empty;
+                    detail =
+                        "foodWeight:" + hb.genome.foodWeight.ToString("F2") +
+                        "\npredatorWeight:" + hb.genome.predatorWeight.ToString("F2") +
+                        "\ncorpseWeight:" + hb.genome.corpseWeight.ToString("F2") +
+                        "\nthreatWeight:" + hb.genome.threatWeight.ToString("F2") +
+                        "\ncuriosity:" + hb.genome.curiosity.ToString("F2");
                     break;
                 case 1:
-                    waveGenes = hb.genome.wanderWaves;
-                    pageTitle = "wanderWaves";
-                    currentHerbivoreDnaCode = string.Empty;
-                    break;
-                case 4:
                     pageTitle = "DNA Code";
                     currentHerbivoreDnaCode = GenomeSerializer.EncodeGenome(hb.genome);
                     detail = currentHerbivoreDnaCode;
                     EnsureHerbivoreDnaCopyButton();
                     break;
-                default:
-                    pageTitle = "status";
+                case 2:
+                    waveGenes = hb.genome.visionWaves;
+                    pageTitle = "visionWaves";
                     currentHerbivoreDnaCode = string.Empty;
-                    detail =
-                        "forwardForce:" + hb.genome.forwardForce.ToString("F2") +
-                        "\nturnForce:" + hb.genome.turnForce.ToString("F2") +
-                        "\nvisionDistance:" + hb.genome.visionDistance.ToString("F2") +
-                        "\nthreatWeight:" + hb.genome.threatWeight.ToString("F2") +
-                        "\nrunAwayDistance:" + hb.genome.runAwayDistance.ToString("F2");
+                    break;
+                default:
+                    waveGenes = hb.genome.wanderWaves;
+                    pageTitle = "wanderWaves";
+                    currentHerbivoreDnaCode = string.Empty;
                     break;
             }
         }
@@ -131,29 +131,29 @@ public partial class WorldUIManager
             switch (page)
             {
                 case 0:
-                    waveGenes = pb.genome.visionWaves;
-                    pageTitle = "visionWaves";
+                    pageTitle = "state weights";
                     currentHerbivoreDnaCode = string.Empty;
+                    detail =
+                        "chaseWeight:" + pb.genome.chaseWeight.ToString("F2") +
+                        "\nthreatWeight:" + pb.genome.threatWeight.ToString("F2") +
+                        "\npreyDetectDistance:" + pb.genome.preyDetectDistance.ToString("F2") +
+                        "\npreferredChaseDistance:" + pb.genome.preferredChaseDistance.ToString("F2") +
+                        "\ndisengageDistance:" + pb.genome.disengageDistance.ToString("F2");
                     break;
                 case 1:
-                    waveGenes = pb.genome.wanderWaves;
-                    pageTitle = "wanderWaves";
-                    currentHerbivoreDnaCode = string.Empty;
-                    break;
-                case 4:
                     pageTitle = "DNA Code";
                     currentHerbivoreDnaCode = string.Empty;
                     detail = "Predator DNA export is not supported.";
                     break;
-                default:
-                    pageTitle = "status";
+                case 2:
+                    waveGenes = pb.genome.visionWaves;
+                    pageTitle = "visionWaves";
                     currentHerbivoreDnaCode = string.Empty;
-                    detail =
-                        "forwardForce:" + pb.genome.forwardForce.ToString("F2") +
-                        "\nturnForce:" + pb.genome.turnForce.ToString("F2") +
-                        "\nvisionDistance:" + pb.genome.visionDistance.ToString("F2") +
-                        "\nchaseWeight:" + pb.genome.chaseWeight.ToString("F2") +
-                        "\nattackDamage:" + pb.genome.attackDamage.ToString("F2");
+                    break;
+                default:
+                    waveGenes = pb.genome.wanderWaves;
+                    pageTitle = "wanderWaves";
+                    currentHerbivoreDnaCode = string.Empty;
                     break;
             }
         }
@@ -169,7 +169,7 @@ public partial class WorldUIManager
         }
         else
         {
-            if (!(currentTarget.TryGetComponent<herbivoreBehaviour>(out _) && page == 4))
+            if (!(currentTarget.TryGetComponent<herbivoreBehaviour>(out _) && page == 1))
                 DestroyHerbivoreDnaCopyButton();
             ClearTextureTransparent();
             text_f.text =
