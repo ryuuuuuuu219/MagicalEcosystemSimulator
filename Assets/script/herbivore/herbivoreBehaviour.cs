@@ -42,7 +42,6 @@ public struct HerbivoreGenome
     public WaveGene[] wanderWaves;
 }
 
-[RequireComponent(typeof(Rigidbody))]
 public class herbivoreBehaviour : MonoBehaviour
 {
     public herbivoreManager herbivoreManager;
@@ -51,8 +50,6 @@ public class herbivoreBehaviour : MonoBehaviour
 
     public Resource bodyResource;
     ResourceDispenser resourceDispenser;
-
-    Rigidbody rb;
 
     [Header("Life")]
     public float maxHealth = 25f;
@@ -73,16 +70,20 @@ public class herbivoreBehaviour : MonoBehaviour
     List<GameObject> predatorObjs = new();
     List<GameObject> foodObjs = new();
     List<GameObject> corpseObjs = new();
+    AnimalAICommon.MovementTelemetry lastMovementTelemetry;
+    Vector3 pendingMoveVector;
     float evasionTimer = 0f;
     float evasionCooldownTimer = 0f;
     Vector3 evasionDirection;
+    Vector3 currentVelocity;
     bool isEvading = false;
 
     public bool IsDead => health <= 0f;
+    public Vector3 CurrentVelocity => currentVelocity;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        AnimalAICommon.PrepareLegacyRigidbody(gameObject);
         bodyResource = GetComponent<Resource>();
         resourceDispenser = ResourceDispenser.Instance != null ? ResourceDispenser.Instance : FindFirstObjectByType<ResourceDispenser>();
         var gauge = GetComponent<CreatureVirtualGauge>();
@@ -91,6 +92,7 @@ public class herbivoreBehaviour : MonoBehaviour
         gauge.Initialize(this);
         health = maxHealth;
         energy = maxEnergy;
+        ClampEnergy();
     }
 
     void OnDestroy()
@@ -113,6 +115,7 @@ public class herbivoreBehaviour : MonoBehaviour
 
         if (IsDead)
         {
+            pendingMoveVector = Vector3.zero;
             bodyResource.Decompose(GetDecomposeRate(), resourceDispenser);
             return;
         }
@@ -121,9 +124,7 @@ public class herbivoreBehaviour : MonoBehaviour
         UpdateVision();
         UpdateWorldCaches();
 
-        Vector3 moveVec = ComputeTotalVector();
-        ApplyMovement(moveVec);
-        ConsumeEnergy(moveVec);
+        pendingMoveVector = ComputeTotalVector();
     }
 
     public void TakeDamage(float amount)
@@ -135,23 +136,44 @@ public class herbivoreBehaviour : MonoBehaviour
         {
             health = 0f;
             currentTarget = null;
-            rb.linearVelocity = Vector3.zero;
+            pendingMoveVector = Vector3.zero;
+            currentVelocity = Vector3.zero;
         }
     }
 
     void ConvertBodyCarbonToEnergy()
     {
-        float generated = GetCarbonToEnergyRate() * Time.deltaTime;
-        if (generated <= 0f) return;
+        if (bodyResource == null) return;
 
-        energy = Mathf.Min(maxEnergy, energy + generated);
+        float carbonUsed = Mathf.Min(bodyResource.carbon, GetCarbonToEnergyRate() * Time.deltaTime);
+        if (carbonUsed <= 0f) return;
+
+        float energyGain = carbonUsed * GetMetabolicEnergyPerCarbon();
+        if (WouldExceedEnergyCap(energyGain))
+            return;
+
+        float released = bodyResource.ReleaseCarbonToEnvironment(carbonUsed, resourceDispenser);
+        if (released <= 0f) return;
+
+        energy += released * GetMetabolicEnergyPerCarbon();
+        ClampEnergy();
+
+        HeatFieldManager heatField = HeatFieldManager.GetOrCreate();
+        float heatAmount = released * GetMetabolicHeatPerCarbon();
+        heatField.AddHeat(transform.position, heatAmount, 2f);
     }
 
-    void ConsumeEnergy(Vector3 moveVec)
+    void ConsumeEnergy(AnimalAICommon.MovementTelemetry telemetry)
     {
-        float moveFactor = Mathf.Clamp01(moveVec.magnitude);
-        float cost = (GetIdleEnergyCostPerSec() + GetMoveEnergyCostPerSec() * moveFactor) * Time.deltaTime;
-        energy = Mathf.Max(0f, energy - cost);
+        float moveCost =
+            GetIdleEnergyCostPerSec() +
+            GetMoveEnergyCostPerSec() * telemetry.moveDemand;
+        float accelCost = GetAccelerationEnergyCostPerUnit() * telemetry.accelerationDemand;
+        float brakeCost = GetBrakingEnergyCostPerUnit() * telemetry.brakingDemand;
+        float turnCost = GetTurnEnergyCostPerDegree() * telemetry.turnDemand;
+        float cost = moveCost * Time.fixedDeltaTime + accelCost + brakeCost + turnCost;
+        energy -= cost;
+        ClampEnergy();
     }
 
     float GetDecomposeRate()
@@ -172,6 +194,50 @@ public class herbivoreBehaviour : MonoBehaviour
     float GetMoveEnergyCostPerSec()
     {
         return resourceDispenser != null ? resourceDispenser.moveEnergyCostPerSec : 0.2f;
+    }
+
+    float GetMetabolicEnergyPerCarbon()
+    {
+        return resourceDispenser != null ? resourceDispenser.metabolicEnergyPerCarbon : 1f;
+    }
+
+    float GetMetabolicHeatPerCarbon()
+    {
+        return resourceDispenser != null ? resourceDispenser.metabolicHeatPerCarbon : 0.5f;
+    }
+
+    float GetAccelerationEnergyCostPerUnit()
+    {
+        return resourceDispenser != null ? resourceDispenser.accelerationEnergyCostPerUnit : 0.03f;
+    }
+
+    float GetBrakingEnergyCostPerUnit()
+    {
+        return resourceDispenser != null ? resourceDispenser.brakingEnergyCostPerUnit : 0.02f;
+    }
+
+    float GetTurnEnergyCostPerDegree()
+    {
+        return resourceDispenser != null ? resourceDispenser.turnEnergyCostPerDegree : 0.0005f;
+    }
+
+    void ClampEnergy()
+    {
+        if (maxEnergy > 0f)
+        {
+            energy = Mathf.Clamp(energy, 0f, maxEnergy);
+            return;
+        }
+
+        energy = Mathf.Max(0f, energy);
+    }
+
+    bool WouldExceedEnergyCap(float gain)
+    {
+        if (gain <= 0f || maxEnergy <= 0f)
+            return false;
+
+        return energy + gain > maxEnergy;
     }
 
     void UpdateVision()
@@ -378,9 +444,13 @@ public class herbivoreBehaviour : MonoBehaviour
             wThreat * vThreat +
             wBoundary * vBoundary +
             wWander * vWander;
+        total = AnimalAICommon.AdjustMovementVectorForTerrain(terrain, transform.position, total);
 
         if (total.sqrMagnitude <= 0.0001f)
-            total = ComputeWanderVector(transform.forward) * Mathf.Max(0f, genome.curiosity);
+            total = AnimalAICommon.AdjustMovementVectorForTerrain(
+                terrain,
+                transform.position,
+                ComputeWanderVector(transform.forward) * Mathf.Max(0f, genome.curiosity));
 
         Debug.DrawLine(transform.position, transform.position + vFood, Color.green);
         Debug.DrawLine(transform.position, transform.position + vThreat, Color.red);
@@ -524,7 +594,9 @@ public class herbivoreBehaviour : MonoBehaviour
             if (p == null) continue;
 
             Vector3 toPred = p.transform.position - pos;
+            toPred.y = 0f;
             float dist = toPred.magnitude;
+            if (dist <= 0.001f) continue;
             float strength = ComputeThreatLevel(dist);
 
             away += (-toPred / dist) * strength;
@@ -534,6 +606,7 @@ public class herbivoreBehaviour : MonoBehaviour
             }
         }
 
+        away.y = 0f;
         return away;
     }
 
@@ -631,19 +704,45 @@ public class herbivoreBehaviour : MonoBehaviour
 
     float currentSpeed = 0f;
 
-    void ApplyMovement(Vector3 total)
+    AnimalAICommon.MovementTelemetry ApplyMovement(Vector3 total)
     {
-        AnimalAICommon.ApplyMovement(rb, total, ref currentSpeed, genome.forwardForce, genome.turnForce);
+        float movementCapacity = GetMovementCapacity();
+        if (movementCapacity <= 0f)
+            return AnimalAICommon.ApplyMovement(
+                transform,
+                terrain,
+                Vector3.zero,
+                ref currentSpeed,
+                ref currentVelocity,
+                genome.forwardForce,
+                genome.turnForce,
+                Time.fixedDeltaTime);
+
+        return AnimalAICommon.ApplyMovement(
+            transform,
+            terrain,
+            total,
+            ref currentSpeed,
+            ref currentVelocity,
+            genome.forwardForce * movementCapacity,
+            genome.turnForce,
+            Time.fixedDeltaTime);
     }
 
     void FixedUpdate()
     {
+        if (bodyResource != null && !IsDead)
+        {
+            lastMovementTelemetry = ApplyMovement(pendingMoveVector);
+            ConsumeEnergy(lastMovementTelemetry);
+        }
+
         ClampRotation();
     }
 
     void ClampRotation()
     {
-        AnimalAICommon.ClampRotation(rb, 45f, 5f);
+        AnimalAICommon.ClampRotation(transform, terrain);
     }
 
     void Eat(Vector3 target)
@@ -657,6 +756,18 @@ public class herbivoreBehaviour : MonoBehaviour
 
             bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
         }
+    }
+
+    float GetMovementCapacity()
+    {
+        if (maxEnergy <= 0f)
+            return 1f;
+
+        float ratio = Mathf.Clamp01(energy / maxEnergy);
+        if (ratio <= 0.05f)
+            return 0f;
+
+        return Mathf.InverseLerp(0.05f, 0.25f, ratio);
     }
 }
 

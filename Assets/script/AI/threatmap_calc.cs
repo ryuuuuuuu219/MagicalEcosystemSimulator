@@ -121,6 +121,30 @@ public class threatmap_calc : MonoBehaviour
         AddThreatScore(worldPosition, -Mathf.Abs(score));
     }
 
+    public void AddThreatPulse(Vector2 worldPosition, float radius, float peakScore, int radialSamples = 12)
+    {
+        if (peakScore == 0f || radius <= 0f)
+            return;
+
+        AddThreatScore(worldPosition, peakScore);
+
+        int samples = Mathf.Max(4, radialSamples);
+        float safeRadius = Mathf.Max(scoreCellSize, radius);
+        for (int i = 0; i < samples; i++)
+        {
+            float angle = (Mathf.PI * 2f * i) / samples;
+            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            for (float dist = scoreCellSize; dist <= safeRadius; dist += scoreCellSize)
+            {
+                float falloff = 1f - Mathf.Clamp01(dist / safeRadius);
+                if (falloff <= 0f)
+                    continue;
+
+                AddThreatScore(worldPosition + dir * dist, peakScore * falloff);
+            }
+        }
+    }
+
     public Vector2 GetLowThreatDirection(Vector2 worldPosition)
     {
         int samples = Mathf.Max(4, lowThreatDirectionSamples);

@@ -93,7 +93,7 @@ public class WorldGenerator : MonoBehaviour
 
     void SettingInvisibleWall()
     {
-        float offset = 1f; // 壁が地形の端から少し離れるようにするためのオフセット
+        float offset = 2f; // 壁が地形の端から少し離れるようにするためのオフセット
         float ceilHeight = 1000f; // 十分な高さを確保
         GameObject invisibleWall = new GameObject("InvisibleWall_north");
         BoxCollider collider = invisibleWall.AddComponent<BoxCollider>();

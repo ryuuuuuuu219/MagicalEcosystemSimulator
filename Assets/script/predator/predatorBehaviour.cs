@@ -21,12 +21,31 @@ public struct PredatorGenome
     public float memorytime;
     public float preferredChaseDistance;
     public float disengageDistance;
+    public float stopMoveThreshold;
+    public float resumeMoveThreshold;
+    public AttackArcSettings chargeArc;
+    public float chargeDamageScale;
+    public float chargeEnergyCost;
+    public float chargeContactPadding;
+    public float chargeAttackClock;
+    public AttackArcSettings biteArc;
+    public float biteDamage;
+    public float biteEnergyCost;
+    public float biteAttackClock;
+    public AttackArcSettings meleeArc;
+    public float meleeDamage;
+    public float meleeEnergyCost;
+    public float meleeAttackClock;
+    public float attackThreatPulseScore;
+    public float attackThreatPulseRadius;
+    public float attackTraceScale;
+    public float attackTraceDuration;
+    public float attackTraceDepth;
 
     public WaveGene[] visionWaves;
     public WaveGene[] wanderWaves;
 }
 
-[RequireComponent(typeof(Rigidbody))]
 public class predatorBehaviour : MonoBehaviour
 {
     public predatorManager predatorManager;
@@ -35,8 +54,6 @@ public class predatorBehaviour : MonoBehaviour
 
     public Resource bodyResource;
     ResourceDispenser resourceDispenser;
-
-    Rigidbody rb;
 
     [Header("Life")]
     public float maxHealth = 40f;
@@ -54,22 +71,39 @@ public class predatorBehaviour : MonoBehaviour
     List<GameObject> preyObjs = new();
     List<GameObject> threatObjs = new();
 
-    float lastAttackTime = -999f;
+    GameObject trackedPrey;
+    Vector3 lastTrackedPreyPosition;
+    Vector3 trackedPreyVelocity;
+    Vector3 currentVelocity;
+    bool hasTrackedPreySample;
+    bool isMovementSuppressed;
+    AnimalAICommon.MovementTelemetry lastMovementTelemetry;
+    Vector3 pendingMoveVector;
+    threatmap_calc threatMap;
+    PredatorCombatLibrary.CombatState combatState = new PredatorCombatLibrary.CombatState
+    {
+        lastChargeClockTime = -999f,
+        lastBiteClockTime = -999f,
+        lastMeleeClockTime = -999f
+    };
 
     public Vector2? currentTarget;
     public bool IsDead => health <= 0f;
+    public Vector3 CurrentVelocity => currentVelocity;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        AnimalAICommon.PrepareLegacyRigidbody(gameObject);
         bodyResource = GetComponent<Resource>();
         resourceDispenser = ResourceDispenser.Instance != null ? ResourceDispenser.Instance : FindFirstObjectByType<ResourceDispenser>();
+        threatMap = FindFirstObjectByType<threatmap_calc>();
         var gauge = GetComponent<CreatureVirtualGauge>();
         if (gauge == null)
             gauge = gameObject.AddComponent<CreatureVirtualGauge>();
         gauge.Initialize(this);
         health = maxHealth;
         energy = maxEnergy;
+        ClampEnergy();
     }
 
     void OnDestroy()
@@ -84,6 +118,7 @@ public class predatorBehaviour : MonoBehaviour
 
         if (IsDead)
         {
+            pendingMoveVector = Vector3.zero;
             bodyResource.Decompose(GetDecomposeRate(), resourceDispenser);
             return;
         }
@@ -91,13 +126,17 @@ public class predatorBehaviour : MonoBehaviour
         ConvertBodyCarbonToEnergy();
         UpdateVision();
 
-        Vector3 moveVec = ComputeTotalVector();
-        ApplyMovement(moveVec);
-        ConsumeEnergy(moveVec);
+        pendingMoveVector = ComputeTotalVector();
     }
 
     void FixedUpdate()
     {
+        if (bodyResource != null && !IsDead)
+        {
+            lastMovementTelemetry = ApplyMovement(pendingMoveVector);
+            ConsumeEnergy(lastMovementTelemetry);
+        }
+
         ClampRotation();
     }
 
@@ -110,23 +149,44 @@ public class predatorBehaviour : MonoBehaviour
         {
             health = 0f;
             currentTarget = null;
-            rb.linearVelocity = Vector3.zero;
+            pendingMoveVector = Vector3.zero;
+            currentVelocity = Vector3.zero;
         }
     }
 
     void ConvertBodyCarbonToEnergy()
     {
-        float generated = GetCarbonToEnergyRate() * Time.deltaTime;
-        if (generated <= 0f) return;
+        if (bodyResource == null) return;
 
-        energy = Mathf.Min(maxEnergy, energy + generated);
+        float carbonUsed = Mathf.Min(bodyResource.carbon, GetCarbonToEnergyRate() * Time.deltaTime);
+        if (carbonUsed <= 0f) return;
+
+        float energyGain = carbonUsed * GetMetabolicEnergyPerCarbon();
+        if (WouldExceedEnergyCap(energyGain))
+            return;
+
+        float released = bodyResource.ReleaseCarbonToEnvironment(carbonUsed, resourceDispenser);
+        if (released <= 0f) return;
+
+        energy += released * GetMetabolicEnergyPerCarbon();
+        ClampEnergy();
+
+        HeatFieldManager heatField = HeatFieldManager.GetOrCreate();
+        float heatAmount = released * GetMetabolicHeatPerCarbon();
+        heatField.AddHeat(transform.position, heatAmount, 2f);
     }
 
-    void ConsumeEnergy(Vector3 moveVec)
+    void ConsumeEnergy(AnimalAICommon.MovementTelemetry telemetry)
     {
-        float moveFactor = Mathf.Clamp01(moveVec.magnitude);
-        float cost = (GetIdleEnergyCostPerSec() + GetMoveEnergyCostPerSec() * moveFactor) * Time.deltaTime;
-        energy = Mathf.Max(0f, energy - cost);
+        float moveCost =
+            GetIdleEnergyCostPerSec() +
+            GetMoveEnergyCostPerSec() * telemetry.moveDemand;
+        float accelCost = GetAccelerationEnergyCostPerUnit() * telemetry.accelerationDemand;
+        float brakeCost = GetBrakingEnergyCostPerUnit() * telemetry.brakingDemand;
+        float turnCost = GetTurnEnergyCostPerDegree() * telemetry.turnDemand;
+        float cost = moveCost * Time.fixedDeltaTime + accelCost + brakeCost + turnCost;
+        energy -= cost;
+        ClampEnergy();
     }
 
     float GetDecomposeRate()
@@ -147,6 +207,50 @@ public class predatorBehaviour : MonoBehaviour
     float GetMoveEnergyCostPerSec()
     {
         return resourceDispenser != null ? resourceDispenser.moveEnergyCostPerSec : 0.2f;
+    }
+
+    float GetMetabolicEnergyPerCarbon()
+    {
+        return resourceDispenser != null ? resourceDispenser.metabolicEnergyPerCarbon : 1f;
+    }
+
+    float GetMetabolicHeatPerCarbon()
+    {
+        return resourceDispenser != null ? resourceDispenser.metabolicHeatPerCarbon : 0.5f;
+    }
+
+    float GetAccelerationEnergyCostPerUnit()
+    {
+        return resourceDispenser != null ? resourceDispenser.accelerationEnergyCostPerUnit : 0.03f;
+    }
+
+    float GetBrakingEnergyCostPerUnit()
+    {
+        return resourceDispenser != null ? resourceDispenser.brakingEnergyCostPerUnit : 0.02f;
+    }
+
+    float GetTurnEnergyCostPerDegree()
+    {
+        return resourceDispenser != null ? resourceDispenser.turnEnergyCostPerDegree : 0.0005f;
+    }
+
+    void ClampEnergy()
+    {
+        if (maxEnergy > 0f)
+        {
+            energy = Mathf.Clamp(energy, 0f, maxEnergy);
+            return;
+        }
+
+        energy = Mathf.Max(0f, energy);
+    }
+
+    bool WouldExceedEnergyCap(float gain)
+    {
+        if (gain <= 0f || maxEnergy <= 0f)
+            return false;
+
+        return energy + gain > maxEnergy;
     }
 
     void UpdateVision()
@@ -306,11 +410,28 @@ public class predatorBehaviour : MonoBehaviour
             wThreat * vThreat +
             wBoundary * vBoundary +
             wWander * vWander;
+        total = AnimalAICommon.AdjustMovementVectorForTerrain(terrain, transform.position, total);
 
         Debug.DrawLine(transform.position, transform.position + vPrey, Color.red);
         Debug.DrawLine(transform.position, transform.position + vThreat, Color.magenta);
         Debug.DrawLine(transform.position, transform.position + vBoundary, Color.blue);
         Debug.DrawLine(transform.position, transform.position + vWander, Color.green);
+
+        float stopThreshold = Mathf.Max(0.001f, genome.stopMoveThreshold);
+        float resumeThreshold = Mathf.Max(stopThreshold + 0.001f, genome.resumeMoveThreshold);
+        float totalMagnitude = total.magnitude;
+        if (isMovementSuppressed)
+        {
+            if (totalMagnitude <= resumeThreshold)
+                return Vector3.zero;
+
+            isMovementSuppressed = false;
+        }
+        else if (totalMagnitude <= stopThreshold)
+        {
+            isMovementSuppressed = true;
+            return Vector3.zero;
+        }
 
         return total;
     }
@@ -328,31 +449,26 @@ public class predatorBehaviour : MonoBehaviour
         Vector3 pos = transform.position;
         Vector3 target = bestPrey.transform.position;
         currentTarget = new Vector2(target.x, target.z);
+        UpdateTrackedPreyMotion(bestPrey, target);
 
         float dist = Vector3.Distance(pos, target);
-        float attackRange = Mathf.Max(eatDistance, genome.attackDistance);
-
         bool preyDead = false;
         if (bestPrey.TryGetComponent<herbivoreBehaviour>(out var herbivore))
         {
             preyDead = herbivore.IsDead;
         }
 
-        if (dist <= attackRange)
+        if (!preyDead && TryCombatActions(bestPrey, herbivore))
         {
-            if (preyDead)
-            {
-                Eat(bestPrey);
-            }
-            else
-            {
-                Attack(bestPrey);
-            }
+            preyWeight = 0f;
+            return Vector3.zero;
+        }
 
-            preyWeight = 1f;
-            Vector3 brake = pos - target;
-            brake.y = 0f;
-            return brake.sqrMagnitude > 0.0001f ? brake.normalized * 0.1f : Vector3.zero;
+        if (preyDead && dist <= eatDistance)
+        {
+            Eat(bestPrey);
+            preyWeight = 0f;
+            return Vector3.zero;
         }
 
         preyWeight = 1f - Mathf.Clamp01(dist / genome.preyDetectDistance);
@@ -360,13 +476,16 @@ public class predatorBehaviour : MonoBehaviour
         Vector3 chase = target - pos;
         chase.y = 0f;
 
-        float preferred = Mathf.Max(0.1f, genome.preferredChaseDistance);
-        if (dist < preferred)
+        if (preyDead)
         {
-            return -chase.normalized * ((preferred - dist) / preferred);
+            return chase.sqrMagnitude > 0.0001f ? chase.normalized : Vector3.zero;
         }
 
-        return chase.normalized;
+        Vector3 guidance = chase.normalized;
+        Vector3 pnCorrection = ComputeProportionalNavigationVector(pos, target, trackedPreyVelocity);
+        Vector3 result = guidance + pnCorrection;
+        result.y = 0f;
+        return result.sqrMagnitude > 0.0001f ? result.normalized : Vector3.zero;
     }
 
     GameObject GetBestRememberedPrey()
@@ -405,6 +524,7 @@ public class predatorBehaviour : MonoBehaviour
             if (threat == null) continue;
 
             Vector3 toThreat = threat.transform.position - pos;
+            toThreat.y = 0f;
             float dist = toThreat.magnitude;
             if (dist <= 0.001f) continue;
 
@@ -413,6 +533,7 @@ public class predatorBehaviour : MonoBehaviour
             if (strength > threatWeight) threatWeight = strength;
         }
 
+        away.y = 0f;
         return away;
     }
 
@@ -443,25 +564,78 @@ public class predatorBehaviour : MonoBehaviour
 
     float currentSpeed = 0f;
 
-    void ApplyMovement(Vector3 total)
+    AnimalAICommon.MovementTelemetry ApplyMovement(Vector3 total)
     {
-        AnimalAICommon.ApplyMovement(rb, total, ref currentSpeed, genome.forwardForce, genome.turnForce);
+        float movementCapacity = GetMovementCapacity();
+        if (movementCapacity <= 0f)
+            return AnimalAICommon.ApplyMovement(
+                transform,
+                terrain,
+                Vector3.zero,
+                ref currentSpeed,
+                ref currentVelocity,
+                genome.forwardForce,
+                genome.turnForce,
+                Time.fixedDeltaTime);
+
+        return AnimalAICommon.ApplyMovement(
+            transform,
+            terrain,
+            total,
+            ref currentSpeed,
+            ref currentVelocity,
+            genome.forwardForce * movementCapacity,
+            genome.turnForce,
+            Time.fixedDeltaTime);
     }
 
     void ClampRotation()
     {
-        AnimalAICommon.ClampRotation(rb, 45f, 5f);
+        AnimalAICommon.ClampRotation(transform, terrain);
     }
 
-    void Attack(GameObject prey)
+    bool TryCombatActions(GameObject prey, herbivoreBehaviour herbivore)
     {
-        if (Time.time < lastAttackTime + genome.attackCooldown) return;
+        if (prey == null || herbivore == null || herbivore.IsDead || !CanAttackLivePrey())
+            return false;
+        if (!TryGetComponent<Collider>(out var selfCollider))
+            return false;
+        if (!prey.TryGetComponent<Collider>(out var preyCollider))
+            return false;
 
-        if (prey.TryGetComponent<herbivoreBehaviour>(out var herbivore) && !herbivore.IsDead)
+        if (threatMap == null)
+            threatMap = FindFirstObjectByType<threatmap_calc>();
+
+        var context = new PredatorCombatLibrary.CombatContext
         {
-            herbivore.TakeDamage(genome.attackDamage);
-            lastAttackTime = Time.time;
+            attacker = transform,
+            attackerCollider = selfCollider,
+            attackerVelocity = currentVelocity,
+            targetPosition = prey.transform.position,
+            targetVelocity = herbivore.CurrentVelocity,
+            targetForward = prey.transform.forward,
+            currentTime = Time.time,
+            threatMap = threatMap,
+            threatPulsePosition = new Vector2(transform.position.x, transform.position.z)
+        };
+
+        PredatorCombatLibrary.CombatResult result =
+            PredatorCombatLibrary.TryCombatActions(genome, context, combatState, CanAttackLivePrey(), preyCollider);
+        combatState = result.nextState;
+        if (!result.performed)
+            return false;
+
+        herbivore.TakeDamage(result.damage);
+        energy -= result.energyCost;
+        ClampEnergy();
+
+        if (result.copyTargetVelocity)
+        {
+            currentVelocity = result.inheritedVelocity;
+            pendingMoveVector = result.inheritedMoveDirection;
         }
+
+        return true;
     }
 
     void Eat(GameObject prey)
@@ -472,6 +646,70 @@ public class predatorBehaviour : MonoBehaviour
         if (!prey.TryGetComponent<herbivoreBehaviour>(out var herbivore) || !herbivore.IsDead) return;
 
         bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
+    }
+
+    float GetMovementCapacity()
+    {
+        if (maxEnergy <= 0f)
+            return 1f;
+
+        float ratio = Mathf.Clamp01(energy / maxEnergy);
+        if (ratio <= 0.05f)
+            return 0f;
+
+        return Mathf.InverseLerp(0.05f, 0.25f, ratio);
+    }
+
+    bool CanAttackLivePrey()
+    {
+        if (maxEnergy <= 0f)
+            return true;
+
+        return energy / maxEnergy > 0.1f;
+    }
+
+    void UpdateTrackedPreyMotion(GameObject prey, Vector3 preyPosition)
+    {
+        if (trackedPrey != prey)
+        {
+            trackedPrey = prey;
+            lastTrackedPreyPosition = preyPosition;
+            trackedPreyVelocity = Vector3.zero;
+            hasTrackedPreySample = false;
+            return;
+        }
+
+        float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+        trackedPreyVelocity = (preyPosition - lastTrackedPreyPosition) / dt;
+        trackedPreyVelocity.y = 0f;
+        lastTrackedPreyPosition = preyPosition;
+        hasTrackedPreySample = true;
+    }
+
+    Vector3 ComputeProportionalNavigationVector(Vector3 selfPosition, Vector3 targetPosition, Vector3 targetVelocity)
+    {
+        Vector3 lineOfSight = targetPosition - selfPosition;
+        lineOfSight.y = 0f;
+        float losSqrMag = lineOfSight.sqrMagnitude;
+        if (!hasTrackedPreySample || losSqrMag <= 0.0001f)
+            return Vector3.zero;
+
+        Vector3 selfVelocity = currentVelocity;
+        selfVelocity.y = 0f;
+
+        Vector3 relativeVelocity = targetVelocity - selfVelocity;
+        float losRate = Vector3.Cross(lineOfSight, relativeVelocity).y / losSqrMag;
+        float closingSpeed = Mathf.Max(0f, Vector3.Dot(-relativeVelocity, lineOfSight.normalized));
+        if (closingSpeed <= 0.001f)
+            return Vector3.zero;
+
+        float navigationConstant = 2f;
+        float correctionStrength = Mathf.Clamp(losRate * closingSpeed * navigationConstant, -1f, 1f);
+        if (Mathf.Abs(correctionStrength) <= 0.0001f)
+            return Vector3.zero;
+
+        Vector3 lateral = Vector3.Cross(Vector3.up, lineOfSight.normalized);
+        return lateral * correctionStrength;
     }
 }
 

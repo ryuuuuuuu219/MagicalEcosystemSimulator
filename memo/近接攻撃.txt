@@ -1,0 +1,68 @@
+近接攻撃
+
+捕食者が草食動物の手前で減速して攻撃距離に届かない現象の原因を解析して
+
+
+Worked for 26s
+主因は predatorBehaviour の追跡距離設計が攻撃距離と一致していないことです。
+
+捕食者は攻撃判定に genome.attackDistance を使っていません。実際に使っているのは固定値の eatDistance = 1.2f です。該当箇所は predatorBehaviour.cs (line 428) と predatorBehaviour.cs (line 437) です。
+その一方で、獲物が preferredChaseDistance 以内に入ると、追跡ベクトルを Vector3.zero にしてしまいます。該当箇所は predatorBehaviour.cs (line 462) から predatorBehaviour.cs (line 466) です。
+つまり実効仕様は「1.2f まで近づいたら攻撃」なのに、「preferredChaseDistance まで来たら前進停止」です。preferredChaseDistance > 1.2f の個体は、攻撃圏外で自分から減速停止します。
+さらに AnimalAICommon.ApplyMovement() は入力ベクトルがゼロになると減速ブレーキ挙動に入るため、見た目としては「草食動物の手前で減速して届かない」になります。停止処理の入口は AnimalAICommon.cs (line 126) 付近です。
+補足です。ランダム生成では preferredChaseDistance は 0.8f から 3.8f に設定されますが、攻撃距離として使われる attackDistance は未使用です。該当は predatorManager.cs (line 120) と predatorManager.cs (line 126) です。なので多くの個体でこの不整合が自然に発生します。
+
+副次要因として、dist <= preferred のとき preyWeight は残るのに vPrey はゼロなので、総合移動は境界ベクトルや徘徊ベクトルに寄りやすくなります。これも「手前でふらつく」挙動を強めます。該当は predatorBehaviour.cs (line 362) から predatorBehaviour.cs (line 410) です。
+
+
+--現状
+
+捕食者の攻撃フローはかなり単純です。
+
+Update() で UpdateVision() を呼び、視界と記憶から草食動物候補を集めます。対象は memoryPrey から preyObjs に構築されます。入口は predatorBehaviour.cs (line 89) と predatorBehaviour.cs (line 230) です。
+その後 ComputeTotalVector() で移動方向を作ります。ここで ComputePreyVector() が最も近い獲物を選び、追跡または攻撃を判断します。該当は predatorBehaviour.cs (line 362) と predatorBehaviour.cs (line 413) です。
+ComputePreyVector() は GetBestRememberedPrey() で最寄りの草食動物を選び、距離 dist を計算します。該当は predatorBehaviour.cs (line 476) です。
+dist <= attackRange になると、その場で攻撃フェーズに入ります。ここで使っている attackRange は genome.attackDistance ではなく eatDistance です。該当は predatorBehaviour.cs (line 428) と predatorBehaviour.cs (line 437) です。
+相手が生きていれば Attack(bestPrey)、死体なら Eat(bestPrey) を呼びます。攻撃時はそれ以上前進せず Vector3.zero を返します。該当は predatorBehaviour.cs (line 437) から predatorBehaviour.cs (line 449) です。
+Attack() はまずエネルギー不足でないかと、攻撃クールダウン中でないかを確認します。通れば対象の herbivoreBehaviour.TakeDamage(genome.attackDamage) を直接呼びます。物理ヒット判定や当たり判定イベントは使っていません。該当は predatorBehaviour.cs (line 582) です。
+TakeDamage() で草食動物の health が減り、0 以下になると死亡状態になります。該当は herbivoreBehaviour.cs (line 108) です。
+死亡後は次回以降、捕食者は同じ距離判定で Eat() に入り、Resource を食べて資源を吸収します。該当は predatorBehaviour.cs (line 594) です。
+要するに、「視認・記憶 -> 最寄り prey 選択 -> 距離が eatDistance 以下なら即 TakeDamage()」という流れで、衝突判定ベースではなく距離ベースの即時攻撃です。
+
+--これを解決する　ついでに攻撃システムを仮のものから本実装（最小要件）へ
+
+距離による攻撃判定を以下に差し替え
+
+攻撃行動１：突進
+コライダー接触により相対速度に比例するダメージを与える
+エネルギー消費小
+
+攻撃行動２：噛みつき
+クールダウンあり、これは連打数によって増幅する
+t=0.8f+n*0.5f
+成立後、自身のベクトルは相手のベクトルを参照し、代入される
+エネルギー消費中
+
+攻撃行動３：近接攻撃
+クールダウンあり、これは連打数によって増幅する
+t=1.2f+0.2f*n^2
+エネルギー消費大
+
+攻撃範囲は弧を描く
+半径、弧の長さ、攻撃判定長さ、開始相対座標、進行ベクトルを決定して行使する
+
+以上の行動は自身の前方象限に対象が存在するときに限る
+
+--
+
+以上攻撃時、脅威度マップのスカラーを自身を中心として増加させる処理も欲しい
+
+--
+
+ラインレンダラーによる描画
+白色、座標AからBに伸びた後にBに向かって縮んでいく描画を
+
+突進なら接触点と基準点として六方向に展開　アスタリスク状に
+嚙みつきなら基準点を中心として(-1,1)(0,1)(1,1)(-1,-1)(0,-1)(1,-1)からX軸に射影するように(-1,0)(0,0)(1,0)に展開させる
+
+近接攻撃なら弧の開始地点から終了地点に展開

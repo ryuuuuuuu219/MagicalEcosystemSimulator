@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -67,18 +68,9 @@ public partial class WorldUIManager : MonoBehaviour
             text_f.text = string.Empty;
         }
 
-        if (!isWorldMenuVisible && Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0))
         {
             Objectpic();
-
-            if (currentTarget == null) return;
-
-            isWorldMenuVisible = true;
-            isObjectListVisible = true;
-            foreach (var go in TabUIlist)
-            {
-                go.SetActive(true);
-            }
 
             UpdateFollowText();
         }
@@ -98,6 +90,7 @@ public partial class WorldUIManager : MonoBehaviour
         if (UI_freq != null && !StatusinfoUIlist.Contains(UI_freq.gameObject))
             StatusinfoUIlist.Add(UI_freq.gameObject);
 
+        InitializeVirtualGaugeManager();
         InitializeVirtualGaugeCanvas();
         UpdateVirtualGaugeVisibility();
 
@@ -117,26 +110,56 @@ public partial class WorldUIManager : MonoBehaviour
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, selectableLayer))
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1000f, selectableLayer);
+        if (hits.Length > 0)
         {
-            SetTarget(hit.collider.gameObject);
-            Menu();
+            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            GameObject target = hits[0].collider.gameObject;
+            if (target == currentTarget && IsCreature(target))
+            {
+                for (int i = 1; i < hits.Length; i++)
+                {
+                    GameObject alternate = hits[i].collider.gameObject;
+                    if (alternate != currentTarget && IsCreature(alternate))
+                    {
+                        target = alternate;
+                        break;
+                    }
+                }
+            }
+
+            SetTarget(target);
+            if (!isWorldMenuVisible)
+            {
+                isWorldMenuVisible = true;
+                ShowMenuRootButtons();
+            }
         }
+    }
+
+    bool IsCreature(GameObject obj)
+    {
+        if (obj == null)
+            return false;
+
+        return obj.TryGetComponent<herbivoreBehaviour>(out _) ||
+               obj.TryGetComponent<predatorBehaviour>(out _);
     }
 
     public void Menu()
     {
         isWorldMenuVisible = !isWorldMenuVisible;
-        foreach (GameObject go in TabUIlist)
+        if (isWorldMenuVisible)
         {
-            go.SetActive(isWorldMenuVisible);
+            ShowMenuRootButtons();
         }
-        if (!isWorldMenuVisible)
+        else
         {
             isObjectListVisible = false;
             isStatusVisible = false;
 
+            HideAllMenuBranches();
             currentTarget = null;
             ClearObjectList();
             HideStatusUI();
@@ -146,45 +169,26 @@ public partial class WorldUIManager : MonoBehaviour
     }
     public void Onclickbutton1()
     {
-        BuildObjectList();
-
-        foreach (GameObject go in GencontrollerUIlist)
-        {
-            go.SetActive(false);
-        }
-
+        OpenObjectListBranch();
     }
     public void Onclickbutton2()
     {
-        foreach (GameObject go in GencontrollerUIlist)
-        {
-            go.SetActive(true);
-        }
-        ClearObjectList();
-        HideStatusUI();
-        ClearStateview();
-
+        OpenGenerationBranch();
     }
 
     public void Onclickbutton2_1()
     {
-        //advance gen
-        if (generationController != null)
-            generationController.onclickbutton2_1();
+        OpenAdvanceGenerationBranch();
     }
 
     public void Onclickbutton2_2()
     {
-        //genome view
-        if (generationController != null)
-            generationController.onclickbutton2_2();
+        OpenGenomeViewerBranch();
     }
 
     public void Onclickbutton2_3()
     {
-        //set genome
-        if (generationController != null)
-            generationController.onclickbutton2_3();
+        OpenGenomeInjectorBranch();
     }
 
     void UpdateFollowText()

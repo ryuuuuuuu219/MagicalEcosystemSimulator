@@ -61,8 +61,9 @@ public class herbivoreManager : MonoBehaviour
             if (height <= wg.waterHeight) continue;
 
             Vector3 spawnPos = new Vector3(centerX, height, centerZ) + new Vector3(0, 2f, 0);
+            Quaternion spawnRotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
 
-            herbivore = Instantiate(prefub, spawnPos, Quaternion.identity);
+            herbivore = Instantiate(prefub, spawnPos, spawnRotation);
             herbivore.name = $"Herbivore_{index}";
             herbivore.layer = LayerMask.NameToLayer("Creature");
 

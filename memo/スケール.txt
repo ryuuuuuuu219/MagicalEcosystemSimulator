@@ -1,0 +1,182 @@
+### 設計
+
+#### 時間スケール/AI更新周期
+
+frame
+Unity `Update()`
+
+physics tick
+Unity `FixedUpdate()`
+
+AI step
+現在は専用の 1 秒刻み step は未実装
+草食、肉食ともに `Update()` で認知、記憶更新、ベクトル計算を行う
+移動とエネルギー消費は `FixedUpdate()` で処理する
+
+environment tick
+現在は専用の 1 秒刻み tick は未実装
+草再生は `ResourceDispenser.Update()`
+熱拡散は `HeatFieldManager.Update()`
+ThreatMap 減衰は `threatmap_calc.Update()`
+
+cycle
+未実装
+昼夜変化なし
+Directional Light による熱量場全体の一様加算も未実装
+
+generation
+`AdvanceGenerationController`
+手動で更新する
+
+
+#### 空間スケール定義
+基本単位
+
+##### ワールドサイズ
+`WorldGenerator.terrainSize`
+
+現在値
+デフォルト `512`
+
+用途
+
+生物の行動範囲
+環境グリッドのサイズ基準
+
+##### 環境グリッド
+`threatmap_calc.scoreCellSize`
+
+現在値
+ThreatCell = `2m`
+`lowThreatProbeDistance = 3m`
+`lowThreatDirectionSamples = 12`
+
+用途
+
+捕食者回避
+安全方向探索
+`threatmap_calc`
+
+##### HeatField
+`HeatFieldManager.gridResolution`
+
+現在値
+解像度 = `96`
+ワールド `512` 基準では 1 セルあたり約 `5.33m`
+
+用途
+
+熱拡散
+代謝熱
+分解熱
+環境熱の可視化
+
+##### ManaField（予定）
+未実装
+
+用途予定
+
+魔素濃度
+魔法補正
+支配種進化
+
+##### AI知覚スケール
+視界
+
+HerbivoreVisionDistance
+現在は固定値ではなくランダム生成
+`50m - 100m`
+
+PredatorVisionDistance
+現在は固定値ではなくランダム生成
+`45m - 110m`
+
+VisionAngle
+
+Herbivore
+`4 - 9`
+現在のコード上は度数法で扱っているが値域がかなり狭いので再確認余地あり
+
+Predator
+`15 - 35`
+
+脅威検知
+
+ThreatDetectDistance
+
+Herbivore
+`20m - 80m`
+
+Predator
+`15m - 65m`
+
+MemoryTime
+
+Herbivore
+`1s - 5s`
+
+Predator
+`2s - 8s`
+
+行動距離
+
+逃走
+
+RunAwayDistance
+Herbivore `5m - 35m`
+
+ContactEscapeDistance
+Herbivore `3m - 23m`
+
+捕食
+
+AttackRange
+Predator `1.5m - 3.0m`
+
+PreferredChaseDistance
+Predator `0.8m - 3.8m`
+
+GiveUpDistance
+Predator `60m - 130m`
+
+群れスケール（将来）
+未実装
+
+GroupFormationRadius
+未定義
+
+EncircleRadius
+未定義
+
+LeaderInfluenceRadius
+未定義
+
+バイオームスケール
+未実装
+
+BiomePatchSize
+未定義
+
+ForestDensityRadius
+未定義
+
+GrassPatchSize
+`grassland.radius`
+現在のシーン値 = `8`
+
+グリッド関係まとめ
+
+World      `512m`
+ThreatCell `2m`
+HeatGrid   `96x96`
+HeatCell   `約5.33m`
+ManaField  `未実装`
+Biome      `未実装`
+
+つまり
+
+World
+ ├ ThreatMap
+ ├ HeatField
+ ├ ManaField(予定)
+ └ Biome(未実装)

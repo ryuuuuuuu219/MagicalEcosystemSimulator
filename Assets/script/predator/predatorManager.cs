@@ -59,8 +59,9 @@ public class predatorManager : MonoBehaviour
             if (height <= wg.waterHeight) continue;
 
             Vector3 spawnPos = new Vector3(centerX, height, centerZ) + new Vector3(0, 2f, 0);
+            Quaternion spawnRotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
 
-            predator = Instantiate(prefub, spawnPos, Quaternion.identity);
+            predator = Instantiate(prefub, spawnPos, spawnRotation);
             predator.name = $"Predator_{index}";
             predator.layer = LayerMask.NameToLayer("Creature");
 
@@ -103,6 +104,12 @@ public class predatorManager : MonoBehaviour
             g.visionAngle <= 0f ||
             g.visionDistance <= 0f ||
             g.preyDetectDistance <= 0f ||
+            g.chargeAttackClock < 0.8f ||
+            g.biteAttackClock < 0.8f ||
+            g.meleeAttackClock < 0.8f ||
+            g.chargeDamageScale <= 0f ||
+            g.biteDamage <= 0f ||
+            g.meleeDamage <= 0f ||
             g.visionWaves == null || g.visionWaves.Length == 0;
 
         if (!invalid) return g;
@@ -124,6 +131,47 @@ public class predatorManager : MonoBehaviour
         g.memorytime = 2f + (float)rand.NextDouble() * 6f;
         g.preferredChaseDistance = 0.8f + (float)rand.NextDouble() * 3f;
         g.disengageDistance = 60f + (float)rand.NextDouble() * 70f;
+        g.stopMoveThreshold = 0.05f + (float)rand.NextDouble() * 0.2f;
+        g.resumeMoveThreshold = g.stopMoveThreshold + 0.05f + (float)rand.NextDouble() * 0.25f;
+        g.chargeArc = new AttackArcSettings
+        {
+            radius = 0f,
+            arcDegrees = 85f,
+            length = 1.35f,
+            startOffset = new Vector3(0f, 0f, 0.2f),
+            localDirection = Vector3.forward
+        };
+        g.chargeDamageScale = 0.9f + (float)rand.NextDouble() * 1.1f;
+        g.chargeEnergyCost = 0.4f + (float)rand.NextDouble() * 0.8f;
+        g.chargeContactPadding = 0.15f + (float)rand.NextDouble() * 0.25f;
+        g.chargeAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
+        g.biteArc = new AttackArcSettings
+        {
+            radius = 0.2f,
+            arcDegrees = 70f,
+            length = 1f,
+            startOffset = new Vector3(0f, 0f, 0.35f),
+            localDirection = Vector3.forward
+        };
+        g.biteDamage = 5f + (float)rand.NextDouble() * 7f;
+        g.biteEnergyCost = 1.2f + (float)rand.NextDouble() * 1.8f;
+        g.biteAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
+        g.meleeArc = new AttackArcSettings
+        {
+            radius = 0.3f,
+            arcDegrees = 110f,
+            length = 1.5f,
+            startOffset = new Vector3(0f, 0f, 0.25f),
+            localDirection = Vector3.forward
+        };
+        g.meleeDamage = 8f + (float)rand.NextDouble() * 12f;
+        g.meleeEnergyCost = 2.2f + (float)rand.NextDouble() * 2.5f;
+        g.meleeAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
+        g.attackThreatPulseScore = 2.5f + (float)rand.NextDouble() * 3.5f;
+        g.attackThreatPulseRadius = 3f + (float)rand.NextDouble() * 3f;
+        g.attackTraceScale = 18f + (float)rand.NextDouble() * 18f;
+        g.attackTraceDuration = 0.18f + (float)rand.NextDouble() * 0.18f;
+        g.attackTraceDepth = 2.5f + (float)rand.NextDouble() * 1.5f;
 
         int visionWaveCount = rand.Next(1, 4);
         g.visionWaves = new WaveGene[visionWaveCount];
@@ -148,6 +196,41 @@ public class predatorManager : MonoBehaviour
                 phase = (float)rand.NextDouble() * Mathf.PI * 2f
             };
         }
+
+        if (g.stopMoveThreshold <= 0f)
+            g.stopMoveThreshold = 0.1f;
+        if (g.resumeMoveThreshold <= g.stopMoveThreshold)
+            g.resumeMoveThreshold = g.stopMoveThreshold + 0.1f;
+        if (g.chargeArc.arcDegrees <= 0f)
+            g.chargeArc.arcDegrees = 85f;
+        if (g.chargeArc.length <= 0f)
+            g.chargeArc.length = 1.35f;
+        if (g.biteArc.arcDegrees <= 0f)
+            g.biteArc.arcDegrees = 70f;
+        if (g.biteArc.length <= 0f)
+            g.biteArc.length = 1f;
+        if (g.meleeArc.arcDegrees <= 0f)
+            g.meleeArc.arcDegrees = 110f;
+        if (g.meleeArc.length <= 0f)
+            g.meleeArc.length = 1.5f;
+        if (g.chargeContactPadding <= 0f)
+            g.chargeContactPadding = 0.2f;
+        if (g.chargeAttackClock < 0.8f)
+            g.chargeAttackClock = 0.8f;
+        if (g.biteAttackClock < 0.8f)
+            g.biteAttackClock = 0.8f;
+        if (g.meleeAttackClock < 0.8f)
+            g.meleeAttackClock = 0.8f;
+        if (g.attackThreatPulseScore <= 0f)
+            g.attackThreatPulseScore = 3f;
+        if (g.attackThreatPulseRadius <= 0f)
+            g.attackThreatPulseRadius = 3f;
+        if (g.attackTraceScale <= 0f)
+            g.attackTraceScale = 24f;
+        if (g.attackTraceDuration <= 0f)
+            g.attackTraceDuration = 0.25f;
+        if (g.attackTraceDepth <= 0f)
+            g.attackTraceDepth = 3f;
 
         return g;
     }

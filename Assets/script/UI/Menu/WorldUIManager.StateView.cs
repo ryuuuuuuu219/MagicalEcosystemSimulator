@@ -138,7 +138,9 @@ public partial class WorldUIManager
                         "\nthreatWeight:" + pb.genome.threatWeight.ToString("F2") +
                         "\npreyDetectDistance:" + pb.genome.preyDetectDistance.ToString("F2") +
                         "\npreferredChaseDistance:" + pb.genome.preferredChaseDistance.ToString("F2") +
-                        "\ndisengageDistance:" + pb.genome.disengageDistance.ToString("F2");
+                        "\ndisengageDistance:" + pb.genome.disengageDistance.ToString("F2") +
+                        "\nstopMoveThreshold:" + pb.genome.stopMoveThreshold.ToString("F3") +
+                        "\nresumeMoveThreshold:" + pb.genome.resumeMoveThreshold.ToString("F3");
                     break;
                 case 1:
                     pageTitle = "DNA Code";

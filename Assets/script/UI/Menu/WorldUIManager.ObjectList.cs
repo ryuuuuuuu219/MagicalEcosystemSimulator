@@ -2,17 +2,19 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.UI.Image;
+using static Resource;
 
 public partial class WorldUIManager
 {
     List<GameObject> createdUI = new();
+    category currentObjectListCategory = category.grass;
 
     public void ClearObjectList()
     {
         foreach (var ui in createdUI)
         {
-            Destroy(ui);
+            if (ui != null)
+                Destroy(ui);
         }
 
         createdUI.Clear();
@@ -23,30 +25,233 @@ public partial class WorldUIManager
         isObjectListVisible = !isObjectListVisible;
         if (isObjectListVisible)
         {
+            RefreshObjectSources();
             DisplayObjectList();
         }
         else
-        {
             ClearObjectList();
+    }
+
+    public void RefreshObjectSources()
+    {
+        if (grassManager != null && grassManager.TryGetComponent<ResourceDispenser>(out var dispenser))
+        {
+            dispenser.grasses = new List<GameObject>();
+            Resource[] resources = FindObjectsByType<Resource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            foreach (var resource in resources)
+            {
+                if (resource == null || resource.resourceCategory != category.grass)
+                    continue;
+
+                dispenser.grasses.Add(resource.gameObject);
+            }
+        }
+
+        if (herbivoreManager != null && herbivoreManager.TryGetComponent<herbivoreManager>(out var herbivoreMgr))
+        {
+            herbivoreMgr.herbivores = new List<GameObject>();
+            herbivoreBehaviour[] herbivores = FindObjectsByType<herbivoreBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            foreach (var herbivore in herbivores)
+            {
+                if (herbivore == null || herbivore.gameObject == null)
+                    continue;
+
+                herbivoreMgr.herbivores.Add(herbivore.gameObject);
+            }
+        }
+
+        if (predatorManager != null && predatorManager.TryGetComponent<predatorManager>(out var predatorMgr))
+        {
+            predatorMgr.predators = new List<GameObject>();
+            predatorBehaviour[] predators = FindObjectsByType<predatorBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            foreach (var predator in predators)
+            {
+                if (predator == null || predator.gameObject == null)
+                    continue;
+
+                predatorMgr.predators.Add(predator.gameObject);
+            }
         }
     }
 
     void DisplayObjectList()
     {
-        int categoryNum = 3;
+        EnsureMenuTree();
+        ClearObjectList();
 
-        List<GameObject> grassList = grassManager.GetComponent<ResourceDispenser>().grasses;
-        SettingDisplay(0, categoryNum, grassList);
+        GameObject root = CreateObjectListRoot(mainCanvas.transform);
+        Transform content = CreateObjectListContent(root.transform);
+        CreateCategorySwitch(root.transform);
 
-        List<GameObject> herbivoreList = herbivoreManager.GetComponent<herbivoreManager>().herbivores;
-        SettingDisplay(1, categoryNum, herbivoreList);
+        switch (currentObjectListCategory)
+        {
+            case category.herbivore:
+                SettingDisplay("Herbivore", herbivoreManager.GetComponent<herbivoreManager>().herbivores, content);
+                break;
+            case category.predator:
+                SettingDisplay("Predator", predatorManager.GetComponent<predatorManager>().predators, content);
+                break;
+            default:
+                SettingDisplay("Grass", grassManager.GetComponent<ResourceDispenser>().grasses, content);
+                break;
+        }
+    }
 
-        List<GameObject> predatorList = predatorManager.GetComponent<predatorManager>().predators;
-        SettingDisplay(2, categoryNum, predatorList);
+    GameObject CreateObjectListRoot(Transform parent)
+    {
+        GameObject root = new GameObject("ObjectListRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        root.transform.SetParent(parent, false);
+        createdUI.Add(root);
+
+        RectTransform rect = root.GetComponent<RectTransform>();
+        RectTransform canvasRect = mainCanvas.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 0f);
+        rect.anchorMax = new Vector2(1f, 0f);
+        rect.pivot = new Vector2(1f, 0f);
+        rect.anchoredPosition = new Vector2(-16f, 16f);
+        rect.sizeDelta = new Vector2(canvasRect.rect.width * 0.75f, canvasRect.rect.height * (2f / 3f));
+
+        Image bg = root.GetComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.7f);
+
+        LayoutElement layout = root.GetComponent<LayoutElement>();
+        layout.ignoreLayout = true;
+        return root;
+    }
+
+    void CreateCategorySwitch(Transform parent)
+    {
+        GameObject header = new GameObject("CategorySwitch", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        header.transform.SetParent(parent, false);
+
+        RectTransform rect = header.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -6f);
+        rect.offsetMin = new Vector2(6f, 0f);
+        rect.offsetMax = new Vector2(-6f, 0f);
+        rect.sizeDelta = new Vector2(0f, 30f);
+
+        LayoutElement layout = header.GetComponent<LayoutElement>();
+        layout.preferredHeight = 30f;
+
+        HorizontalLayoutGroup group = header.GetComponent<HorizontalLayoutGroup>();
+        group.childControlWidth = false;
+        group.childControlHeight = true;
+        group.childForceExpandWidth = false;
+        group.childForceExpandHeight = false;
+        group.spacing = 6f;
+        group.padding = new RectOffset(4, 4, 4, 4);
+
+        CreateControlButton(header.transform, "<", () =>
+        {
+            currentObjectListCategory = PreviousCategory(currentObjectListCategory);
+            DisplayObjectList();
+        });
+
+        GameObject labelRoot = new GameObject("CategoryLabelRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        labelRoot.transform.SetParent(header.transform, false);
+        labelRoot.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.08f);
+        LayoutElement labelLayout = labelRoot.GetComponent<LayoutElement>();
+        labelLayout.preferredWidth = 180f;
+        labelLayout.preferredHeight = 22f;
+        CreateChildLabel(labelRoot.transform, currentObjectListCategory.ToString(), 16, TextAlignmentOptions.Center);
+
+        CreateControlButton(header.transform, ">", () =>
+        {
+            currentObjectListCategory = NextCategory(currentObjectListCategory);
+            DisplayObjectList();
+        });
+    }
+
+    category NextCategory(category value)
+    {
+        switch (value)
+        {
+            case category.grass:
+                return category.herbivore;
+            case category.herbivore:
+                return category.predator;
+            default:
+                return category.grass;
+        }
+    }
+
+    category PreviousCategory(category value)
+    {
+        switch (value)
+        {
+            case category.predator:
+                return category.herbivore;
+            case category.herbivore:
+                return category.grass;
+            default:
+                return category.predator;
+        }
+    }
+
+    Transform CreateObjectListContent(Transform parent)
+    {
+        GameObject scrollObj = new GameObject("ObjectListScroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+        scrollObj.transform.SetParent(parent, false);
+
+        RectTransform rect = scrollObj.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(6f, 6f);
+        rect.offsetMax = new Vector2(-6f, -42f);
+
+        scrollObj.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.04f);
+        ScrollRect scrollRect = scrollObj.GetComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+        GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+        viewport.transform.SetParent(scrollObj.transform, false);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = Vector2.zero;
+        viewportRect.offsetMax = Vector2.zero;
+        viewport.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.02f);
+        viewport.GetComponent<Mask>().showMaskGraphic = false;
+
+        GameObject content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        content.transform.SetParent(viewport.transform, false);
+        RectTransform contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = Vector2.zero;
+
+        VerticalLayoutGroup layout = content.GetComponent<VerticalLayoutGroup>();
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.spacing = 6f;
+        layout.padding = new RectOffset(6, 6, 6, 6);
+
+        ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        scrollRect.viewport = viewportRect;
+        scrollRect.content = contentRect;
+        return content.transform;
     }
 
     public void SetTarget(GameObject obj)
     {
+        if (obj == null)
+        {
+            if (currentTarget == null)
+                UpdateFollowText();
+            return;
+        }
+
         currentTarget = obj;
 
         if (RotationThenlooking)
@@ -64,10 +269,7 @@ public partial class WorldUIManager
         if (freeFly != null)
             freeFly.SyncRotationFromTransform();
 
-        foreach (var go in StatusUIlist)
-        {
-            go.SetActive(true);
-        }
+        ShowStatusButtons();
 
         UpdateFollowText();
 
@@ -78,81 +280,148 @@ public partial class WorldUIManager
         }
     }
 
+    void ShowStatusButtons()
+    {
+        foreach (var go in StatusUIlist)
+        {
+            if (go == null) continue;
+            go.SetActive(true);
+        }
+    }
+
     [Header("button Prefabs")]
     public GameObject buttonPrefab;
 
-    void SettingDisplay(int index, int categorynum, List<GameObject> list)
+    void SettingDisplay(string categoryName, List<GameObject> list, Transform parent)
     {
-        float screenWidth = mainCanvas.GetComponent<RectTransform>().rect.width;
+        GameObject categoryRoot = new GameObject(categoryName + "_Category", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        categoryRoot.transform.SetParent(parent, false);
+        createdUI.Add(categoryRoot);
 
-        GameObject scrollObj = new GameObject("ScrollView_" + index);
-        scrollObj.transform.SetParent(mainCanvas.transform, false);
-        createdUI.Add(scrollObj);
+        Image bg = categoryRoot.GetComponent<Image>();
+        bg.color = new Color(1f, 1f, 1f, 0.03f);
 
-        RectTransform rect = scrollObj.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(index / (float)categorynum, 0);
-        rect.anchorMax = new Vector2((index + 1) / (float)categorynum, 1f / 3f);
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-
-        ScrollRect scrollRect = scrollObj.AddComponent<ScrollRect>();
-
-        GameObject viewport = new GameObject("Viewport");
-        viewport.transform.SetParent(scrollObj.transform, false);
-        RectTransform vRect = viewport.AddComponent<RectTransform>();
-        vRect.anchorMin = Vector2.zero;
-        vRect.anchorMax = Vector2.one;
-        vRect.offsetMin = Vector2.zero;
-        vRect.offsetMax = Vector2.zero;
-
-        Mask mask = viewport.AddComponent<Mask>();
-        mask.showMaskGraphic = false;
-        Image img = viewport.AddComponent<Image>();
-
-        GameObject content = new GameObject("Content");
-        content.transform.SetParent(viewport.transform, false);
-        RectTransform cRect = content.AddComponent<RectTransform>();
-        cRect.anchorMin = new Vector2(0, 1);
-        cRect.anchorMax = new Vector2(1, 1);
-        cRect.pivot = new Vector2(0.5f, 1);
-
-        cRect.anchoredPosition = Vector2.zero;
-        cRect.sizeDelta = new Vector2(0, 1);
-
-        VerticalLayoutGroup layout = content.AddComponent<VerticalLayoutGroup>();
+        VerticalLayoutGroup layout = categoryRoot.GetComponent<VerticalLayoutGroup>();
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
+        layout.spacing = 4f;
+        layout.padding = new RectOffset(6, 6, 6, 6);
 
-        ContentSizeFitter fitter = content.AddComponent<ContentSizeFitter>();
+        ContentSizeFitter fitter = categoryRoot.GetComponent<ContentSizeFitter>();
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
 
-        scrollRect.movementType = ScrollRect.MovementType.Clamped;
-        scrollRect.horizontal = false;
-        scrollRect.viewport = vRect;
-        scrollRect.content = cRect;
+        CreateCategoryHeader(categoryRoot.transform, categoryName, list != null ? list.Count : 0);
 
-        LayoutElement layoutElement;
-        if (!buttonPrefab.TryGetComponent<LayoutElement>(out layoutElement))
-        {
-            layoutElement = buttonPrefab.AddComponent<LayoutElement>();
-        }
-
-        layoutElement.preferredHeight = 20;
+        if (list == null)
+            return;
 
         foreach (GameObject obj in list)
         {
             if (obj == null) continue;
-
-            GameObject btn = Instantiate(buttonPrefab, content.transform);
-            btn.GetComponentInChildren<TextMeshProUGUI>().text = obj.name;
-
-            btn.GetComponent<Button>().onClick.AddListener(() =>
-            {
-                SetTarget(obj);
-            });
+            CreateObjectEntry(categoryRoot.transform, obj);
         }
+    }
+
+    void CreateCategoryHeader(Transform parent, string categoryName, int count)
+    {
+        GameObject header = new GameObject(categoryName + "_Header", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        header.transform.SetParent(parent, false);
+
+        Image image = header.GetComponent<Image>();
+        image.color = new Color(1f, 1f, 1f, 0.08f);
+
+        LayoutElement layout = header.GetComponent<LayoutElement>();
+        layout.preferredHeight = 24f;
+
+        TextMeshProUGUI label = CreateChildLabel(header.transform, $"{categoryName} ({count})", 16, TextAlignmentOptions.MidlineLeft);
+        RectTransform rect = label.GetComponent<RectTransform>();
+        rect.offsetMin = new Vector2(8f, 0f);
+        rect.offsetMax = new Vector2(-8f, 0f);
+    }
+
+    void CreateObjectEntry(Transform parent, GameObject obj)
+    {
+        GameObject entry = new GameObject(obj.name + "_Entry", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        entry.transform.SetParent(parent, false);
+        createdUI.Add(entry);
+
+        Image bg = entry.GetComponent<Image>();
+        bg.color = new Color(1f, 1f, 1f, 0.02f);
+
+        VerticalLayoutGroup layout = entry.GetComponent<VerticalLayoutGroup>();
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.spacing = 2f;
+        layout.padding = new RectOffset(4, 4, 4, 4);
+
+        ContentSizeFitter fitter = entry.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        GameObject mainButton = Instantiate(buttonPrefab, entry.transform);
+        mainButton.name = obj.name + "_Button";
+        TextMeshProUGUI label = mainButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+            label.text = obj.name;
+
+        Button button = mainButton.GetComponent<Button>();
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() =>
+        {
+            if (obj == null)
+            {
+                createdUI.Remove(entry);
+                Destroy(entry);
+                return;
+            }
+
+            SetTarget(obj);
+        });
+    }
+
+    void CreateControlButton(Transform parent, string text, UnityEngine.Events.UnityAction action)
+    {
+        GameObject buttonObj = Instantiate(buttonPrefab, parent);
+        buttonObj.name = text + "_Button";
+
+        LayoutElement layout = buttonObj.GetComponent<LayoutElement>();
+        if (layout == null)
+            layout = buttonObj.AddComponent<LayoutElement>();
+
+        layout.preferredHeight = 20f;
+        layout.preferredWidth = text == "detail" ? 80f : 36f;
+        layout.flexibleWidth = text == "detail" ? 1f : 0f;
+
+        TextMeshProUGUI label = buttonObj.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+            label.text = text;
+
+        Button button = buttonObj.GetComponent<Button>();
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(action);
+    }
+
+    TextMeshProUGUI CreateChildLabel(Transform parent, string textValue, float fontSize, TextAlignmentOptions alignment)
+    {
+        GameObject go = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+        text.text = textValue;
+        text.fontSize = fontSize;
+        text.color = Color.white;
+        text.alignment = alignment;
+        return text;
     }
 }

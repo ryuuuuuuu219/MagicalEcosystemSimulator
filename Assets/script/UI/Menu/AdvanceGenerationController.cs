@@ -74,6 +74,7 @@ public class AdvanceGenerationController : MonoBehaviour
 
     [Header("Generation")]
     public int generationIndex = 1;
+    public bool varySeedPerGeneration = true;
     int injectedHerbivoreSpawnIndex = 1000000;
     [SerializeField] int selectedPhasePage = 0;
     [SerializeField] int selectedGenerationPage = 0;
@@ -395,7 +396,12 @@ public class AdvanceGenerationController : MonoBehaviour
         int herbivoreCount = Mathf.Max(1, CountExisting(herbivoreManager.herbivores));
         int predatorCount = Mathf.Max(1, CountExisting(predatorManager.predators));
 
-        var rng = new System.Random(wg.seed + generationIndex * 7919);
+        var rng = new System.Random(GetGenerationSeed(wg.seed, 7919));
+
+        resourceDispenser.ResetGenerationCarbonState();
+
+        if (generationPhase == GenerationPhase.Both)
+            ResetGenerationEnvironment();
 
         if (generationPhase == GenerationPhase.Both || generationPhase == GenerationPhase.HerbivoreOnly)
         {
@@ -423,8 +429,15 @@ public class AdvanceGenerationController : MonoBehaviour
             SpawnPredators(predatorCount);
         }
 
+        resourceDispenser.FinalizeGenerationCarbonBudget();
+
         LogCurrentGeneration();
         generationIndex++;
+    }
+
+    void ResetGenerationEnvironment()
+    {
+        resourceDispenser.ResetGenerationEnvironment();
     }
 
     public void onclickbutton2_1()
@@ -434,27 +447,44 @@ public class AdvanceGenerationController : MonoBehaviour
 
     public void onclickbutton2_2()
     {
-        EnsureGenomeUi();
-        bool show = herbivoreGenomeViewerRoot == null || !herbivoreGenomeViewerRoot.activeSelf;
-        if (herbivoreGenomeViewerRoot != null)
-            herbivoreGenomeViewerRoot.SetActive(show);
+        SetGenomeViewerVisible(herbivoreGenomeViewerRoot == null || !herbivoreGenomeViewerRoot.activeSelf);
+    }
 
-        if (herbivoreGenomeInjectorRoot != null && show)
+    public void SetGenomeViewerVisible(bool visible)
+    {
+        EnsureGenomeUi();
+        if (herbivoreGenomeViewerRoot != null)
+            herbivoreGenomeViewerRoot.SetActive(visible);
+
+        if (herbivoreGenomeInjectorRoot != null && visible)
             herbivoreGenomeInjectorRoot.SetActive(false);
 
-        if (show)
+        if (visible)
             BuildHerbivoreGenomeViewerList();
     }
 
     public void onclickbutton2_3()
     {
-        EnsureGenomeUi();
-        bool show = herbivoreGenomeInjectorRoot == null || !herbivoreGenomeInjectorRoot.activeSelf;
-        if (herbivoreGenomeInjectorRoot != null)
-            herbivoreGenomeInjectorRoot.SetActive(show);
+        SetGenomeInjectorVisible(herbivoreGenomeInjectorRoot == null || !herbivoreGenomeInjectorRoot.activeSelf);
+    }
 
-        if (herbivoreGenomeViewerRoot != null && show)
+    public void SetGenomeInjectorVisible(bool visible)
+    {
+        EnsureGenomeUi();
+        if (herbivoreGenomeInjectorRoot != null)
+            herbivoreGenomeInjectorRoot.SetActive(visible);
+
+        if (herbivoreGenomeViewerRoot != null && visible)
             herbivoreGenomeViewerRoot.SetActive(false);
+    }
+
+    public void HideGenomePanels()
+    {
+        EnsureGenomeUi();
+        if (herbivoreGenomeViewerRoot != null)
+            herbivoreGenomeViewerRoot.SetActive(false);
+        if (herbivoreGenomeInjectorRoot != null)
+            herbivoreGenomeInjectorRoot.SetActive(false);
     }
 
     public void OnclickSpawnHerbivoreGenome()
@@ -607,7 +637,7 @@ public class AdvanceGenerationController : MonoBehaviour
         bool foundBest = false;
         float bestFitness = 0f;
         HerbivoreGenome bestGenome = default;
-        var rng = new System.Random(GetBaseSeed() + generationIndex * 1223);
+        var rng = new System.Random(GetGenerationSeed(GetBaseSeed(), 1223));
 
         for (int i = 0; i < herbivoreManager.herbivores.Count; i++)
         {
@@ -675,6 +705,22 @@ public class AdvanceGenerationController : MonoBehaviour
         return generationIndex;
     }
 
+    int GetGenerationSeed(int baseSeed, int multiplier)
+    {
+        if (!varySeedPerGeneration)
+            return baseSeed;
+
+        return baseSeed + generationIndex * multiplier;
+    }
+
+    int GetGenerationSpawnIndex(int localIndex)
+    {
+        if (!varySeedPerGeneration)
+            return localIndex;
+
+        return generationIndex * 1000 + localIndex;
+    }
+
     void RecycleAndDestroyHerbivores()
     {
         for (int i = herbivoreManager.herbivores.Count - 1; i >= 0; i--)
@@ -682,7 +728,6 @@ public class AdvanceGenerationController : MonoBehaviour
             GameObject obj = herbivoreManager.herbivores[i];
             if (obj == null) continue;
 
-            ReturnCarbonToEnvironment(obj);
             Destroy(obj);
         }
         herbivoreManager.herbivores.Clear();
@@ -695,25 +740,16 @@ public class AdvanceGenerationController : MonoBehaviour
             GameObject obj = predatorManager.predators[i];
             if (obj == null) continue;
 
-            ReturnCarbonToEnvironment(obj);
             Destroy(obj);
         }
         predatorManager.predators.Clear();
-    }
-
-    void ReturnCarbonToEnvironment(GameObject obj)
-    {
-        if (obj != null && obj.TryGetComponent<Resource>(out var resource))
-        {
-            resourceDispenser.ReturnCarbon(resource.carbon);
-        }
     }
 
     void SpawnHerbivores(int count)
     {
         for (int i = 0; i < count; i++)
         {
-            if (herbivoreManager.spownherbivore(worldgen, generationIndex * 1000 + i, out GameObject herbivore))
+            if (herbivoreManager.spownherbivore(worldgen, GetGenerationSpawnIndex(i), out GameObject herbivore))
             {
                 resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.carbonPerHerbivore, category.herbivore);
             }
@@ -724,7 +760,7 @@ public class AdvanceGenerationController : MonoBehaviour
     {
         for (int i = 0; i < count; i++)
         {
-            if (predatorManager.spownpredator(worldgen, generationIndex * 1000 + i, out GameObject predator))
+            if (predatorManager.spownpredator(worldgen, GetGenerationSpawnIndex(i), out GameObject predator))
             {
                 resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.carbonPerPredator, category.predator);
             }
@@ -1025,6 +1061,26 @@ public class AdvanceGenerationController : MonoBehaviour
             memorytime = BlendFloat(a.memorytime, b.memorytime, rng),
             preferredChaseDistance = BlendFloat(a.preferredChaseDistance, b.preferredChaseDistance, rng),
             disengageDistance = BlendFloat(a.disengageDistance, b.disengageDistance, rng),
+            stopMoveThreshold = BlendFloat(a.stopMoveThreshold, b.stopMoveThreshold, rng),
+            resumeMoveThreshold = BlendFloat(a.resumeMoveThreshold, b.resumeMoveThreshold, rng),
+            chargeArc = BlendAttackArc(a.chargeArc, b.chargeArc, rng),
+            chargeDamageScale = BlendFloat(a.chargeDamageScale, b.chargeDamageScale, rng),
+            chargeEnergyCost = BlendFloat(a.chargeEnergyCost, b.chargeEnergyCost, rng),
+            chargeContactPadding = BlendFloat(a.chargeContactPadding, b.chargeContactPadding, rng),
+            chargeAttackClock = BlendFloat(a.chargeAttackClock, b.chargeAttackClock, rng),
+            biteArc = BlendAttackArc(a.biteArc, b.biteArc, rng),
+            biteDamage = BlendFloat(a.biteDamage, b.biteDamage, rng),
+            biteEnergyCost = BlendFloat(a.biteEnergyCost, b.biteEnergyCost, rng),
+            biteAttackClock = BlendFloat(a.biteAttackClock, b.biteAttackClock, rng),
+            meleeArc = BlendAttackArc(a.meleeArc, b.meleeArc, rng),
+            meleeDamage = BlendFloat(a.meleeDamage, b.meleeDamage, rng),
+            meleeEnergyCost = BlendFloat(a.meleeEnergyCost, b.meleeEnergyCost, rng),
+            meleeAttackClock = BlendFloat(a.meleeAttackClock, b.meleeAttackClock, rng),
+            attackThreatPulseScore = BlendFloat(a.attackThreatPulseScore, b.attackThreatPulseScore, rng),
+            attackThreatPulseRadius = BlendFloat(a.attackThreatPulseRadius, b.attackThreatPulseRadius, rng),
+            attackTraceScale = BlendFloat(a.attackTraceScale, b.attackTraceScale, rng),
+            attackTraceDuration = BlendFloat(a.attackTraceDuration, b.attackTraceDuration, rng),
+            attackTraceDepth = BlendFloat(a.attackTraceDepth, b.attackTraceDepth, rng),
             visionWaves = BlendWaves(a.visionWaves, b.visionWaves, rng),
             wanderWaves = BlendWaves(a.wanderWaves, b.wanderWaves, rng)
         };
@@ -1085,6 +1141,36 @@ public class AdvanceGenerationController : MonoBehaviour
         child.memorytime = MutateFloat(child.memorytime, a.memorytime, b.memorytime, rng);
         child.preferredChaseDistance = MutateFloat(child.preferredChaseDistance, a.preferredChaseDistance, b.preferredChaseDistance, rng);
         child.disengageDistance = MutateFloat(child.disengageDistance, a.disengageDistance, b.disengageDistance, rng);
+        child.stopMoveThreshold = MutateFloat(child.stopMoveThreshold, a.stopMoveThreshold, b.stopMoveThreshold, rng);
+        child.resumeMoveThreshold = MutateFloat(child.resumeMoveThreshold, a.resumeMoveThreshold, b.resumeMoveThreshold, rng);
+        child.chargeArc = MutateAttackArc(child.chargeArc, a.chargeArc, b.chargeArc, rng);
+        child.chargeDamageScale = MutateFloat(child.chargeDamageScale, a.chargeDamageScale, b.chargeDamageScale, rng);
+        child.chargeEnergyCost = MutateFloat(child.chargeEnergyCost, a.chargeEnergyCost, b.chargeEnergyCost, rng);
+        child.chargeContactPadding = MutateFloat(child.chargeContactPadding, a.chargeContactPadding, b.chargeContactPadding, rng);
+        child.chargeAttackClock = MutateFloat(child.chargeAttackClock, a.chargeAttackClock, b.chargeAttackClock, rng);
+        child.biteArc = MutateAttackArc(child.biteArc, a.biteArc, b.biteArc, rng);
+        child.biteDamage = MutateFloat(child.biteDamage, a.biteDamage, b.biteDamage, rng);
+        child.biteEnergyCost = MutateFloat(child.biteEnergyCost, a.biteEnergyCost, b.biteEnergyCost, rng);
+        child.biteAttackClock = MutateFloat(child.biteAttackClock, a.biteAttackClock, b.biteAttackClock, rng);
+        child.meleeArc = MutateAttackArc(child.meleeArc, a.meleeArc, b.meleeArc, rng);
+        child.meleeDamage = MutateFloat(child.meleeDamage, a.meleeDamage, b.meleeDamage, rng);
+        child.meleeEnergyCost = MutateFloat(child.meleeEnergyCost, a.meleeEnergyCost, b.meleeEnergyCost, rng);
+        child.meleeAttackClock = MutateFloat(child.meleeAttackClock, a.meleeAttackClock, b.meleeAttackClock, rng);
+        child.attackThreatPulseScore = MutateFloat(child.attackThreatPulseScore, a.attackThreatPulseScore, b.attackThreatPulseScore, rng);
+        child.attackThreatPulseRadius = MutateFloat(child.attackThreatPulseRadius, a.attackThreatPulseRadius, b.attackThreatPulseRadius, rng);
+        child.attackTraceScale = MutateFloat(child.attackTraceScale, a.attackTraceScale, b.attackTraceScale, rng);
+        child.attackTraceDuration = MutateFloat(child.attackTraceDuration, a.attackTraceDuration, b.attackTraceDuration, rng);
+        child.attackTraceDepth = MutateFloat(child.attackTraceDepth, a.attackTraceDepth, b.attackTraceDepth, rng);
+        if (child.stopMoveThreshold < 0.001f)
+            child.stopMoveThreshold = 0.001f;
+        if (child.resumeMoveThreshold <= child.stopMoveThreshold)
+            child.resumeMoveThreshold = child.stopMoveThreshold + 0.05f;
+        if (child.chargeAttackClock < 0.8f)
+            child.chargeAttackClock = 0.8f;
+        if (child.biteAttackClock < 0.8f)
+            child.biteAttackClock = 0.8f;
+        if (child.meleeAttackClock < 0.8f)
+            child.meleeAttackClock = 0.8f;
         child.visionWaves = MutateWaves(child.visionWaves, a.visionWaves, b.visionWaves, rng);
         child.wanderWaves = MutateWaves(child.wanderWaves, a.wanderWaves, b.wanderWaves, rng);
         return child;
@@ -1103,6 +1189,28 @@ public class AdvanceGenerationController : MonoBehaviour
             default:
                 return rng.NextDouble() < 0.5 ? a : b;
         }
+    }
+
+    AttackArcSettings BlendAttackArc(AttackArcSettings a, AttackArcSettings b, System.Random rng)
+    {
+        return new AttackArcSettings
+        {
+            radius = BlendFloat(a.radius, b.radius, rng),
+            arcDegrees = BlendFloat(a.arcDegrees, b.arcDegrees, rng),
+            length = BlendFloat(a.length, b.length, rng),
+            startOffset = BlendVector3(a.startOffset, b.startOffset, rng),
+            localDirection = BlendVector3(a.localDirection, b.localDirection, rng)
+        };
+    }
+
+    AttackArcSettings MutateAttackArc(AttackArcSettings child, AttackArcSettings a, AttackArcSettings b, System.Random rng)
+    {
+        child.radius = MutateFloat(child.radius, a.radius, b.radius, rng);
+        child.arcDegrees = MutateFloat(child.arcDegrees, a.arcDegrees, b.arcDegrees, rng);
+        child.length = MutateFloat(child.length, a.length, b.length, rng);
+        child.startOffset = MutateVector3(child.startOffset, a.startOffset, b.startOffset, rng);
+        child.localDirection = MutateVector3(child.localDirection, a.localDirection, b.localDirection, rng);
+        return child;
     }
 
     WaveGene[] BlendWaves(WaveGene[] a, WaveGene[] b, System.Random rng)
@@ -1139,6 +1247,22 @@ public class AdvanceGenerationController : MonoBehaviour
         float parentBase = Mathf.Max(0.01f, Mathf.Abs((parentA + parentB) * 0.5f));
         float delta = Mathf.Lerp(-parentBase * parentMutationScale, parentBase * parentMutationScale, (float)rng.NextDouble());
         return value + delta;
+    }
+
+    Vector3 BlendVector3(Vector3 a, Vector3 b, System.Random rng)
+    {
+        return new Vector3(
+            BlendFloat(a.x, b.x, rng),
+            BlendFloat(a.y, b.y, rng),
+            BlendFloat(a.z, b.z, rng));
+    }
+
+    Vector3 MutateVector3(Vector3 value, Vector3 parentA, Vector3 parentB, System.Random rng)
+    {
+        value.x = MutateFloat(value.x, parentA.x, parentB.x, rng);
+        value.y = MutateFloat(value.y, parentA.y, parentB.y, rng);
+        value.z = MutateFloat(value.z, parentA.z, parentB.z, rng);
+        return value;
     }
 
     WaveGene[] MutateWaves(WaveGene[] waves, WaveGene[] parentA, WaveGene[] parentB, System.Random rng)
