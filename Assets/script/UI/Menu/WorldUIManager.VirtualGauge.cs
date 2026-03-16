@@ -22,6 +22,19 @@ public partial class WorldUIManager
         public Slider EnergySlider;
         public Slider CarbonSlider;
         public TextMeshProUGUI EnergyLapText;
+        public Image HealthBackground;
+        public Image EnergyBackground;
+        public Image CarbonBackground;
+        public Image HealthFill;
+        public Image EnergyFill;
+        public Image CarbonFill;
+        public Color HealthBackgroundColor;
+        public Color EnergyBackgroundColor;
+        public Color CarbonBackgroundColor;
+        public Color HealthFillColor;
+        public Color EnergyFillColor;
+        public Color CarbonFillColor;
+        public Color EnergyLapTextColor;
     }
 
     void InitializeVirtualGaugeCanvas()
@@ -132,6 +145,7 @@ public partial class WorldUIManager
             view.Root.localPosition = new Vector3(localPoint.x, localPoint.y, 0f);
             float scale = currentTarget == gauge.gameObject ? selectedGaugeScale : 1f;
             view.Root.localScale = Vector3.one * scale;
+            ApplyGaugeAlpha(view, virtualGaugeManager == null ? 1f : virtualGaugeManager.GaugeAlpha);
             view.HealthSlider.value = healthRatio;
             view.EnergySlider.value = energyRatio;
             view.CarbonSlider.value = carbonRatio;
@@ -229,9 +243,9 @@ public partial class WorldUIManager
         root.sizeDelta = new Vector2(160f, 38f);
         root.pivot = new Vector2(0.5f, 0.5f);
 
-        Slider healthSlider = CreateGaugeSlider("HealthSlider", root, new Vector2(0f, 14f), new Color(1f, 0.52f, 0.12f, 0.95f));
-        Slider energySlider = CreateGaugeSlider("EnergySlider", root, new Vector2(0f, 1f), new Color(1f, 0.87f, 0.16f, 0.95f));
-        Slider carbonSlider = CreateGaugeSlider("CarbonSlider", root, new Vector2(0f, -12f), new Color(0.35f, 0.82f, 1f, 0.95f));
+        Slider healthSlider = CreateGaugeSlider("HealthSlider", root, new Vector2(0f, 14f), new Color(1f, 0.52f, 0.12f, 0.95f), out var healthBackground, out var healthFill);
+        Slider energySlider = CreateGaugeSlider("EnergySlider", root, new Vector2(0f, 1f), new Color(1f, 0.87f, 0.16f, 0.95f), out var energyBackground, out var energyFill);
+        Slider carbonSlider = CreateGaugeSlider("CarbonSlider", root, new Vector2(0f, -12f), new Color(0.35f, 0.82f, 1f, 0.95f), out var carbonBackground, out var carbonFill);
         TextMeshProUGUI energyLapText = CreateGaugeLabel("EnergyLapText", root, new Vector2(-86f, 1f));
 
         rootObj.SetActive(false);
@@ -242,11 +256,24 @@ public partial class WorldUIManager
             HealthSlider = healthSlider,
             EnergySlider = energySlider,
             CarbonSlider = carbonSlider,
-            EnergyLapText = energyLapText
+            EnergyLapText = energyLapText,
+            HealthBackground = healthBackground,
+            EnergyBackground = energyBackground,
+            CarbonBackground = carbonBackground,
+            HealthFill = healthFill,
+            EnergyFill = energyFill,
+            CarbonFill = carbonFill,
+            HealthBackgroundColor = healthBackground.color,
+            EnergyBackgroundColor = energyBackground.color,
+            CarbonBackgroundColor = carbonBackground.color,
+            HealthFillColor = healthFill.color,
+            EnergyFillColor = energyFill.color,
+            CarbonFillColor = carbonFill.color,
+            EnergyLapTextColor = energyLapText.color
         };
     }
 
-    Slider CreateGaugeSlider(string name, RectTransform parent, Vector2 anchoredPosition, Color fillColor)
+    Slider CreateGaugeSlider(string name, RectTransform parent, Vector2 anchoredPosition, Color fillColor, out Image backgroundImage, out Image fillImage)
     {
         GameObject sliderObj = new GameObject(name, typeof(RectTransform), typeof(Slider));
         sliderObj.transform.SetParent(parent, false);
@@ -265,7 +292,7 @@ public partial class WorldUIManager
         backgroundRect.anchorMax = Vector2.one;
         backgroundRect.offsetMin = Vector2.zero;
         backgroundRect.offsetMax = Vector2.zero;
-        Image backgroundImage = backgroundObj.GetComponent<Image>();
+        backgroundImage = backgroundObj.GetComponent<Image>();
         backgroundImage.color = new Color(0f, 0f, 0f, 0.45f);
 
         GameObject fillAreaObj = new GameObject("Fill Area", typeof(RectTransform));
@@ -283,7 +310,7 @@ public partial class WorldUIManager
         fillRect.anchorMax = Vector2.one;
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
-        Image fillImage = fillObj.GetComponent<Image>();
+        fillImage = fillObj.GetComponent<Image>();
         fillImage.color = fillColor;
 
         Slider slider = sliderObj.GetComponent<Slider>();
@@ -316,6 +343,34 @@ public partial class WorldUIManager
         text.alignment = TextAlignmentOptions.MidlineRight;
         text.text = "1x";
         return text;
+    }
+
+    void ApplyGaugeAlpha(GaugeView view, float alpha)
+    {
+        float clampedAlpha = Mathf.Clamp01(alpha);
+        SetGraphicAlpha(view.HealthBackground, view.HealthBackgroundColor, clampedAlpha);
+        SetGraphicAlpha(view.EnergyBackground, view.EnergyBackgroundColor, clampedAlpha);
+        SetGraphicAlpha(view.CarbonBackground, view.CarbonBackgroundColor, clampedAlpha);
+        SetGraphicAlpha(view.HealthFill, view.HealthFillColor, clampedAlpha);
+        SetGraphicAlpha(view.EnergyFill, view.EnergyFillColor, clampedAlpha);
+        SetGraphicAlpha(view.CarbonFill, view.CarbonFillColor, clampedAlpha);
+
+        if (view.EnergyLapText != null)
+        {
+            Color color = view.EnergyLapTextColor;
+            color.a *= clampedAlpha;
+            view.EnergyLapText.color = color;
+        }
+    }
+
+    void SetGraphicAlpha(Graphic graphic, Color baseColor, float alpha)
+    {
+        if (graphic == null)
+            return;
+
+        Color color = baseColor;
+        color.a *= alpha;
+        graphic.color = color;
     }
 
 

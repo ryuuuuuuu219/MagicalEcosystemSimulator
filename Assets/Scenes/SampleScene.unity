@@ -861,6 +861,7 @@ MonoBehaviour:
   showHealthGauge: 1
   showEnergyGauge: 1
   showCarbonText: 1
+  gaugeAlpha: 0.186
 --- !u!1 &385512463
 GameObject:
   m_ObjectHideFlags: 0
@@ -1913,7 +1914,7 @@ MonoBehaviour:
     chargeDamageScale: 0
     chargeEnergyCost: 0
     chargeContactPadding: 0
-    chargeCooldown: 0
+    chargeAttackClock: 0
     biteArc:
       radius: 0
       arcDegrees: 0
@@ -1922,6 +1923,7 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     biteDamage: 0
     biteEnergyCost: 0
+    biteAttackClock: 0
     meleeArc:
       radius: 0
       arcDegrees: 0
@@ -1930,8 +1932,12 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     meleeDamage: 0
     meleeEnergyCost: 0
+    meleeAttackClock: 0
     attackThreatPulseScore: 0
     attackThreatPulseRadius: 0
+    attackTraceScale: 0
+    attackTraceDuration: 0
+    attackTraceDepth: 0
     visionWaves: []
     wanderWaves: []
   saveOutputGenome: 1
@@ -2342,7 +2348,7 @@ MonoBehaviour:
     chargeDamageScale: 0
     chargeEnergyCost: 0
     chargeContactPadding: 0
-    chargeCooldown: 0
+    chargeAttackClock: 0
     biteArc:
       radius: 0
       arcDegrees: 0
@@ -2351,6 +2357,7 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     biteDamage: 0
     biteEnergyCost: 0
+    biteAttackClock: 0
     meleeArc:
       radius: 0
       arcDegrees: 0
@@ -2359,8 +2366,12 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     meleeDamage: 0
     meleeEnergyCost: 0
+    meleeAttackClock: 0
     attackThreatPulseScore: 0
     attackThreatPulseRadius: 0
+    attackTraceScale: 0
+    attackTraceDuration: 0
+    attackTraceDepth: 0
     visionWaves: []
     wanderWaves: []
   nextGenerationGenome:
@@ -2392,7 +2403,7 @@ MonoBehaviour:
     chargeDamageScale: 0
     chargeEnergyCost: 0
     chargeContactPadding: 0
-    chargeCooldown: 0
+    chargeAttackClock: 0
     biteArc:
       radius: 0
       arcDegrees: 0
@@ -2401,6 +2412,7 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     biteDamage: 0
     biteEnergyCost: 0
+    biteAttackClock: 0
     meleeArc:
       radius: 0
       arcDegrees: 0
@@ -2409,8 +2421,12 @@ MonoBehaviour:
       localDirection: {x: 0, y: 0, z: 0}
     meleeDamage: 0
     meleeEnergyCost: 0
+    meleeAttackClock: 0
     attackThreatPulseScore: 0
     attackThreatPulseRadius: 0
+    attackTraceScale: 0
+    attackTraceDuration: 0
+    attackTraceDepth: 0
     visionWaves: []
     wanderWaves: []
   useManagerGenome: 0

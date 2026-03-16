@@ -157,7 +157,7 @@ public static class AttackTraceLibrary
 
         var starts = new List<Vector3>(6);
         var ends = new List<Vector3>(6);
-        float safeScale = Mathf.Max(0.05f, scale);
+        float safeScale = ResolveWorldScale(cam, worldCenter, scale);
         for (int i = 0; i < 6; i++)
         {
             float angle = i * 60f * Mathf.Deg2Rad;
@@ -178,7 +178,7 @@ public static class AttackTraceLibrary
         if (!IsVisibleFromCamera(cam, worldCenter))
             return;
 
-        float safeScale = Mathf.Max(0.05f, scale);
+        float safeScale = ResolveWorldScale(cam, worldCenter, scale);
         Vector2[] fromOffsets =
         {
             new Vector2(-1f, 1f),
@@ -220,7 +220,7 @@ public static class AttackTraceLibrary
             return;
 
         BuildBillboardBasis(cam, worldCenter, worldForward, out Vector3 axis, out Vector3 ortho);
-        float safeScale = Mathf.Max(0.05f, scale);
+        float safeScale = ResolveWorldScale(cam, worldCenter, scale);
         float halfArc = Mathf.Max(1f, arcDegrees) * 0.5f;
         int safeSegments = Mathf.Max(2, segments);
         Vector3 prev = worldCenter + RotateOnBillboard(axis, ortho, -halfArc * Mathf.Deg2Rad) * safeScale;
@@ -300,5 +300,14 @@ public static class AttackTraceLibrary
             return Mathf.Max(0.5f, CommonAttackVisualUIManager.Instance.attackTraceWidthPixels);
 
         return 3f;
+    }
+
+    static float ResolveWorldScale(Camera cam, Vector3 worldCenter, float scalePixels)
+    {
+        float safePixels = Mathf.Max(1f, scalePixels);
+        float distance = Vector3.Dot(worldCenter - cam.transform.position, cam.transform.forward);
+        distance = Mathf.Max(cam.nearClipPlane + 0.05f, distance);
+        float worldPerPixel = (2f * distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad)) / Mathf.Max(1f, Screen.height);
+        return Mathf.Max(0.01f, safePixels * worldPerPixel);
     }
 }

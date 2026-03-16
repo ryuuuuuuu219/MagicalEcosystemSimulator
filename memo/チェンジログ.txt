@@ -1,0 +1,84 @@
+2026-03-15 変更ログ
+
+1. 動物のワールド外脱走対策
+- `Assets/script/AI/AnimalAICommon.cs`
+- 移動後座標を Terrain 範囲内へクランプする処理を追加。
+- 地形外へ出たあと戻れなくなる問題を防止。
+
+2. 捕食者の攻撃距離不整合の調査
+- `predatorBehaviour` の攻撃判定と追跡停止条件を確認。
+- `attackDistance` 未使用、`preferredChaseDistance` により攻撃前停止する構造を特定。
+
+3. 捕食者攻撃の再設計
+- 距離即時判定から 3 種攻撃へ変更。
+- 対象は前方象限にいることを前提。
+- 攻撃種別:
+  - 突進: 接触時、相対速度比例ダメージ、小エネルギー消費
+  - 噛みつき: 命中時に対象速度を継承、中エネルギー消費
+  - 近接攻撃: 高ダメージ、大エネルギー消費
+- 攻撃判定は弧状設定 `AttackArcSettings` で管理。
+
+4. 脅威度マップ連携
+- `Assets/script/AI/threatmap_calc.cs`
+- `AddThreatPulse` を追加。
+- 攻撃成功時に捕食者中心で脅威スコアを放射状に加算するよう変更。
+
+5. 攻撃ロジックのライブラリ分離
+- `Assets/script/AI/PredatorCombatLibrary.cs` を新設。
+- 攻撃状態、攻撃判定、ダメージ計算、脅威パルス加算を `predatorBehaviour` から分離。
+- `predatorBehaviour` 側はコンテキスト構築と結果適用のみ担当。
+
+6. 草食動物速度の外部参照対応
+- `Assets/script/herbivore/herbivoreBehaviour.cs`
+- `CurrentVelocity` を追加。
+- 噛みつき時に捕食者が対象速度を継承できるようにした。
+
+7. 攻撃描画ライブラリの追加
+- `Assets/script/AI/AttackTraceLibrary.cs` を新設。
+- `LineRenderer` ベースの攻撃描画を独立化。
+- 攻撃成功直前に呼び出す構成へ変更。
+- 描画種別:
+  - 突進: 接触点から六方向アスタリスク
+  - 噛みつき: 上下 6 点から中央 3 点への射影
+  - 近接: 弧の開始点から終了点への展開
+
+8. 攻撃描画のワールド座標化
+- 当初のスクリーン座標ベース描画を廃止。
+- ワールド座標上のビルボード平面に描く方式へ変更。
+- 見かけの太さはカメラ距離から毎フレーム補正するようにした。
+
+9. 攻撃判断の周期確率化
+- 攻撃距離ベースの発動を撤廃。
+- 攻撃距離を理由にした減速・停止も撤廃。
+- 攻撃は攻撃クロック周期ごとに抽選。
+- 距離 x はワールド距離をそのまま使用。
+- 確率 y は 0..100 にクランプ。
+- 実装式:
+  - 突進: `y = 80 - 2x`
+  - 噛みつき: `y = 60 - x`
+  - 近接: `y = -0.8x^2 + 70 + 7x`
+- クロック周期は 0.8 以上。
+- 攻撃力係数は `clock / 0.8`。
+- 既存の噛みつき/近接の連打クールダウン増幅は撤廃。
+
+10. 攻撃関連遺伝子の調整
+- `PredatorGenome` に攻撃クロック、描画スケール、描画時間などを追加。
+- `predatorManager` のランダム初期化を更新。
+- `AdvanceGenerationController` の交配・突然変異処理を更新。
+
+11. 共通攻撃描写 UI マネージャ追加
+- `Assets/script/UI/CommonAttackVisualUIManager.cs` を新設。
+- `WorldUIManager` 継承クラスとして追加。
+- 共通攻撃描画の太さ設定 `attackTraceWidthPixels` を環境側固定値として保持。
+- `AttackTraceLibrary` はこの UI マネージャの設定を参照して描画幅を決定。
+- 個体遺伝子から描画幅設定を削除。
+
+12. CLI ビルド確認用調整
+- `Assembly-CSharp.csproj`
+- 新規追加した `.cs` ファイルをビルド対象へ追加。
+- 都度 `dotnet build Assembly-CSharp.csproj` でコンパイル確認を実施。
+
+補足
+- 攻撃描画の太さは現在、`CommonAttackVisualUIManager.attackTraceWidthPixels` が基準。
+- `CommonAttackVisualUIManager` がシーン上に無い場合は描画ライブラリ側デフォルト値を使用。
+- `SampleScene.unity` には旧シリアライズ項目が残っている可能性があるため、必要に応じて Unity 上で再保存が必要。

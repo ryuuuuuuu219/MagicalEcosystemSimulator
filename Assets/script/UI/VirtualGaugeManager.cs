@@ -12,12 +12,16 @@ public class VirtualGaugeManager : MonoBehaviour
     [SerializeField] bool showEnergyGauge = true;
     [SerializeField] bool showCarbonText = true;
 
+    [Header("Appearance")]
+    [SerializeField, Range(0f, 1f)] float gaugeAlpha = 1f;
+
     public bool ShowVirtualGauges => showVirtualGauges;
     public bool ShowHerbivoreGauges => showHerbivoreGauges;
     public bool ShowPredatorGauges => showPredatorGauges;
     public bool ShowHealthGauge => showHealthGauge;
     public bool ShowEnergyGauge => showEnergyGauge;
     public bool ShowCarbonText => showCarbonText;
+    public float GaugeAlpha => gaugeAlpha;
 
     void Awake()
     {

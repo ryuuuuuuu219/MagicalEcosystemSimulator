@@ -3,6 +3,7 @@ using TMPro;
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -51,7 +52,24 @@ public partial class WorldUIManager : MonoBehaviour
     const int stateViewPageCount = 4;
     string currentHerbivoreDnaCode = string.Empty;
     Button herbivoreDnaCopyButton;
+    Button menuRootButton;
+    int lastMenuInvokeFrame = -1;
+    int lastObjectListInvokeFrame = -1;
+    int lastGenerationInvokeFrame = -1;
+    int lastAdvanceGenerationInvokeFrame = -1;
+    int lastGenomeViewerInvokeFrame = -1;
+    int lastGenomeInjectorInvokeFrame = -1;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
+
+    void Awake()
+    {
+        EnsureSceneButtonBindings();
+    }
+
+    void OnEnable()
+    {
+        EnsureSceneButtonBindings();
+    }
 
     void Update()
     {
@@ -78,6 +96,8 @@ public partial class WorldUIManager : MonoBehaviour
 
     private void Start()
     {
+        EnsureSceneButtonBindings();
+
         UIlist = new() { GencontrollerUIlist, StatusUIlist, StatusinfoUIlist, TabUIlist };
         RectTransform rect = waveImage.GetComponent<RectTransform>();
         InitWaveTexture((int)rect.rect.width, (int)rect.rect.height);
@@ -106,7 +126,7 @@ public partial class WorldUIManager : MonoBehaviour
 
     void Objectpic()
     {
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -147,8 +167,22 @@ public partial class WorldUIManager : MonoBehaviour
                obj.TryGetComponent<predatorBehaviour>(out _);
     }
 
+    /// <summary>
+    /// ワールドメニュー全体の表示状態を切り替えます。
+    /// 閉じる際は配下 UI と選択状態もまとめてリセットします。
+    /// </summary>
+    /// <seealso cref="ShowMenuRootButtons"/>
+    /// <seealso cref="HideAllMenuBranches"/>
     public void Menu()
     {
+        if (lastMenuInvokeFrame == Time.frameCount)
+        {
+            Debug.Log($"[WorldUIManager] Menu() ignored duplicate call in frame={Time.frameCount}", this);
+            return;
+        }
+
+        lastMenuInvokeFrame = Time.frameCount;
+        Debug.Log($"[WorldUIManager] Menu() invoked. beforeToggle visible={isWorldMenuVisible} objectList={isObjectListVisible} status={isStatusVisible} frame={Time.frameCount}", this);
         isWorldMenuVisible = !isWorldMenuVisible;
         if (isWorldMenuVisible)
         {
@@ -166,29 +200,68 @@ public partial class WorldUIManager : MonoBehaviour
             ClearStateview();
             UpdateFollowText();
         }
-    }
-    public void Onclickbutton1()
-    {
-        OpenObjectListBranch();
-    }
-    public void Onclickbutton2()
-    {
-        OpenGenerationBranch();
+
+        Debug.Log($"[WorldUIManager] Menu() completed. afterToggle visible={isWorldMenuVisible} objectList={isObjectListVisible} status={isStatusVisible} frame={Time.frameCount}", this);
     }
 
+    /// <summary>
+    /// オブジェクト一覧ブランチの表示を切り替えます。
+    /// </summary>
+    /// <seealso cref="ToggleObjectListBranch"/>
+    public void Onclickbutton1()
+    {
+        if (IsDuplicateUiInvoke(ref lastObjectListInvokeFrame, nameof(Onclickbutton1)))
+            return;
+
+        ToggleObjectListBranch();
+    }
+
+    /// <summary>
+    /// 生成メニューブランチの表示を切り替えます。
+    /// </summary>
+    /// <seealso cref="ToggleGenerationBranch"/>
+    public void Onclickbutton2()
+    {
+        if (IsDuplicateUiInvoke(ref lastGenerationInvokeFrame, nameof(Onclickbutton2)))
+            return;
+
+        ToggleGenerationBranch();
+    }
+
+    /// <summary>
+    /// AdvanceGeneration パネルを開いて世代更新処理を実行します。
+    /// </summary>
+    /// <seealso cref="OpenAdvanceGenerationBranch"/>
     public void Onclickbutton2_1()
     {
+        if (IsDuplicateUiInvoke(ref lastAdvanceGenerationInvokeFrame, nameof(Onclickbutton2_1)))
+            return;
+
         OpenAdvanceGenerationBranch();
     }
 
+    /// <summary>
+    /// Genome Viewer パネルの表示を切り替えます。
+    /// </summary>
+    /// <seealso cref="ToggleGenomeViewerBranch"/>
     public void Onclickbutton2_2()
     {
-        OpenGenomeViewerBranch();
+        if (IsDuplicateUiInvoke(ref lastGenomeViewerInvokeFrame, nameof(Onclickbutton2_2)))
+            return;
+
+        ToggleGenomeViewerBranch();
     }
 
+    /// <summary>
+    /// Genome Injector パネルの表示を切り替えます。
+    /// </summary>
+    /// <seealso cref="ToggleGenomeInjectorBranch"/>
     public void Onclickbutton2_3()
     {
-        OpenGenomeInjectorBranch();
+        if (IsDuplicateUiInvoke(ref lastGenomeInjectorInvokeFrame, nameof(Onclickbutton2_3)))
+            return;
+
+        ToggleGenomeInjectorBranch();
     }
 
     void UpdateFollowText()
@@ -228,5 +301,127 @@ public partial class WorldUIManager : MonoBehaviour
         }
 
         text_f.text = statusText;
+    }
+
+    void EnsureSceneButtonBindings()
+    {
+        menuRootButton = ResolveButton(menuRootButton, "manu root", "Menu");
+
+        Debug.Log($"[WorldUIManager] EnsureSceneButtonBindings menuRootButton={(menuRootButton != null ? menuRootButton.name : "null")} frame={Time.frameCount}", this);
+
+        EnsureMenuButtonRelay(menuRootButton);
+        BindSceneButton(GetObjectListButton(), Onclickbutton1);
+        BindSceneButton(GetGenerationButton(), Onclickbutton2);
+        BindSceneButton(GetStateButton(), Onclick_State);
+        BindSceneButton(GetPageDownButton(), Onclick_PageDown);
+        BindSceneButton(GetPageUpButton(), Onclick_PageUp);
+        BindSceneButton(GetAdvanceGenerationButton(), Onclickbutton2_1);
+        BindSceneButton(GetGenomeViewerButton(), Onclickbutton2_2);
+        BindSceneButton(GetGenomeInjectorButton(), Onclickbutton2_3);
+    }
+
+    Button GetObjectListButton() => ResolveButton(GetButton(TabUIlist, 0), "list tab");
+
+    Button GetGenerationButton() => ResolveButton(GetButton(TabUIlist, 1), "gen tab");
+
+    Button GetStateButton() => ResolveButton(GetButton(StatusUIlist, 0), "detail");
+
+    Button GetPageDownButton() => ResolveButton(GetButton(StatusUIlist, 1), "<");
+
+    Button GetPageUpButton() => ResolveButton(GetButton(StatusUIlist, 2), ">");
+
+    Button GetAdvanceGenerationButton() => ResolveButton(GetButton(GencontrollerUIlist, 2), "advance gen page", "AdvanceGeneration");
+
+    Button GetGenomeViewerButton() => ResolveButton(GetButton(GencontrollerUIlist, 0), "log page", "Log view");
+
+    Button GetGenomeInjectorButton() => ResolveButton(GetButton(GencontrollerUIlist, 1), "set genome page");
+
+    Button GetButton(List<GameObject> list, int index)
+    {
+        GameObject go = GetNodeObject(list, index);
+        return go != null ? go.GetComponent<Button>() : null;
+    }
+
+    Button ResolveButton(Button button, string objectName, string labelText = null)
+    {
+        if (button != null)
+            return button;
+
+        Transform root = mainCanvas != null ? mainCanvas.transform : transform;
+        if (root == null)
+            return null;
+
+        Transform found = root.Find(objectName);
+        if (found != null && found.TryGetComponent<Button>(out var namedButton))
+            return namedButton;
+
+        if (string.IsNullOrEmpty(labelText))
+            return null;
+
+        foreach (var candidate in root.GetComponentsInChildren<Button>(true))
+        {
+            TextMeshProUGUI label = candidate.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (label != null && string.Equals(label.text, labelText, StringComparison.Ordinal))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    static void BindSceneButton(Button button, UnityAction action)
+    {
+        if (button == null)
+            return;
+
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(action);
+    }
+
+    void EnsureMenuButtonRelay(Button button)
+    {
+        if (button == null)
+            return;
+
+        if (!button.TryGetComponent<WorldMenuButtonRelay>(out var relay))
+            relay = button.gameObject.AddComponent<WorldMenuButtonRelay>();
+
+        relay.Bind(this);
+    }
+
+    bool IsDuplicateUiInvoke(ref int lastInvokeFrame, string actionName)
+    {
+        if (lastInvokeFrame == Time.frameCount)
+        {
+            Debug.Log($"[WorldUIManager] {actionName} ignored duplicate call in frame={Time.frameCount}", this);
+            return true;
+        }
+
+        lastInvokeFrame = Time.frameCount;
+        return false;
+    }
+}
+
+public sealed class WorldMenuButtonRelay : MonoBehaviour, IPointerClickHandler, ISubmitHandler
+{
+    WorldUIManager manager;
+
+    public void Bind(WorldUIManager target)
+    {
+        manager = target;
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        Debug.Log($"[WorldMenuButtonRelay] OnPointerClick button={eventData.button} frame={Time.frameCount}", this);
+        manager?.Menu();
+    }
+
+    public void OnSubmit(BaseEventData eventData)
+    {
+        Debug.Log($"[WorldMenuButtonRelay] OnSubmit frame={Time.frameCount}", this);
+        manager?.Menu();
     }
 }
