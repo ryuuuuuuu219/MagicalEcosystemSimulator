@@ -1850,7 +1850,7 @@ MonoBehaviour:
   predatorInputMode: 0
   generationPhase: 0
   enableCrossover: 1
-  crossoverMode: 1
+  crossoverMode: 3
   enableMutation: 1
   mutationChance: 0.1
   mutationRangeMode: 1

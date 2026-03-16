@@ -1,0 +1,84 @@
+遺伝システム
+
+◇初期値　
+既存ゲノム優先、固定値+乱数（レンジ固定）
+
+◇世代交代時　
+候補をスコア順に並べて上位2体を親にするか、Selection モードでは保存済みDNAプールからランダムに2つ取ります。
+交叉方法は BlendFloat で切り替えています。
+Assign: 親A/Bどちらかをそのまま採用
+Average: 平均
+Interpolate: 親A-B間をランダム補間
+
+◇突然変異　
+GlobalRange モードなら、globalMutationMin から globalMutationMax の加算値を入れます。
+それ以外は、親2体の平均絶対値を基準に parentMutationScale 倍の範囲で増減します。
+つまり「割合変異」はあります。
+ただし「この項目は最大 ±3、この項目は ±0.2」みたいな個別上限指定にはなっていません。
+
+◇
+
+いまの突然変異の増減値は、各項目ごとに個別設定ではなく、全項目共通ルールです。AdvanceGenerationController.cs:63
+
+共通設定の初期値
+
+enableMutation = true
+mutationChance = 0.1
+mutationRangeMode = ParentRelative
+globalMutationMin = -0.2
+globalMutationMax = 0.2
+parentMutationScale = 0.2
+増減の決まり方
+
+まず各項目ごとに 10% の確率で突然変異します。AdvanceGenerationController.cs:1239
+変異しなければ増減 0
+変異したときの増減幅はモード次第です
+1. GlobalRange モード
+
+増減値 = -0.2 から +0.2 の範囲の一様乱数
+式: value + random(globalMutationMin, globalMutationMax)
+つまり最大変化量は固定で ±0.2 です。AdvanceGenerationController.cs:1242
+2. ParentRelative モード
+
+現在のデフォルトはこれです
+親2体の平均絶対値を基準にして、その 20% 分だけ上下します
+式:
+parentBase = max(0.01, abs((parentA + parentB) / 2))
+delta = random(-parentBase * 0.2, parentBase * 0.2)
+value += delta
+つまり最大変化量は 親平均の絶対値 × 0.2 です。AdvanceGenerationController.cs:1248
+具体例
+
+親平均が 10 の項目
+変異幅は -2.0 から +2.0
+親平均が 5 の項目
+-1.0 から +1.0
+親平均が 1 の項目
+-0.2 から +0.2
+親平均が 0 付近の項目
+下限補正で parentBase = 0.01
+-0.002 から +0.002
+対象
+
+草食・捕食どちらも、ほぼ全ての float 項目にこのルールがかかります
+Vector3 や WaveGene も中の各 float を同じルールで変異させています。AdvanceGenerationController.cs:1258
+
+◇◇
+追加要件
+すべての乱数を２回出力→平均にして中央値によるようにする
+
+◇◇
+前提
+草食動物は純粋な被捕食者として定義。
+HPの駆け引きは肉食動物、（上位肉食動物、支配種）でおこなう
+肉食動物以上の相では自身と自身と同じ種族以外に攻撃・被弾する設計を予定。
+
+◇◇
+対象	項目				初期値		実際の変化要素					世代交代/突然変異
+草食	HP				35		ダメージを受けると減少、0で死亡			なし
+草食	攻撃力				なし		攻撃手段なし					なし
+捕食	HP				55		ダメージを受けると減少、0で死亡			なし
+捕食	chargeDamageScale		0.6 - 1.2	突進ダメージ = scale × 相対速度 × 攻撃係数	あり
+捕食	biteDamage			4 - 8		噛みつきダメージ = biteDamage × 攻撃係数	あり
+捕食	meleeDamage			6 - 12		近接ダメージ = meleeDamage × 攻撃係数		あり
+捕食	charge/bite/meleeAttackClock	0.9 - 1.8	攻撃頻度と攻撃係数に影響			あり

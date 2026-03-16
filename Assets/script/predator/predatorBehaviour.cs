@@ -101,6 +101,7 @@ public class predatorBehaviour : MonoBehaviour
         if (gauge == null)
             gauge = gameObject.AddComponent<CreatureVirtualGauge>();
         gauge.Initialize(this);
+        maxHealth = CreatureBalanceTuning.PredatorMaxHealth;
         health = maxHealth;
         energy = maxEnergy;
         ClampEnergy();

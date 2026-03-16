@@ -112,7 +112,7 @@ public class predatorManager : MonoBehaviour
             g.meleeDamage <= 0f ||
             g.visionWaves == null || g.visionWaves.Length == 0;
 
-        if (!invalid) return g;
+        if (!invalid) return CreatureBalanceTuning.NormalizePredatorGenome(g);
 
         g.forwardForce = 6f + (float)rand.NextDouble() * 6f;
         g.turnForce = 120f + (float)rand.NextDouble() * 320f;
@@ -124,8 +124,6 @@ public class predatorManager : MonoBehaviour
         g.chaseWeight = 0.8f + (float)rand.NextDouble() * 1.2f;
         g.preyDetectDistance = 20f + (float)rand.NextDouble() * 60f;
         g.attackDistance = 1.5f + (float)rand.NextDouble() * 1.5f;
-        g.attackDamage = 4f + (float)rand.NextDouble() * 8f;
-        g.attackCooldown = 0.4f + (float)rand.NextDouble() * 1.2f;
         g.threatWeight = 0.5f + (float)rand.NextDouble();
         g.threatDetectDistance = 15f + (float)rand.NextDouble() * 50f;
         g.memorytime = 2f + (float)rand.NextDouble() * 6f;
@@ -141,10 +139,8 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.2f),
             localDirection = Vector3.forward
         };
-        g.chargeDamageScale = 0.9f + (float)rand.NextDouble() * 1.1f;
         g.chargeEnergyCost = 0.4f + (float)rand.NextDouble() * 0.8f;
         g.chargeContactPadding = 0.15f + (float)rand.NextDouble() * 0.25f;
-        g.chargeAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
         g.biteArc = new AttackArcSettings
         {
             radius = 0.2f,
@@ -153,9 +149,7 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.35f),
             localDirection = Vector3.forward
         };
-        g.biteDamage = 5f + (float)rand.NextDouble() * 7f;
         g.biteEnergyCost = 1.2f + (float)rand.NextDouble() * 1.8f;
-        g.biteAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
         g.meleeArc = new AttackArcSettings
         {
             radius = 0.3f,
@@ -164,14 +158,13 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.25f),
             localDirection = Vector3.forward
         };
-        g.meleeDamage = 8f + (float)rand.NextDouble() * 12f;
         g.meleeEnergyCost = 2.2f + (float)rand.NextDouble() * 2.5f;
-        g.meleeAttackClock = 0.8f + (float)rand.NextDouble() * 1.6f;
         g.attackThreatPulseScore = 2.5f + (float)rand.NextDouble() * 3.5f;
         g.attackThreatPulseRadius = 3f + (float)rand.NextDouble() * 3f;
         g.attackTraceScale = 18f + (float)rand.NextDouble() * 18f;
         g.attackTraceDuration = 0.18f + (float)rand.NextDouble() * 0.18f;
         g.attackTraceDepth = 2.5f + (float)rand.NextDouble() * 1.5f;
+        CreatureBalanceTuning.ApplyPredatorCombatDefaults(ref g, rand);
 
         int visionWaveCount = rand.Next(1, 4);
         g.visionWaves = new WaveGene[visionWaveCount];
@@ -232,6 +225,6 @@ public class predatorManager : MonoBehaviour
         if (g.attackTraceDepth <= 0f)
             g.attackTraceDepth = 3f;
 
-        return g;
+        return CreatureBalanceTuning.NormalizePredatorGenome(g);
     }
 }

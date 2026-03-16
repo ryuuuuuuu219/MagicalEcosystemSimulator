@@ -90,6 +90,7 @@ public class herbivoreBehaviour : MonoBehaviour
         if (gauge == null)
             gauge = gameObject.AddComponent<CreatureVirtualGauge>();
         gauge.Initialize(this);
+        maxHealth = CreatureBalanceTuning.HerbivoreMaxHealth;
         health = maxHealth;
         energy = maxEnergy;
         ClampEnergy();

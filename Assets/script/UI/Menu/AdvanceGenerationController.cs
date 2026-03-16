@@ -1173,7 +1173,7 @@ public class AdvanceGenerationController : MonoBehaviour
             child.meleeAttackClock = 0.8f;
         child.visionWaves = MutateWaves(child.visionWaves, a.visionWaves, b.visionWaves, rng);
         child.wanderWaves = MutateWaves(child.wanderWaves, a.wanderWaves, b.wanderWaves, rng);
-        return child;
+        return CreatureBalanceTuning.NormalizePredatorGenome(child);
     }
 
     float BlendFloat(float a, float b, System.Random rng)
