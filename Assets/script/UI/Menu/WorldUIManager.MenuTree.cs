@@ -17,8 +17,6 @@ public partial class WorldUIManager
     MenuNode objectListNode;
     MenuNode generationNode;
     MenuNode advanceGenerationNode;
-    MenuNode genomeViewerNode;
-    MenuNode genomeInjectorNode;
 
     void EnsureMenuTree()
     {
@@ -29,8 +27,8 @@ public partial class WorldUIManager
         objectListNode = CreateMenuNode("ObjectList", GetNodeObject(TabUIlist, 0), menuRoot);
         generationNode = CreateMenuNode("Generation", GetNodeObject(TabUIlist, 1), menuRoot);
         advanceGenerationNode = CreateMenuNode("AdvanceGeneration", GetAdvanceGenerationButton()?.gameObject, generationNode);
-        genomeViewerNode = CreateMenuNode("GenomeViewer", GetGenomeViewerButton()?.gameObject, generationNode);
-        genomeInjectorNode = CreateMenuNode("GenomeInjector", GetGenomeInjectorButton()?.gameObject, generationNode);
+        CreateMenuNode("GenomeViewer", GetGenomeViewerButton()?.gameObject, generationNode);
+        CreateMenuNode("GenomeInjector", GetGenomeInjectorButton()?.gameObject, generationNode);
     }
 
     MenuNode CreateMenuNode(string name, GameObject uiObject, MenuNode parent)
@@ -61,8 +59,6 @@ public partial class WorldUIManager
         if (node == null)
             return;
 
-        node.visible = false;
-
         if (node.uiObject != null)
             node.uiObject.SetActive(false);
 
@@ -79,25 +75,6 @@ public partial class WorldUIManager
             HideBranch(child);
     }
 
-    void ActivateNode(MenuNode node)
-    {
-        if (node == null || node.parent == null)
-            return;
-
-        foreach (var sibling in node.parent.children)
-        {
-            if (sibling == node)
-                continue;
-
-            HideBranch(sibling);
-        }
-
-        node.visible = true;
-
-        if (node.uiObject != null)
-            node.uiObject.SetActive(true);
-    }
-
     void ShowDirectChildren(MenuNode node)
     {
         if (node == null)
@@ -105,7 +82,6 @@ public partial class WorldUIManager
 
         foreach (var child in node.children)
         {
-            child.visible = true;
             if (child.uiObject != null)
                 child.uiObject.SetActive(true);
         }
@@ -117,11 +93,9 @@ public partial class WorldUIManager
         HideBranch(objectListNode);
         HideBranch(generationNode);
 
-        objectListNode.visible = true;
         if (objectListNode.uiObject != null)
             objectListNode.uiObject.SetActive(true);
 
-        generationNode.visible = true;
         if (generationNode.uiObject != null)
             generationNode.uiObject.SetActive(true);
     }
@@ -143,7 +117,6 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseGenerationBranch();
-        objectListNode.visible = true;
         if (objectListNode.uiObject != null)
             objectListNode.uiObject.SetActive(true);
 
@@ -163,7 +136,6 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseObjectListBranch();
-        generationNode.visible = true;
         if (generationNode.uiObject != null)
             generationNode.uiObject.SetActive(true);
         ShowDirectChildren(generationNode);
@@ -184,7 +156,8 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        ActivateNode(advanceGenerationNode);
+        if (advanceGenerationNode.uiObject != null)
+            advanceGenerationNode.uiObject.SetActive(true);
         if (generationController != null)
         {
             generationController.HideGenomePanels();
@@ -201,7 +174,7 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        ActivateNode(genomeViewerNode);
+        ShowDirectChildren(generationNode);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(true);
@@ -218,7 +191,7 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        ActivateNode(genomeInjectorNode);
+        ShowDirectChildren(generationNode);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(false);
@@ -314,7 +287,6 @@ public partial class WorldUIManager
         HideStatusUI();
         ClearObjectList();
         ClearStateview();
-        objectListNode.visible = true;
         if (objectListNode.uiObject != null)
             objectListNode.uiObject.SetActive(true);
     }
@@ -328,7 +300,6 @@ public partial class WorldUIManager
         EnsureMenuTree();
         HideChildren(generationNode);
         HideGenerationBranchContent();
-        generationNode.visible = true;
         if (generationNode.uiObject != null)
             generationNode.uiObject.SetActive(true);
     }
@@ -340,7 +311,6 @@ public partial class WorldUIManager
     void CloseGenomeViewerBranch()
     {
         EnsureMenuTree();
-        HideBranch(genomeViewerNode);
         if (generationController != null)
             generationController.SetGenomeViewerVisible(false);
         ShowDirectChildren(generationNode);
@@ -353,7 +323,6 @@ public partial class WorldUIManager
     void CloseGenomeInjectorBranch()
     {
         EnsureMenuTree();
-        HideBranch(genomeInjectorNode);
         if (generationController != null)
             generationController.SetGenomeInjectorVisible(false);
         ShowDirectChildren(generationNode);
@@ -374,9 +343,6 @@ public partial class WorldUIManager
     bool IsGenomeViewerBranchOpen()
     {
         EnsureMenuTree();
-        if (genomeViewerNode.uiObject != null && genomeViewerNode.uiObject.activeSelf)
-            return true;
-
         return generationController != null &&
                generationController.herbivoreGenomeViewerRoot != null &&
                generationController.herbivoreGenomeViewerRoot.activeSelf;
@@ -385,9 +351,6 @@ public partial class WorldUIManager
     bool IsGenomeInjectorBranchOpen()
     {
         EnsureMenuTree();
-        if (genomeInjectorNode.uiObject != null && genomeInjectorNode.uiObject.activeSelf)
-            return true;
-
         return generationController != null &&
                generationController.herbivoreGenomeInjectorRoot != null &&
                generationController.herbivoreGenomeInjectorRoot.activeSelf;

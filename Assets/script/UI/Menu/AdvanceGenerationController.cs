@@ -393,15 +393,11 @@ public class AdvanceGenerationController : MonoBehaviour
         if (wg == null || !wg.isgenerating)
             return;
 
-        int herbivoreCount = Mathf.Max(1, CountExisting(herbivoreManager.herbivores));
-        int predatorCount = Mathf.Max(1, CountExisting(predatorManager.predators));
+        LogCurrentGeneration();
 
         var rng = new System.Random(GetGenerationSeed(wg.seed, 7919));
 
-        resourceDispenser.ResetGenerationCarbonState();
-
-        if (generationPhase == GenerationPhase.Both)
-            ResetGenerationEnvironment();
+        ResetGenerationEnvironment();
 
         if (generationPhase == GenerationPhase.Both || generationPhase == GenerationPhase.HerbivoreOnly)
         {
@@ -412,8 +408,6 @@ public class AdvanceGenerationController : MonoBehaviour
             if (saveOutputGenome)
                 savedHerbivoreGenome = nextHerbivoreGenome;
 
-            RecycleAndDestroyHerbivores();
-            SpawnHerbivores(herbivoreCount);
         }
 
         if (generationPhase == GenerationPhase.Both || generationPhase == GenerationPhase.PredatorOnly)
@@ -425,13 +419,14 @@ public class AdvanceGenerationController : MonoBehaviour
             if (saveOutputGenome)
                 savedPredatorGenome = nextPredatorGenome;
 
-            RecycleAndDestroyPredators();
-            SpawnPredators(predatorCount);
         }
 
-        resourceDispenser.FinalizeGenerationCarbonBudget();
+        RecycleAndDestroyHerbivores();
+        RecycleAndDestroyPredators();
+        SpawnHerbivores(resourceDispenser.herbivoreCountPerGeneration);
+        SpawnPredators(resourceDispenser.predatorCountPerGeneration);
 
-        LogCurrentGeneration();
+        resourceDispenser.FinalizeGenerationCarbonBudget();
         generationIndex++;
     }
 
@@ -513,6 +508,7 @@ public class AdvanceGenerationController : MonoBehaviour
             }
 
             resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.carbonPerHerbivore, category.herbivore);
+            resourceDispenser.AddExternalCarbon(resourceDispenser.carbonPerHerbivore);
             SetHerbivoreGenomeUiStatus("Spawned herbivore from DNA.");
 
             if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
@@ -747,24 +743,55 @@ public class AdvanceGenerationController : MonoBehaviour
 
     void SpawnHerbivores(int count)
     {
-        for (int i = 0; i < count; i++)
+        int spawned = 0;
+        int localIndex = 0;
+        int attempts = 0;
+        int maxAttempts = GetMaxSpawnAttempts(count);
+        while (spawned < count && attempts < maxAttempts)
         {
-            if (herbivoreManager.spownherbivore(worldgen, GetGenerationSpawnIndex(i), out GameObject herbivore))
+            attempts++;
+            if (herbivoreManager.spownherbivore(worldgen, GetGenerationSpawnIndex(localIndex++), out GameObject herbivore))
             {
                 resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.carbonPerHerbivore, category.herbivore);
+                spawned++;
             }
         }
+
+        LogSpawnShortfall("generation herbivore", spawned, count);
     }
 
     void SpawnPredators(int count)
     {
-        for (int i = 0; i < count; i++)
+        int spawned = 0;
+        int localIndex = 0;
+        int attempts = 0;
+        int maxAttempts = GetMaxSpawnAttempts(count);
+        while (spawned < count && attempts < maxAttempts)
         {
-            if (predatorManager.spownpredator(worldgen, GetGenerationSpawnIndex(i), out GameObject predator))
+            attempts++;
+            if (predatorManager.spownpredator(worldgen, GetGenerationSpawnIndex(localIndex++), out GameObject predator))
             {
                 resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.carbonPerPredator, category.predator);
+                spawned++;
             }
         }
+
+        LogSpawnShortfall("generation predator", spawned, count);
+    }
+
+    int GetMaxSpawnAttempts(int targetCount)
+    {
+        int safeTarget = Mathf.Max(0, targetCount);
+        int perEntity = resourceDispenser != null ? Mathf.Max(1, resourceDispenser.maxSpawnAttemptsPerEntity) : 1;
+        return Mathf.Max(1, safeTarget * perEntity);
+    }
+
+    void LogSpawnShortfall(string label, int spawned, int target)
+    {
+        if (spawned >= target)
+            return;
+
+        Debug.LogWarning($"[GenerationSpawn] Could not reach target {label} count. spawned={spawned} target={target}");
     }
 
     HerbivoreGenome ResolveHerbivoreGenome(System.Random rng)

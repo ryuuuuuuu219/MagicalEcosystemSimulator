@@ -28,8 +28,24 @@ public class Resource : MonoBehaviour
 
     public void AddCarbon(float amount, out float excess)
     {
-        carbon += Mathf.Max(0f, amount);
-        excess = 0f;
+        float addAmount = Mathf.Max(0f, amount);
+        if (addAmount <= 0f)
+        {
+            excess = 0f;
+            return;
+        }
+
+        if (maxCarbon <= 0f)
+        {
+            carbon += addAmount;
+            excess = 0f;
+            return;
+        }
+
+        float remainingCapacity = Mathf.Max(0f, maxCarbon - carbon);
+        float accepted = Mathf.Min(addAmount, remainingCapacity);
+        carbon += accepted;
+        excess = addAmount - accepted;
     }
 
     public float RemoveCarbon(float amount)

@@ -176,13 +176,9 @@ public partial class WorldUIManager : MonoBehaviour
     public void Menu()
     {
         if (lastMenuInvokeFrame == Time.frameCount)
-        {
-            Debug.Log($"[WorldUIManager] Menu() ignored duplicate call in frame={Time.frameCount}", this);
             return;
-        }
 
         lastMenuInvokeFrame = Time.frameCount;
-        Debug.Log($"[WorldUIManager] Menu() invoked. beforeToggle visible={isWorldMenuVisible} objectList={isObjectListVisible} status={isStatusVisible} frame={Time.frameCount}", this);
         isWorldMenuVisible = !isWorldMenuVisible;
         if (isWorldMenuVisible)
         {
@@ -200,8 +196,6 @@ public partial class WorldUIManager : MonoBehaviour
             ClearStateview();
             UpdateFollowText();
         }
-
-        Debug.Log($"[WorldUIManager] Menu() completed. afterToggle visible={isWorldMenuVisible} objectList={isObjectListVisible} status={isStatusVisible} frame={Time.frameCount}", this);
     }
 
     /// <summary>
@@ -307,8 +301,6 @@ public partial class WorldUIManager : MonoBehaviour
     {
         menuRootButton = ResolveButton(menuRootButton, "manu root", "Menu");
 
-        Debug.Log($"[WorldUIManager] EnsureSceneButtonBindings menuRootButton={(menuRootButton != null ? menuRootButton.name : "null")} frame={Time.frameCount}", this);
-
         EnsureMenuButtonRelay(menuRootButton);
         BindSceneButton(GetObjectListButton(), Onclickbutton1);
         BindSceneButton(GetGenerationButton(), Onclickbutton2);
@@ -391,10 +383,7 @@ public partial class WorldUIManager : MonoBehaviour
     bool IsDuplicateUiInvoke(ref int lastInvokeFrame, string actionName)
     {
         if (lastInvokeFrame == Time.frameCount)
-        {
-            Debug.Log($"[WorldUIManager] {actionName} ignored duplicate call in frame={Time.frameCount}", this);
             return true;
-        }
 
         lastInvokeFrame = Time.frameCount;
         return false;
@@ -415,13 +404,11 @@ public sealed class WorldMenuButtonRelay : MonoBehaviour, IPointerClickHandler, 
         if (eventData == null || eventData.button != PointerEventData.InputButton.Left)
             return;
 
-        Debug.Log($"[WorldMenuButtonRelay] OnPointerClick button={eventData.button} frame={Time.frameCount}", this);
         manager?.Menu();
     }
 
     public void OnSubmit(BaseEventData eventData)
     {
-        Debug.Log($"[WorldMenuButtonRelay] OnSubmit frame={Time.frameCount}", this);
         manager?.Menu();
     }
 }

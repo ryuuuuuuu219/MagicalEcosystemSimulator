@@ -35,7 +35,15 @@ public class ResourceDispenser : MonoBehaviour
     [Header("Initial Spawn")]
     public int initialGrassCount = 100;
     public int initialHerbivoreCount = 30;
-    public int initialPredatorCount = 10;   
+    public int initialPredatorCount = 10;
+
+    [Header("Count Per Gen")]
+    public int grassCountPerGeneration = 100;
+    public int herbivoreCountPerGeneration = 30;
+    public int predatorCountPerGeneration = 10;
+
+    [Header("Spawn Safety")]
+    public int maxSpawnAttemptsPerEntity = 64;
 
     public List<GameObject> grasses;
     float nextCarbonAuditTime = 60f;
@@ -54,30 +62,17 @@ public class ResourceDispenser : MonoBehaviour
 
     void Initialspown()
     {
-        for (int i = 0; i < initialGrassCount; i++)
-        {
-            Addgrass();
-        }
+        ConfigureCarbonBudget(initialGrassCount, initialHerbivoreCount, initialPredatorCount);
+        SpawnGrassCount(initialGrassCount);
 
         var hm = herbivoreManager.GetComponent<herbivoreManager>();
-        for (int i = 0; i < initialHerbivoreCount; i++)
-        {
-            if (hm.spownherbivore(Worldgen, i, out GameObject herbivore))
-            {
-                ResouseInit(herbivore, carbonPerHerbivore, category.herbivore);
-            }
-        }
+        int herbivoreSpawned = TrySpawnHerbivoreBatch(hm, initialHerbivoreCount, 0);
 
         var pm = predatorManager.GetComponent<predatorManager>();
-        for (int i = 0; i < initialPredatorCount; i++)
-        {
-            if (pm.spownpredator(Worldgen, i, out GameObject predator))
-            {
-                ResouseInit(predator, carbonPerPredator, category.predator);
-            }
-        }
+        int predatorSpawned = TrySpawnPredatorBatch(pm, initialPredatorCount, 0);
 
-        FinalizeGenerationCarbonBudget();
+        LogSpawnShortfall("initial herbivore", herbivoreSpawned, initialHerbivoreCount);
+        LogSpawnShortfall("initial predator", predatorSpawned, initialPredatorCount);
     }
 
     void ResouseInit(GameObject obj, float amount, category category)
@@ -104,6 +99,14 @@ public class ResourceDispenser : MonoBehaviour
         comp.resourceCategory = category;
     }
 
+    public void AddExternalCarbon(float amount)
+    {
+        if (amount <= 0f)
+            return;
+
+        totalCarbon += amount;
+    }
+
     public void ReturnCarbon(float amount)
     {
         if (amount <= 0f) return;
@@ -112,14 +115,32 @@ public class ResourceDispenser : MonoBehaviour
             carbonPool = Mathf.Min(carbonPool, totalCarbon);
     }
 
-    public void Addgrass()
+    public bool Addgrass()
     {
         grassIndex++;
         if (spowngrass(grassIndex, out GameObject grass))
         {
             grasses.Add(grass);
             ResouseInit(grass, carbonPerGrass, category.grass);
+            return true;
         }
+
+        return false;
+    }
+
+    public void SpawnGrassCount(int count)
+    {
+        int spawned = 0;
+        int attempts = 0;
+        int maxAttempts = GetMaxAttempts(count);
+        while (spawned < count && attempts < maxAttempts)
+        {
+            attempts++;
+            if (Addgrass())
+                spawned++;
+        }
+
+        LogSpawnShortfall("grass", spawned, count);
     }
 
     bool issetting = false;
@@ -206,16 +227,75 @@ public class ResourceDispenser : MonoBehaviour
 
     public void FinalizeGenerationCarbonBudget()
     {
-        Resource[] resources = FindObjectsByType<Resource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        float sum = carbonPool;
+        totalCarbon = Mathf.Max(0f, totalCarbon);
+    }
 
-        for (int i = 0; i < resources.Length; i++)
+    public void ConfigureCarbonBudget(int grassCount, int herbivoreCount, int predatorCount)
+    {
+        totalCarbon =
+            Mathf.Max(0, grassCount) * Mathf.Max(0f, carbonPerGrass) +
+            Mathf.Max(0, herbivoreCount) * Mathf.Max(0f, carbonPerHerbivore) +
+            Mathf.Max(0, predatorCount) * Mathf.Max(0f, carbonPerPredator);
+        carbonPool = 0f;
+    }
+
+    int TrySpawnHerbivoreBatch(herbivoreManager manager, int count, int startIndex)
+    {
+        if (manager == null)
+            return 0;
+
+        int spawned = 0;
+        int attempts = 0;
+        int nextIndex = startIndex;
+        int maxAttempts = GetMaxAttempts(count);
+        while (spawned < count && attempts < maxAttempts)
         {
-            if (resources[i] == null) continue;
-            sum += Mathf.Max(0f, resources[i].carbon);
+            attempts++;
+            if (manager.spownherbivore(Worldgen, nextIndex++, out GameObject herbivore))
+            {
+                ResouseInit(herbivore, carbonPerHerbivore, category.herbivore);
+                spawned++;
+            }
         }
 
-        totalCarbon = sum;
+        return spawned;
+    }
+
+    int TrySpawnPredatorBatch(predatorManager manager, int count, int startIndex)
+    {
+        if (manager == null)
+            return 0;
+
+        int spawned = 0;
+        int attempts = 0;
+        int nextIndex = startIndex;
+        int maxAttempts = GetMaxAttempts(count);
+        while (spawned < count && attempts < maxAttempts)
+        {
+            attempts++;
+            if (manager.spownpredator(Worldgen, nextIndex++, out GameObject predator))
+            {
+                ResouseInit(predator, carbonPerPredator, category.predator);
+                spawned++;
+            }
+        }
+
+        return spawned;
+    }
+
+    int GetMaxAttempts(int targetCount)
+    {
+        int safeTarget = Mathf.Max(0, targetCount);
+        int perEntity = Mathf.Max(1, maxSpawnAttemptsPerEntity);
+        return Mathf.Max(1, safeTarget * perEntity);
+    }
+
+    void LogSpawnShortfall(string label, int spawned, int target)
+    {
+        if (spawned >= target)
+            return;
+
+        Debug.LogWarning($"[SpawnBudget] Could not reach target {label} count. spawned={spawned} target={target}");
     }
 
     public void ResetGenerationEnvironment()
@@ -223,9 +303,8 @@ public class ResourceDispenser : MonoBehaviour
         ClearGrasslands();
         ResetGenerationCarbonState();
         HeatFieldManager.GetOrCreate().ClearAllHeat();
-
-        for (int i = 0; i < initialGrassCount; i++)
-            Addgrass();
+        ConfigureCarbonBudget(grassCountPerGeneration, herbivoreCountPerGeneration, predatorCountPerGeneration);
+        SpawnGrassCount(grassCountPerGeneration);
     }
 
     public void ClearGrasslands()
