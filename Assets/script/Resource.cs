@@ -6,12 +6,6 @@ public class Resource : MonoBehaviour
     public float maxCarbon;
     public float totalReleasedCarbon;
 
-    public enum category
-    {
-        grass,
-        herbivore,
-        predator
-    }
     public category resourceCategory;
 
     public void Eating(float amount, Resource tgtresource)

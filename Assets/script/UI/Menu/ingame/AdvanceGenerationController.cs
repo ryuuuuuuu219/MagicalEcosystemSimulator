@@ -3,46 +3,9 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Resource;
 
 public class AdvanceGenerationController : MonoBehaviour
 {
-    public enum EvaluationAxis
-    {
-        Random,
-        Carbon,
-        Health,
-        Selection
-    }
-
-    public enum CrossoverMode
-    {
-        Assign,
-        Average,
-        Interpolate,
-        Mix
-    }
-
-    public enum MutationRangeMode
-    {
-        GlobalRange,
-        ParentRelative
-    }
-
-    public enum GenomeInputMode
-    {
-        Population,
-        SavedGenome,
-        ManagerGenome
-    }
-
-    public enum GenerationPhase
-    {
-        Both,
-        HerbivoreOnly,
-        PredatorOnly
-    }
-
     [Header("References")]
     public GameObject worldgen;
     public ResourceDispenser resourceDispenser;
@@ -76,12 +39,13 @@ public class AdvanceGenerationController : MonoBehaviour
     public int generationIndex = 1;
     public bool varySeedPerGeneration = true;
     int injectedHerbivoreSpawnIndex = 1000000;
+    [SerializeField] category selectedInjectorCategory = category.herbivore;
     [SerializeField] int selectedPhasePage = 0;
     [SerializeField] int selectedGenerationPage = 0;
     const int generationPageSize = 12;
-    GenomeViewerItemEntry.SpeciesType SelectedSpecies => (selectedPhasePage % 2 == 0)
-        ? GenomeViewerItemEntry.SpeciesType.Herbivore
-        : GenomeViewerItemEntry.SpeciesType.Predator;
+    SpeciesType SelectedSpecies => (selectedPhasePage % 2 == 0)
+        ? SpeciesType.Herbivore
+        : SpeciesType.Predator;
     int SelectedPhaseIndex => Mathf.Max(0, selectedPhasePage / 2);
 
     [Header("Genome UI")]
@@ -92,6 +56,9 @@ public class AdvanceGenerationController : MonoBehaviour
     public TMP_InputField herbivoreGenomeInjectorInput;
     public TextMeshProUGUI herbivoreGenomeUiStatusText;
     TextMeshProUGUI herbivoreGenomePageStatusText;
+    TextMeshProUGUI herbivoreGenomeInjectorTitleText;
+    TextMeshProUGUI herbivoreGenomeInjectorPhaseStatusText;
+    Button herbivoreGenomeInjectorSpawnButton;
 
     readonly List<GameObject> createdGenomeUi = new List<GameObject>();
 
@@ -238,17 +205,44 @@ public class AdvanceGenerationController : MonoBehaviour
 
     void EnsureInjectorWidgets(Transform root)
     {
-        CreateLabel("Title", root, "Spawn Herbivore From DNA", new Vector2(0.03f, 0.72f), new Vector2(0.97f, 0.98f));
+        if (herbivoreGenomeInjectorTitleText == null)
+            herbivoreGenomeInjectorTitleText = CreateLabel("Title", root, "Spawn Herbivore From DNA", new Vector2(0.03f, 0.72f), new Vector2(0.97f, 0.98f));
 
         if (herbivoreGenomeInjectorInput == null)
             herbivoreGenomeInjectorInput = CreateInputField(root, "GenomeInput", new Vector2(0.03f, 0.38f), new Vector2(0.97f, 0.68f), "Paste DNA code...");
 
-        var button = CreateButton(root, "SpawnButton", "Spawn", new Vector2(0.03f, 0.16f), new Vector2(0.38f, 0.32f));
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(OnclickSpawnHerbivoreGenome);
+        if (herbivoreGenomeInjectorSpawnButton == null)
+        {
+            herbivoreGenomeInjectorSpawnButton = CreateButton(root, "SpawnButton", "Spawn", new Vector2(0.03f, 0.16f), new Vector2(0.30f, 0.32f));
+            herbivoreGenomeInjectorSpawnButton.onClick.RemoveAllListeners();
+            herbivoreGenomeInjectorSpawnButton.onClick.AddListener(OnclickSpawnGenome);
+        }
 
         if (herbivoreGenomeUiStatusText == null)
-            herbivoreGenomeUiStatusText = CreateLabel("Status", root, string.Empty, new Vector2(0.42f, 0.03f), new Vector2(0.97f, 0.32f));
+            herbivoreGenomeUiStatusText = CreateLabel("Status", root, string.Empty, new Vector2(0.03f, 0.03f), new Vector2(0.58f, 0.16f));
+
+        if (root.Find("InjectorPhasePrevButton") == null)
+        {
+            Button phasePrev = CreateButton(root, "InjectorPhasePrevButton", "Phase -", new Vector2(0.60f, 0.03f), new Vector2(0.73f, 0.16f));
+            phasePrev.onClick.RemoveAllListeners();
+            phasePrev.onClick.AddListener(OnclickInjectorPhaseDown);
+        }
+
+        if (root.Find("InjectorPhaseNextButton") == null)
+        {
+            Button phaseNext = CreateButton(root, "InjectorPhaseNextButton", "Phase +", new Vector2(0.87f, 0.03f), new Vector2(0.98f, 0.16f));
+            phaseNext.onClick.RemoveAllListeners();
+            phaseNext.onClick.AddListener(OnclickInjectorPhaseUp);
+        }
+
+        if (herbivoreGenomeInjectorPhaseStatusText == null)
+        {
+            herbivoreGenomeInjectorPhaseStatusText = CreateLabel("InjectorPhaseStatus", root, string.Empty, new Vector2(0.74f, 0.03f), new Vector2(0.86f, 0.16f));
+            herbivoreGenomeInjectorPhaseStatusText.alignment = TextAlignmentOptions.Center;
+            herbivoreGenomeInjectorPhaseStatusText.fontSize = 18;
+        }
+
+        UpdateInjectorUiState();
     }
 
     void EnsureViewerPageControls(Transform root)
@@ -484,6 +478,86 @@ public class AdvanceGenerationController : MonoBehaviour
 
     public void OnclickSpawnHerbivoreGenome()
     {
+        SpawnSelectedGenome();
+    }
+
+    public void OnclickInjectorPhaseUp()
+    {
+        CycleInjectorCategory(1);
+    }
+
+    public void OnclickInjectorPhaseDown()
+    {
+        CycleInjectorCategory(-1);
+    }
+
+    void CycleInjectorCategory(int delta)
+    {
+        Array values = Enum.GetValues(typeof(category));
+        if (values.Length == 0)
+            return;
+
+        int currentIndex = 0;
+        for (int i = 0; i < values.Length; i++)
+        {
+            if ((category)values.GetValue(i) == selectedInjectorCategory)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        int nextIndex = (currentIndex + delta) % values.Length;
+        if (nextIndex < 0)
+            nextIndex += values.Length;
+
+        selectedInjectorCategory = (category)values.GetValue(nextIndex);
+        UpdateInjectorUiState();
+    }
+
+    void UpdateInjectorUiState()
+    {
+        EnsureGenomeUi();
+
+        if (herbivoreGenomeInjectorTitleText != null)
+            herbivoreGenomeInjectorTitleText.text = GetInjectorTitle(selectedInjectorCategory);
+
+        if (herbivoreGenomeInjectorPhaseStatusText != null)
+            herbivoreGenomeInjectorPhaseStatusText.text = selectedInjectorCategory.ToString();
+
+        if (herbivoreGenomeInjectorSpawnButton != null)
+            herbivoreGenomeInjectorSpawnButton.interactable = selectedInjectorCategory != category.grass;
+    }
+
+    static string GetInjectorTitle(category phaseCategory)
+    {
+        return phaseCategory switch
+        {
+            category.herbivore => "Spawn Herbivore From DNA",
+            category.predator => "Spawn Predator From DNA",
+            category.grass => "Genome Injection Unsupported",
+            _ => $"Spawn {phaseCategory} From DNA"
+        };
+    }
+
+    void SpawnSelectedGenome()
+    {
+        switch (selectedInjectorCategory)
+        {
+            case category.herbivore:
+                SpawnHerbivoreGenomeFromInput();
+                break;
+            case category.predator:
+                SpawnPredatorGenomeFromInput();
+                break;
+            default:
+                SetHerbivoreGenomeUiStatus($"{selectedInjectorCategory} does not support genome injection.");
+                break;
+        }
+    }
+
+    void SpawnHerbivoreGenomeFromInput()
+    {
         EnsureGenomeUi();
         string dna = herbivoreGenomeInjectorInput != null ? herbivoreGenomeInjectorInput.text : string.Empty;
         if (string.IsNullOrWhiteSpace(dna))
@@ -520,9 +594,45 @@ public class AdvanceGenerationController : MonoBehaviour
         }
     }
 
+    void SpawnPredatorGenomeFromInput()
+    {
+        EnsureGenomeUi();
+        string dna = herbivoreGenomeInjectorInput != null ? herbivoreGenomeInjectorInput.text : string.Empty;
+        if (string.IsNullOrWhiteSpace(dna))
+        {
+            SetHerbivoreGenomeUiStatus("DNA code is empty.");
+            return;
+        }
+
+        if (worldgen == null || resourceDispenser == null || predatorManager == null)
+        {
+            SetHerbivoreGenomeUiStatus("Reference is missing.");
+            return;
+        }
+
+        if (!TryDecodePredatorGenome(dna, out PredatorGenome genome))
+        {
+            SetHerbivoreGenomeUiStatus("Invalid DNA.");
+            return;
+        }
+
+        if (!predatorManager.SpawnPredatorWithGenome(worldgen, injectedHerbivoreSpawnIndex++, genome, out GameObject predator))
+        {
+            SetHerbivoreGenomeUiStatus("Spawn failed.");
+            return;
+        }
+
+        resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.carbonPerPredator, category.predator);
+        resourceDispenser.AddExternalCarbon(resourceDispenser.carbonPerPredator);
+        SetHerbivoreGenomeUiStatus("Spawned predator from DNA.");
+
+        if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
+            BuildHerbivoreGenomeViewerList();
+    }
+
     public void OnclickSpawnGenome()
     {
-        OnclickSpawnHerbivoreGenome();
+        SpawnSelectedGenome();
     }
 
     void BuildHerbivoreGenomeViewerList()
@@ -538,7 +648,7 @@ public class AdvanceGenerationController : MonoBehaviour
 
         int start = selectedGenerationPage * generationPageSize;
 
-        if (SelectedSpecies == GenomeViewerItemEntry.SpeciesType.Herbivore)
+        if (SelectedSpecies == SpeciesType.Herbivore)
         {
             if (herbivoreManager == null)
             {
@@ -591,7 +701,7 @@ public class AdvanceGenerationController : MonoBehaviour
         createdGenomeUi.Clear();
     }
 
-    void AddGenomeViewerItem(string dna, GenomeViewerItemEntry.SpeciesType species, int phaseId, int numberId, bool isDead)
+    void AddGenomeViewerItem(string dna, SpeciesType species, int phaseId, int numberId, bool isDead)
     {
         EnsureGenomeViewerItemPrefab();
         GameObject item = Instantiate(herbivoreGenomeViewerItemPrefab, herbivoreGenomeViewerContent);
@@ -1331,12 +1441,6 @@ public class GenomePhaseBucket
 
 public class GenomeViewerItemEntry : MonoBehaviour
 {
-    public enum SpeciesType
-    {
-        Herbivore,
-        Predator
-    }
-
     public TextMeshProUGUI idText;
     public TextMeshProUGUI dnaText;
     public Button applyButton;

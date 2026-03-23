@@ -96,6 +96,17 @@ public class predatorManager : MonoBehaviour
         predators.Remove(predator);
     }
 
+    public bool SpawnPredatorWithGenome(GameObject worldgen, int index, PredatorGenome injectedGenome, out GameObject predator)
+    {
+        if (!spownpredator(worldgen, index, out predator))
+            return false;
+
+        if (predator != null && predator.TryGetComponent<predatorBehaviour>(out var pb))
+            pb.genome = injectedGenome;
+
+        return predator != null;
+    }
+
     static PredatorGenome ValidateOrRandomize(PredatorGenome g, System.Random rand)
     {
         bool invalid =

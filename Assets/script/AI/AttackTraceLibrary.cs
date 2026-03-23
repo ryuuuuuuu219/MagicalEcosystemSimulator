@@ -51,7 +51,7 @@ public static class AttackTraceLibrary
                 lr.startColor = Color.white;
                 lr.endColor = Color.white;
                 lr.widthMultiplier = 1f;
-
+                lr.sortingOrder = short.MaxValue;
                 Vector3 cameraPush = cam.transform.forward * safeOffset;
                 Vector3 start = starts[i] + cameraPush;
                 Vector3 end = ends[i] + cameraPush;
@@ -64,11 +64,14 @@ public static class AttackTraceLibrary
             if (sharedMaterial != null)
                 return;
 
-            Shader shader = Shader.Find("Sprites/Default");
+            Shader shader = Shader.Find("Custom/AttackTraceOverlay");
+            if (shader == null)
+                shader = Shader.Find("Sprites/Default");
             if (shader == null)
                 shader = Shader.Find("Universal Render Pipeline/Unlit");
             sharedMaterial = new Material(shader);
             sharedMaterial.color = Color.white;
+            sharedMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Overlay;
         }
     }
 

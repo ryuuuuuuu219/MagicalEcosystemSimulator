@@ -1,7 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using static Resource;
-
 public class ResourceDispenser : MonoBehaviour
 {
     public static ResourceDispenser Instance { get; private set; }

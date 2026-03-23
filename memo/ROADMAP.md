@@ -64,6 +64,31 @@
 - `heat field` の計算と debug 可視化
 - パフォーマンス監視
 
+### シーンから見た現状
+
+- `SampleScene` には `WorldUIManager`、`AdvanceGenerationController`、`VirtualGaugeManager`、`WorldGenerator`、`ResourceDispenser`、`ThreatMapsGenerator`、`PerformanceBudgetMonitor` が配置済み
+- 観測 UI、世代更新、動物上ゲージ、debug 可視化、性能監視は、少なくともシーン構成上は初回リリース候補として成立している
+- `AdvanceGenerationController` は評価軸、交差、突然変異、対象切替を持ち、単純な「最小限 UI」より広い機能を含んでいる
+- `VirtualGaugeManager` は草食 / 肉食 / health / energy / carbon の表示切替土台を持つ
+- `ThreatMapsGenerator` は herbivore / predator 向け mode binding を持ち、`showThreatMap` が有効な状態で置かれている
+
+### 初回リリース機能候補一覧との差異
+
+- 候補一覧では `パフォーマンス監視` が優先度低だが、シーン常駐の観測基盤なので最小要件側の扱いが妥当
+- 候補一覧では `threat map` / `heat field` が優先度低に寄っているが、実際は debug 機能としてすでに初回リリース候補に近い
+- 候補一覧の `一斉世代更新（最小限）` という表現では、現状の評価軸、交差、突然変異、対象切替の広さを十分に表せていない
+- 候補一覧は観測 UI を個別項目で列挙しているが、ロードマップ上は `選択 / 追跡 / 一覧 / 状態表示 / ゲージ` を観測基盤としてまとめて扱うほうが整合的
+
+### 特筆すべき機能
+
+- 世代更新は `Random / Carbon / Health / Selection` の評価軸に対応
+- 世代更新は `Assign / Average / Interpolate / Mix` の交差方式に対応
+- 世代更新は突然変異確率と変異範囲モードを持つ
+- 世代更新は `Both / HerbivoreOnly / PredatorOnly` の対象切替を持つ
+- 動物上ゲージ表示は health / energy / carbon の可視化土台まで存在する
+- `PerformanceBudgetMonitor` はレポート間隔、FPS 監視、ログ出力の設定を持つ
+- `ThreatMapsGenerator` は debug 可視化としてシーンへ組み込まれている
+
 ### 初回リリースまでの主な残作業
 
 - `Phase 0` の不足設計を README と memo で同期する

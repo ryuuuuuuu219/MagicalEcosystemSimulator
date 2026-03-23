@@ -4,14 +4,6 @@ using UnityEngine;
 
 public class threatmap_calc : MonoBehaviour
 {
-    public enum AiAgentMode
-    {
-        grassland,
-        herbibore,
-        predator,
-        highpredator
-    }
-
     public struct EvaluationProfile
     {
         public float foodWeight;
