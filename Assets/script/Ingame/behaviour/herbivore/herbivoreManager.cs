@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using UnityEditorInternal.VR;
 using UnityEngine;
 
 public class herbivoreManager : MonoBehaviour
