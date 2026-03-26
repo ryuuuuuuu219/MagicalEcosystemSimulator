@@ -1,0 +1,67 @@
+ゲノム構造（群れ拡張）
+
+目的:
+基礎拡張ゲノムの上に、群れ判断と役割分担を遺伝子として追加する。
+
+前提:
+- 土台は `1.生態系コア強化/設定：ゲノム構造（基礎拡張）.txt` の内容。
+- 現行コードには群れ専用ゲノム項目はまだ存在しない。
+
+---
+追加候補（群れ拡張）
+
+群れ判断:
+- commandPower
+  - 群れ全体へ意思決定を伝播させる強さ。
+- loyalty
+  - リーダーや群れ方針への追従度。
+- rebelliousness
+  - 単独行動へ逸脱しやすい度合い。
+- formationPreference
+  - 密集、横列、包囲などの基本隊形傾向。
+- encirclementBias
+  - 包囲を選ぶ重み。
+- retreatThreshold
+  - 群れとして離脱判断へ移る閾値。
+- allyTrustDecay
+  - 味方評価が時間で低下する強さ。
+- hostileFixation
+  - 特定敵への執着継続度。
+
+役割分化:
+- leaderStyleWeightFront
+  - 前衛型リーダーを選好する重み。
+- leaderStyleWeightRear
+  - 後衛型リーダーを選好する重み。
+- leaderStyleWeightFlank
+  - 側面展開型リーダーを選好する重み。
+- baitAcceptance
+  - 囮役を引き受ける許容度。
+
+---
+既存ゲノムとの接続先
+
+草食:
+- `predatorWeight` `fearThreshold` `escapeThreshold` と組み合わせて、
+  群れ全体で逃走判断を共有する方向が自然。
+- `curiosity` は単独探索と群れ維持の競合要素として扱える。
+
+捕食:
+- `chaseWeight` `preferredChaseDistance` `disengageDistance` と組み合わせて、
+  前衛追跡役 / 包囲役 / 待ち伏せ役へ分けやすい。
+- `threatWeight` は群れ内での慎重派・強行派の差分に使える。
+
+---
+実装整理メモ
+
+必要な補助データ:
+- 群れID
+- リーダー候補スコア
+- 共有ターゲット
+- 隊形スロット
+- 離脱フェーズ
+
+実装順の想定:
+1. 群れ共有ステートを `GroupIntent` 系に切り出す。
+2. 既存ゲノムから役割配分に使える項目を先に流用する。
+3. 不足分だけ上記遺伝子を追加する。

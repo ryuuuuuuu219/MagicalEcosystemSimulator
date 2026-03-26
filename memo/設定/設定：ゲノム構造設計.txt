@@ -1,0 +1,125 @@
+ゲノム構造設計
+
+目的:
+現行実装のゲノム構造を基準化し、段階拡張の設計メモを各作業フォルダへ分割して管理する。
+
+参照元コード:
+- Assets\script\Ingame\behaviour\herbivore\herbivoreBehaviour.cs
+- Assets\script\Ingame\behaviour\predator\predatorBehaviour.cs
+
+---
+現状のゲノム構造（実装準拠）
+
+前提:
+- 現在ゲノムとして定義されているのは `HerbivoreGenome` と `PredatorGenome` の 2 系統。
+- `maxHealth` / `health` / `maxEnergy` / `energy` は Behaviour 側の状態値であり、ゲノム項目ではない。
+- 突然変異設定 (`mutationChance` など) はゲノムではなく `AdvanceGenerationController` 側の遺伝処理設定。
+- 旧メモにあった `hpBase` `speedBase` `staminaBase` などの名前は、現行コード上のゲノム項目名とは一致しない。
+
+草食 (`HerbivoreGenome`):
+- 移動:
+  - forwardForce
+  - turnForce
+- 視覚:
+  - visionAngle
+  - visionturnAngle
+  - visionDistance
+  - visionWaves
+- 代謝/摂食:
+  - metabolismRate
+  - eatspeed
+- 脅威認識/記憶:
+  - threatWeight
+  - threatDetectDistance
+  - memorytime
+- 逃走:
+  - runAwayDistance
+  - contactEscapeDistance
+  - evasionAngle
+  - evasionDuration
+  - evasionCooldown
+  - evasionDistance
+  - predictIntercept
+  - zigzagFrequency
+  - zigzagAmplitude
+- 行動重み:
+  - foodWeight
+  - predatorWeight
+  - corpseWeight
+  - fearThreshold
+  - escapeThreshold
+  - curiosity
+- 徘徊:
+  - wanderWaves
+
+捕食 (`PredatorGenome`):
+- 移動:
+  - forwardForce
+  - turnForce
+- 視覚:
+  - visionAngle
+  - visionTurnAngle
+  - visionDistance
+  - visionWaves
+- 代謝/摂食:
+  - metabolismRate
+  - eatspeed
+- 追跡/認識:
+  - chaseWeight
+  - preyDetectDistance
+  - threatWeight
+  - threatDetectDistance
+  - memorytime
+  - preferredChaseDistance
+  - disengageDistance
+  - stopMoveThreshold
+  - resumeMoveThreshold
+- 戦闘:
+  - attackDistance
+  - attackDamage
+  - attackCooldown
+  - chargeArc
+  - chargeDamageScale
+  - chargeEnergyCost
+  - chargeContactPadding
+  - chargeAttackClock
+  - biteArc
+  - biteDamage
+  - biteEnergyCost
+  - biteAttackClock
+  - meleeArc
+  - meleeDamage
+  - meleeEnergyCost
+  - meleeAttackClock
+  - attackThreatPulseScore
+  - attackThreatPulseRadius
+  - attackTraceScale
+  - attackTraceDuration
+  - attackTraceDepth
+- 徘徊:
+  - wanderWaves
+
+課題:
+- 群知性・魔法・支配種に直結する遺伝子はまだ未実装。
+- 森林遮蔽や再捕捉のような知覚拡張も現行ゲノムには未分離。
+- 草食と捕食で似た役割の項目名が揃っておらず、共通遺伝処理の抽象化余地がある。
+
+---
+分割先
+
+基礎拡張:
+- memo\タスク一覧\1.生態系コア強化\設定：ゲノム構造（基礎拡張）.txt
+
+群れ拡張:
+- memo\タスク一覧\3.群知性導入\設定：ゲノム構造（群れ拡張）.txt
+
+魔法拡張:
+- memo\タスク一覧\5.属性魔法拡張\設定：ゲノム構造（魔法拡張）.txt
+
+支配種拡張:
+- memo\タスク一覧\7.支配種到達条件\設定：ゲノム構造（支配種拡張）.txt
+
+---
+補足:
+- 段階拡張の各ファイルでは、現行 `HerbivoreGenome` / `PredatorGenome` を土台に「追加候補」と「既存項目との接続先」を整理する。
+- 学習と進化フォルダでは、遺伝処理ルールそのものの管理を継続する。

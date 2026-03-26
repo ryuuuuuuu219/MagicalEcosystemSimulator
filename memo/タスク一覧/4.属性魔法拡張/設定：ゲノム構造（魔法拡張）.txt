@@ -1,0 +1,71 @@
+ゲノム構造（魔法拡張）
+
+目的:
+基礎拡張の上に、属性魔法の適性と使用判断を遺伝子として追加する。
+
+前提:
+- 土台は `1.生態系コア強化/設定：ゲノム構造（基礎拡張）.txt` の内容。
+- 群知性への接続は後段タスクとして扱う。
+- 現行コードには魔法専用ゲノム項目はまだ存在しない。
+
+---
+追加候補（魔法拡張）
+
+魔法適性:
+- manaAffinity
+  - 魔素との親和性。
+- manaControl
+  - 魔素を安定して制御する能力。
+- spellUnlockRate
+  - 技を解放しやすい度合い。
+- elementFireBias
+  - 火属性への偏り。
+- elementIceBias
+  - 氷属性への偏り。
+- elementThunderBias
+  - 雷属性への偏り。
+- elementWindBias
+  - 風属性への偏り。
+- antiMagicResponse
+  - 魔法干渉や対魔法反応の強さ。
+- castRiskTolerance
+  - 暴発や隙を許容してでも詠唱する傾向。
+- cooldownDiscipline
+  - クールダウンを守る慎重さ。
+
+行動インデックス連動:
+- magicUsePriority
+  - 近接 / 追跡 / 回避より魔法を優先する重み。
+- awakenedSpellRetention
+  - 覚醒後に技を維持する強さ。
+- boredomToSpellPenalty
+  - 飽きが魔法選択に与える減衰量。
+
+---
+既存ゲノムとの接続先
+
+草食:
+- 直接戦闘より、防御・妨害・逃走補助への接続が自然。
+- `evasionDuration` `evasionDistance` `zigzagFrequency` と組み合わせると、
+  風・幻惑・遮蔽系の行動差に落とし込みやすい。
+
+捕食:
+- `chargeDamageScale` `biteDamage` `meleeDamage` と競合しない形で、
+  遠隔火力または補助行動の分岐先として設計する。
+- `attackThreatPulseScore` `attackTraceScale` は、
+  魔法発動後の可視化・危険度反映と相性が良い。
+
+---
+実装整理メモ
+
+必要な補助データ:
+- 属性ごとの解放状態
+- 詠唱コスト
+- クールダウン
+- 命中評価
+- 環境相互作用フラグ
+
+実装順の想定:
+1. 属性ごとの効果定義を先に固定する。
+2. 既存の行動選択に `magicUsePriority` を差し込む。
+3. その後で適性遺伝子を世代差へ反映する。

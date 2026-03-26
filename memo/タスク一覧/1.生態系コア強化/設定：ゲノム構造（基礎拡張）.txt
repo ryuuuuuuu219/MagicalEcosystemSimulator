@@ -1,0 +1,110 @@
+ゲノム構造（基礎拡張）
+
+目的:
+現行の草食 / 捕食ゲノムを土台に、地形・遮蔽・知覚品質を扱う基礎拡張項目を整理する。
+
+参照元コード:
+- Assets\script\Ingame\behaviour\herbivore\herbivoreBehaviour.cs
+- Assets\script\Ingame\behaviour\predator\predatorBehaviour.cs
+
+---
+現状の土台
+
+草食で既にある基礎項目:
+- 移動:
+  - forwardForce
+  - turnForce
+- 視覚:
+  - visionAngle
+  - visionturnAngle
+  - visionDistance
+  - visionWaves
+- 脅威回避:
+  - threatDetectDistance
+  - runAwayDistance
+  - contactEscapeDistance
+  - evasionAngle
+  - evasionDuration
+  - evasionCooldown
+  - evasionDistance
+  - zigzagFrequency
+  - zigzagAmplitude
+- 行動重み:
+  - foodWeight
+  - predatorWeight
+  - fearThreshold
+  - escapeThreshold
+  - curiosity
+
+捕食で既にある基礎項目:
+- 移動:
+  - forwardForce
+  - turnForce
+- 視覚:
+  - visionAngle
+  - visionTurnAngle
+  - visionDistance
+  - visionWaves
+- 探知/追跡:
+  - chaseWeight
+  - preyDetectDistance
+  - threatDetectDistance
+  - preferredChaseDistance
+  - disengageDistance
+- 行動安定:
+  - stopMoveThreshold
+  - resumeMoveThreshold
+
+不足:
+- 遮蔽物越しの見えにくさを遺伝子として扱えていない。
+- 見失い後の再捕捉速度や持続追跡性がゲノムにない。
+- 森・高低差・影などの環境差を行動重みに落とす変数が不足している。
+
+---
+追加候補（基礎拡張）
+
+知覚刷新:
+- visualOcclusionTolerance
+  - 遮蔽がある状況でも対象を追い続ける強さ。
+  - `visionDistance` や Raycast 判定の許容補正先として使う。
+- concealmentDetectBias
+  - 森や障害物周辺にいる対象を優先検出する補正。
+  - 草食の `IsGrassSafe`、捕食の `UpdateVision` の評価式へ接続候補。
+- lineOfSightPersistence
+  - 一度見つけた対象を見失っても追跡を継続する時間補正。
+  - `memorytime` の環境依存補正として使いやすい。
+- shadowTrackingBias
+  - 直視ではなく痕跡や影を追う傾向。
+  - wander から threat / prey への遷移条件に接続候補。
+
+認知反応:
+- threatRecognitionRate
+  - 脅威を脅威として採用する速度。
+  - `threatWeight` の立ち上がり係数として使う。
+- falsePositiveTolerance
+  - 誤検知をどこまで許容するか。
+  - threat map や遮蔽環境での過剰回避抑制に使う。
+- targetReacquireSpeed
+  - 目標を再捕捉する速さ。
+  - `currentTarget` 復帰や `memorytime` 再更新頻度の補正候補。
+
+遺伝安定性:
+- geneLockResistance
+  - 有利な知覚遺伝子が固定化し過ぎることへの抵抗値。
+  - 遺伝システム側の変異抑制/解放条件へ接続候補。
+- adaptationLatency
+  - 環境変化に適応するまでの遅延。
+  - 学習系または世代評価で差分を見る対象。
+
+---
+実装整理メモ
+
+既存項目との対応:
+- 旧メモの `speedBase` は、現行では主に `forwardForce` / `turnForce` に分解されている。
+- 旧メモの `sightRangeBase` は、現行では `visionDistance` と `visionAngle` 系で表現している。
+- `hpBase` `staminaBase` `hearingRangeBase` は、現行の草食 / 捕食ゲノムには未存在。
+
+優先順:
+1. `visionDistance` `memorytime` `threatDetectDistance` 周辺に補正項目として接続する。
+2. 森・障害物・高低差に関する評価関数を追加する。
+3. その後に群知性・魔法側へ拡張する。

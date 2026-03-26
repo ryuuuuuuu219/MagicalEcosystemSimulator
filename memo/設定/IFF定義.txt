@@ -1,0 +1,41 @@
+IFF定義（Identification Friend or Foe）
+
+◇目的
+個体・群れの敵味方識別を統一し、戦闘判断と行動遷移の基盤にする。
+
+◇識別軸
+- speciesID（種族ID）: 種としての識別
+- factionID（派閥ID）: 同種内の所属識別
+- phase（相）: 捕食段階・役割識別（IFFの直接判定には使わない）
+
+◇基本判定（最終出力）
+- speciesID が一致 かつ factionID が一致: Friendly
+- 上記以外: Hostile
+
+◇中間識別状態（内部保持のみ）
+- Unknown: 未観測
+- Bogey: 未確認目標
+- Suspect: 敵性疑い
+- Friendly: 味方確定
+- Hostile: 敵確定
+
+補足:
+- Unknown / Bogey / Suspect は観測や認識途中の状態として保持してよい。
+- ただし最終行動出力は Friendly か Hostile の二値に収束させる。
+
+◇擬似コード
+if (target.speciesID == self.speciesID && target.factionID == self.factionID)
+    status = Friendly;
+else
+    status = Hostile;
+
+◇敵確定トリガー例
+- 自身が攻撃された
+- 味方が攻撃された
+- 指揮者が敵指定した
+- 相・群知性ルール上で敵対条件を満たした
+- 既存の恨み記録がある
+
+◇設計上の注意
+- phase は「食物連鎖段階の参照軸」であり、Friendly 判定の条件には使わない。
+- 戦闘システム側で IFF の基礎判定を持ち、群知性側では共有・拡張して使う。

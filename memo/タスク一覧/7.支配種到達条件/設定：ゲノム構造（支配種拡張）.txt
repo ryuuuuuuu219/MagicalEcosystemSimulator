@@ -1,0 +1,64 @@
+ゲノム構造（支配種拡張）
+
+目的:
+魔法拡張まで含んだゲノムの上に、支配種固有の長期戦略と制圧能力を追加する。
+
+前提:
+- 土台は `4.属性魔法拡張/設定：ゲノム構造（魔法拡張）.txt` の内容。
+- 現行コードには支配種専用ゲノム項目はまだ存在しない。
+
+---
+追加候補（支配種拡張）
+
+支配行動:
+- apexDominanceScore
+  - 支配種候補としての総合優位性。
+- territoryControlDrive
+  - 縄張り維持・拡張への執着度。
+- multiPhasePredationBias
+  - 段階的に狩り方を切り替える傾向。
+- warOfAttritionTolerance
+  - 消耗戦を受け入れる強さ。
+- strategicWithdrawalControl
+  - 不利時に撤退して再戦する判断力。
+- forestAmbushPreference
+  - 森林や遮蔽を利用した伏撃志向。
+- resourceMonopolyDrive
+  - 資源独占へ向かう傾向。
+- successionStability
+  - 世代交代後も支配体制を保つ安定性。
+
+支配種判定補助:
+- lowerPhaseSuppressionRate
+  - 下位相を押さえ込む効率。
+- eliteConflictWinRateBias
+  - 上位個体同士の競合で勝率へ寄与する補正。
+- longTermSurvivalPlanBias
+  - 長期生存を優先した計画性。
+
+---
+既存ゲノムとの接続先
+
+草食:
+- 直接の支配種候補よりも、生存最適化や資源独占回避行動の派生として扱う方が自然。
+
+捕食:
+- `preferredChaseDistance` `disengageDistance` `threatWeight` に長期判断を重ねる。
+- `charge` / `bite` / `melee` の既存戦闘セットに、
+  支配種専用フェーズ切替条件を追加する構成が自然。
+- `attackThreatPulseScore` は周辺個体への威圧演出と接続しやすい。
+
+---
+実装整理メモ
+
+必要な補助データ:
+- 支配種到達フラグ
+- 到達条件スコア
+- 長期縄張りスコア
+- 勝率履歴
+- 世代継承ボーナス
+
+実装順の想定:
+1. 支配種判定を数値化する。
+2. 支配行動の優先度を既存捕食AIへ重ねる。
+3. 世代継承時に支配状態をどう扱うかを遺伝システムへ接続する。
