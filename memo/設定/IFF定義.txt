@@ -16,12 +16,26 @@ IFF定義（Identification Friend or Foe）
 - Unknown: 未観測
 - Bogey: 未確認目標
 - Suspect: 敵性疑い
+- Warning: 威嚇・最終通告段階
 - Friendly: 味方確定
 - Hostile: 敵確定
 
 補足:
-- Unknown / Bogey / Suspect は観測や認識途中の状態として保持してよい。
+- Unknown / Bogey / Suspect / Warning は観測や認識途中の状態として保持してよい。
 - ただし最終行動出力は Friendly か Hostile の二値に収束させる。
+
+◇段階状態（拡張運用）
+- 未認識 = Unknown
+- 認識 = Bogey
+- 警戒 = Suspect
+- 警告 = Warning
+- 許可 = Friendly
+- 戦闘状態 = Hostile
+
+◇推奨遷移
+- Unknown -> Bogey -> Suspect -> Warning -> Hostile
+- Unknown -> Bogey -> Friendly
+- Warning は威嚇行動と退避機会の提示を行う最終通告段階とする。
 
 ◇擬似コード
 if (target.speciesID == self.speciesID && target.factionID == self.factionID)
