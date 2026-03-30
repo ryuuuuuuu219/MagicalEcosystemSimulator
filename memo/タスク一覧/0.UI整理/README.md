@@ -23,6 +23,8 @@
   - `document/ユーザー向け/説明書.txt`
   - `document/ユーザー向け/README.md`
 
+  終了扱い　以降各作業フォルダの進行完了時に編集する。
+
 2. UI着手順位の固定
 - 第一候補: 動物上ゲージ表示切替 UI
 - 第二候補: 世代更新詳細設定 UI（相選択 + mutation on/off）
@@ -31,6 +33,8 @@
   - `memo/タスク一覧/0.UI整理/資料/メニュー整備予定(長期目標).txt`
   - `memo/タスク一覧/0.UI整理/資料/実装機能候補一覧.txt`
   - `memo/タスク一覧/0.UI整理/資料/拡張方針.txt`
+
+上記順序で決定
 
 3. debug可視化の公開方針
 - threat/heat を開発者専用か公開対象か明文化。
@@ -41,18 +45,17 @@
   - `Assets/script/Ingame/AI/ThreatMapsGenerator.cs`
   - `Assets/script/Ingame/balance/ResourceDispenser.cs`
 
+非公開　もしくはphase10以降に整備・公開
+
 4. 設計メモのタスク化
 - 各作業フォルダへ統合した `設定：*.txt` を「対象システム / 依存 / 完了条件」で再分解。
 - 対象ファイル:
   - `memo/タスク一覧/*/設定：*.txt`
   - `memo/設定/設定：ゲノム構造設計.txt`
 
-### 本実装
+設定側の追記の可能性・修正の手間を考慮ししないものとする
 
-1. タイトル/遷移UI
-- 対象ファイル:
-  - `Assets/script/pregame/menu.cs`
-  - `Assets/script/pregame/pregame.cs`
+### 本実装
 
 2. Ingame UI基盤
 - 対象ファイル:
@@ -62,22 +65,6 @@
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs`
 
-3. 世代更新UI
-- 対象ファイル:
-  - `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
-
-4. 観測補助UI
-- 対象ファイル:
-  - `Assets/script/Ingame/UI/VirtualGaugeManager.cs`
-  - `Assets/script/Ingame/UI/CreatureVirtualGauge.cs`
-  - `Assets/script/Ingame/UI/CommonAttackVisualUIManager.cs`
-  - `Assets/script/Ingame/UI/FreeCameraController.cs`
-
-5. 関連（UI整理と依存が強い）
-- 対象ファイル:
-  - `Assets/script/Ingame/WorldGenerator.cs`
-  - `Assets/script/Ingame/Diagnostics/PerformanceBudgetMonitor.cs`
-
 ## 完了条件
 
 - 上記 1〜4 のステータスが明記され、次担当が即着手できる。
@@ -85,6 +72,4 @@
 ## 資料
 
 - `資料/メニュー整備予定(長期目標).txt`
-- `資料/実装機能候補一覧.txt`
-- `資料/拡張方針.txt`
 
