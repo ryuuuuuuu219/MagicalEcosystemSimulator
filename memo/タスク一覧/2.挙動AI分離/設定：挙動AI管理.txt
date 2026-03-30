@@ -1,0 +1,122 @@
+挙動AI
+C:\魔法環境シミュ\memo\タスク一覧\2.挙動AI分離\設定：挙動AI分離.txt　の作業完了後タスク
+
+分離後AI管理設計
+
+◇テーブル
+enum NodeID
+{
+    Root=0,
+    vision,
+}
+
+static List<(NodeID parent, NodeID child)> relations = new()
+{
+    (NodeID.Root, NodeID.Vision),
+    (NodeID.Root, NodeID.Hearing),
+
+    (NodeID.Vision, NodeID.Vision_FoodMemory),
+    (NodeID.Vision, NodeID.Vision_PredatorDetect),
+    (NodeID.Vision, NodeID.Vision_MoveDecision),
+};
+
+◇前準備
+Dictionary<NodeID, NodeID> parentMap;
+void BuildParentMap()
+{
+    parentMap = new();
+
+    foreach (var r in relations)
+        parentMap[r.child] = r.parent;
+}
+
+void ReconstructNodes(Dictionary<NodeID, AINode> nodes)
+{
+    foreach (var key in nodes.Keys.ToList())
+    {
+        var node = nodes[key];
+
+        if (!node.enabled) continue;
+
+        NodeID current = node.id;
+
+        while (parentMap.ContainsKey(current))
+        {
+            NodeID parent = parentMap[current];
+
+            if (!nodes[parent].enabled)
+            {
+                node.enabled = false;
+                nodes[key] = node; // structなので再代入必須
+                break;
+            }
+
+            current = parent;
+        }
+    }
+}
+
+◇コンポーネントツリーのノード
+[System.Serializable]
+public struct AINode
+{
+    public NodeID id;
+    public bool enabled;
+    public float weight;
+}
+
+AINode[] function
+
+◇構成の一例
+便宜上C:\魔法環境シミュ\Assets\script\Ingame\balance\Resource.cs　をルートにする
+
+その下に視覚、聴覚（脅威度マップ取得能（未実装））
+
+視覚の下には餌の記憶、捕食者の確認・捕食対象からの除外、移動判断
+
+◇補足1
+移動判断の重みとして負数を許容。負数にすることで逃走判断を兼ねるようにする
+
+◇コンポーネント追加
+Modcomponent(NodeID id)
+{
+    switch (id)
+    {
+        case NodeID.Vision:
+            gameObject.AddComponent<VisionSystem>();
+            break;
+
+            ・
+            ・
+            ・
+
+
+
+この「機能」たちは生存中、使用率や指定条件で重みが増減する。
+ツリー構造はnode[] として遺伝させる
+C:\魔法環境シミュ\Assets\script\Ingame\UI\Menu\ingame\AdvanceGenerationController.cs　のAdvanceGeneration　で
+C:\魔法環境シミュ\Assets\script\Ingame\behaviour\*\*Manager.cs　の次世代個体生成時参照用のゲノム構造格納　node[] 変数にいれる
+その後、スポーン処理時に配布する
+Resourceのゲノム構造格納　node[] 変数
+
+◇概要
+Resource Awakeでする
+void Awake()
+{
+    BuildParentMap();
+
+    var nodeDict = nodes.ToDictionary(n => n.id, n => n);
+
+    ReconstructNodes(nodeDict);
+
+    foreach (var node in nodeDict.Values)
+    {
+        if (!node.enabled) continue;
+
+        if (Mathf.Abs(node.weight) < 0.01f) continue;
+
+        ModComponent(node.id);
+    }
+}
+
+

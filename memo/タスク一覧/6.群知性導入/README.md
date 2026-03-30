@@ -12,15 +12,37 @@
 - 群れ行動は設計段階で、コード基盤未整備。
 - 魔法関連の前提設計を先に固める方針へ変更。
 
-## 作業詳細
+## 作業区分
 
-- `GroupIntent` データ構造定義
-- 指揮者個体（リーダー）選出ロジック
-- 追従 / 包囲 / 離脱判断の共有規則
-- 群れ内部の意図共有プロトコル
-- 戦闘フェーズとの連動
-- 魔法手段を含む多対一戦闘の段階判断
-- 魔法手段を含む多対多戦闘の判断基準整理
+### 設計資料の校正
+
+1. 群れ意思決定モデルの確定
+- GroupIntent、リーダー選出、共有規則を定義する。
+- 対象ファイル:
+  - `memo/タスク一覧/6.群知性導入/設定：群知性.txt`
+  - `memo/設定/IFF定義.txt`
+
+2. 群れ拡張ゲノムの確定
+- 役割分担に必要な遺伝項目を確定する。
+- 対象ファイル:
+  - `memo/タスク一覧/6.群知性導入/設定：ゲノム構造（群れ拡張）.txt`
+  - `memo/設定/設定：ゲノム構造設計.txt`
+
+### 本実装
+
+1. 群れ管理と意図共有
+- 群れ単位のターゲット/行動共有を実装する。
+- 対象ファイル:
+  - `Assets/script/Ingame/behaviour/predator/predatorManager.cs`
+  - `Assets/script/Ingame/behaviour/herbivore/herbivoreManager.cs`
+  - `Assets/script/Ingame/AI/AnimalAICommon.cs`
+
+2. 戦闘・UI連動
+- 群れ状態を戦闘判断と観測UIへ反映する。
+- 対象ファイル:
+  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs`
 
 ## 完了条件
 
@@ -33,4 +55,3 @@
 - `../0.UI整理/資料/拡張方針.txt`
 - `./設定：群知性.txt`
 - `./設定：ゲノム構造（群れ拡張）.txt`
-

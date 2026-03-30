@@ -12,7 +12,7 @@
 
 1. `memo/README.md`（このファイル）
 2. `memo/ROADMAP.md`
-3. `memo/AI_RULES.md`
+3. `AI_RULES.md`（プロジェクトルート）
 4. 必要な個別メモ（`memo/タスク一覧/` 配下の `設定：*.txt` を含む）
 
 ## 運用ルール

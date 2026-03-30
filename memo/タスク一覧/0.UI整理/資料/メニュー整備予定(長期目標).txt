@@ -1,4 +1,4 @@
-# メニュー整備予定(長期目標)
+﻿# メニュー整備予定(長期目標)
 
 ## 初回リリースから退避した項目
 
@@ -21,8 +21,8 @@
   表示制御は `WorldUIManager` のメニュー木で管理しており、親ボタン押下で配下 UI の開閉は可能。
   トグル挙動と多重クリック抑止は実装済み。
 - 関連:
-  `Assets/script/UI/WorldUIManager.cs`
-  `Assets/script/UI/Menu/WorldUIManager.MenuTree.cs`
+  `Assets/script/Ingame/UI/WorldUIManager.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs`
 
 # 環境調整
 
@@ -50,7 +50,7 @@
   地形調整 UI は未実装。
   ワールド生成は `WorldGenerator` 側依存。
 - 関連:
-  `Assets/script/WorldGenerator.cs`
+  `Assets/script/Ingame/WorldGenerator.cs`
 
 # 生態系調整
 
@@ -80,7 +80,7 @@
   `WorldUIManager` に `selectableLayer` があり、クリック選択時の `Physics.RaycastAll` に使用中。
   ただし Inspector 設定のみで、メニューからの変更 UI は未実装。
 - 関連:
-  `Assets/script/UI/WorldUIManager.cs`
+  `Assets/script/Ingame/UI/WorldUIManager.cs`
 
 ## 動物上ゲージ
 
@@ -91,8 +91,8 @@
   選択対象や可視状態の更新処理あり。
   内部的には表示項目 ON/OFF、相ごとの表示 ON/OFF、透明度の概念がすでに存在する。
 - 関連:
-  `Assets/script/UI/Menu/WorldUIManager.VirtualGauge.cs`
-  `Assets/script/UI/VirtualGaugeManager.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs`
+  `Assets/script/Ingame/UI/VirtualGaugeManager.cs`
 
 ### 表示ステータス選択（HP・炭素・エネルギー）
 
@@ -128,7 +128,7 @@
   実装済み。
   オブジェクト一覧から対象ボタンを押すと `SetTarget` で注目対象に設定される。
 - 関連:
-  `Assets/script/UI/Menu/WorldUIManager.ObjectList.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs`
 
 ### リスト展開
 
@@ -148,7 +148,7 @@
   対象選択後に `detail` ボタンで状態表示 UI を開閉可能。
   草食・肉食で表示内容が分岐し、DNA コード表示や波形表示あり。
 - 関連:
-  `Assets/script/UI/Menu/WorldUIManager.StateView.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
 
 #### ページ切り替え
 
@@ -167,8 +167,8 @@
   `RotationThenlooking` フラグで追従方式を切替。
   真上固定と、現在回転を維持した追従の 2 系統あり。
 - 関連:
-  `Assets/script/UI/WorldUIManager.cs`
-  `Assets/script/UI/Menu/WorldUIManager.ObjectList.cs`
+  `Assets/script/Ingame/UI/WorldUIManager.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs`
 
 #### 真上
 
@@ -214,7 +214,7 @@
   `Log view` から Genome Viewer を開ける。
   世代 / 相ページ切替あり。
 - 関連:
-  `Assets/script/UI/Menu/AdvanceGenerationController.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
 
 ## 単体スポーン
 
@@ -232,7 +232,7 @@
   実装済み。
   `AdvanceGeneration` から世代更新処理を呼べる。
 - 関連:
-  `Assets/script/UI/Menu/AdvanceGenerationController.cs`
+  `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
 
 ### 相選択
 
@@ -328,3 +328,4 @@
 - 現状:
   実装済み。
   世代更新処理の呼び出し自体はある。
+

@@ -12,13 +12,37 @@
 - mana field は未実装。
 - 魔法側への接続経路未整備。
 
-## 作業詳細
+## 作業区分
 
-- 魔素グリッドの定義
-- 拡散・吸収・消費の更新式実装
-- 濃度差による能力補正実装
-- 生体行動と魔素場の相互作用定義
-- UI観測項目の最小露出
+### 設計資料の校正
+
+1. 魔素経済モデルの定義
+- 魔素の拡散・吸収・消費の式を確定する。
+- 対象ファイル:
+  - `memo/タスク一覧/4.魔素基盤構築/設定：経済.txt`
+  - `memo/タスク一覧/4.魔素基盤構築/設定：スケール.txt`
+
+2. heat と mana の役割分離
+- 既存 heat 系との境界を設計上で明確化する。
+- 対象ファイル:
+  - `memo/タスク一覧/0.UI整理/資料/拡張方針.txt`
+  - `memo/タスク一覧/1.生態系コア強化/設定：動物の移動・場（map）のまとめ.txt`
+
+### 本実装
+
+1. 環境場の実装
+- mana field グリッドと更新ループを追加する。
+- 対象ファイル:
+  - `Assets/script/Ingame/balance/ResourceDispenser.cs`
+  - `Assets/script/Ingame/AI/threatmap_calc.cs`
+  - `Assets/script/Ingame/AI/ThreatMapsGenerator.cs`
+
+2. 生体行動との相互作用
+- 個体能力補正を場データと接続する。
+- 対象ファイル:
+  - `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
+  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/balance/Resource.cs`
 
 ## 完了条件
 
@@ -30,4 +54,3 @@
 - `../0.UI整理/資料/拡張方針.txt`
 - `./設定：経済.txt`
 - `./設定：スケール.txt`
-

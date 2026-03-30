@@ -1,19 +1,50 @@
 ﻿# 2.挙動AI分離
 
-目的:
-既存の行動AIを機能コンポーネントへ分割し、1.生態系コア強化で整えた知覚・移動基盤と、3.戦闘システム拡張の間に「AI責務分離」の独立工程を置く。
+## 目的
 
-作業詳細:
-- 制御AIに直書きされた機能を、責務単位のコンポーネントへ分離する
-- 感覚（視覚/聴覚/記憶連携）・欲求・攻撃の機能境界を整理する
-- コンポーネントの有効化/無効化による行動構成の切り替え方針を定義する
+- 既存の行動AIを機能コンポーネントへ分割し、1.生態系コア強化と3.戦闘システム拡張の間に独立工程を置く。
 
-完了条件:
-- 主要な行動機能が責務単位で分離され、依存関係が明文化されている
-- 1.生態系コア強化と3.戦闘システム拡張の間で再利用できるAI基盤として扱える
+## 作業区分
 
-参照:
+### 設計資料の校正
+
+1. 分離対象と依存関係の整理
+- 感覚・欲求・攻撃の責務境界を確定する。
+- 対象ファイル:
+  - `memo/タスク一覧/2.挙動AI分離/設定：挙動AI分離.txt`
+  - `memo/タスク一覧/2.挙動AI分離/設定：挙動AI管理.txt`
+
+2. 遺伝・生成フローとの接続設計
+- node 構造の配布と適用タイミングを明文化する。
+- 対象ファイル:
+  - `memo/タスク一覧/7.学習と進化/設定：遺伝システム.txt`
+  - `memo/設定/設定：ゲノム構造設計.txt`
+
+### 本実装
+
+1. 挙動機能の責務分離
+- 制御AI直書きロジックをモジュール単位へ切り出す。
+- 対象ファイル:
+  - `Assets/script/Ingame/AI/AnimalAICommon.cs`
+  - `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
+  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+
+2. 生成・適用基盤の実装
+- 分離挙動の配布/有効化フローを組み込む。
+- 対象ファイル:
+  - `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
+  - `Assets/script/Ingame/behaviour/herbivore/herbivoreManager.cs`
+  - `Assets/script/Ingame/behaviour/predator/predatorManager.cs`
+  - `Assets/script/Ingame/balance/Resource.cs`
+
+## 完了条件
+
+- 主要な行動機能が責務単位で分離され、依存関係が明文化されている。
+- 1.生態系コア強化と3.戦闘システム拡張の間で再利用できるAI基盤として扱える。
+
+## 参照
+
 - `./設定：挙動AI分離.txt`
+- `./設定：挙動AI管理.txt`
 - `../1.生態系コア強化/README.md`
 - `../3.戦闘システム拡張/README.md`
-

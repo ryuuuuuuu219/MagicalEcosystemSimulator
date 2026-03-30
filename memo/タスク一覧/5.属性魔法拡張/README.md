@@ -11,13 +11,37 @@
 - 属性リスト構想のみ。
 - 実装・評価式・行動接続は未着手。
 
-## 作業詳細
+## 作業区分
 
-- 属性体系（火/氷/雷/風/空間）の効果定義
-- 属性発動条件とクールダウン設計
-- 戦闘/移動/環境との相互作用実装
-- 観測UIで属性発動の差分可視化
-- 学習・進化系への接続ポイント整理
+### 設計資料の校正
+
+1. 属性体系と相性の確定
+- 火/氷/雷/風/空間の効果、相性、発生形式を確定する。
+- 対象ファイル:
+  - `memo/設定/設定：魔法：属性の考察.txt`
+  - `memo/設定/魔法一覧.txt`
+
+2. 魔法ゲノム項目の整理
+- 魔法適性を遺伝項目へ接続する。
+- 対象ファイル:
+  - `memo/タスク一覧/5.属性魔法拡張/設定：ゲノム構造（魔法拡張）.txt`
+  - `memo/設定/設定：ゲノム構造設計.txt`
+
+### 本実装
+
+1. 属性行動の導入
+- 発動条件、クールダウン、行動分岐を実装する。
+- 対象ファイル:
+  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/AI/PredatorCombatLibrary.cs`
+  - `Assets/script/Ingame/AI/AnimalAICommon.cs`
+
+2. 環境・UI連動
+- 属性発動と場データ、可視化を接続する。
+- 対象ファイル:
+  - `Assets/script/Ingame/balance/ResourceDispenser.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
+  - `Assets/script/Ingame/UI/CommonAttackVisualUIManager.cs`
 
 ## 完了条件
 
@@ -27,6 +51,5 @@
 ## 参照
 
 - `../0.UI整理/資料/拡張方針.txt`
-- `./設定：魔法：属性の考察.txt`
+- `../../設定/設定：魔法：属性の考察.txt`
 - `./設定：ゲノム構造（魔法拡張）.txt`
-
