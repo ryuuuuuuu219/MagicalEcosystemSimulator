@@ -19,9 +19,9 @@ public partial class WorldUIManager
         isStatusVisible = !isStatusVisible;
         if (IsStateViewVisible)
         {
-
-            foreach(var item in StatusinfoUIlist)
+            foreach (GameObject item in EnumerateStatusInfoObjects())
             {
+                if (item == null) continue;
                 item.SetActive(true);
             }
 
@@ -29,8 +29,9 @@ public partial class WorldUIManager
         }
         else
         {
-            foreach (var item in StatusinfoUIlist)
+            foreach (GameObject item in EnumerateStatusInfoObjects())
             {
+                if (item == null) continue;
                 item.SetActive(false);
             }
         }
@@ -54,7 +55,7 @@ public partial class WorldUIManager
 
     void HideStatusUI()
     {
-        foreach (var go in StatusUIlist)
+        foreach (GameObject go in EnumerateStatusButtons())
         {
             if (go == null) continue;
             go.SetActive(false);

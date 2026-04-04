@@ -2,109 +2,111 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class MenuNode
+public class UITreeBranch
 {
-    public string name;
-    public GameObject uiObject;
-    public MenuNode parent;
-    public List<MenuNode> children = new();
-    public bool visible;
+    public GameObject entity;
+    public UITreeBranch parent;
+    public List<UITreeBranch> children = new();
+    public bool isOpen;
 }
 
 public partial class WorldUIManager
 {
-    MenuNode menuRoot;
-    MenuNode objectListNode;
-    MenuNode generationNode;
-    MenuNode advanceGenerationNode;
+    UITreeBranch menuRootBranch;
+    UITreeBranch objectListBranch;
+    UITreeBranch generationBranch;
+    UITreeBranch advanceGenerationBranch;
 
     void EnsureMenuTree()
     {
-        if (menuRoot != null)
+        if (menuRootBranch != null)
             return;
 
-        menuRoot = new MenuNode { name = "MenuRoot" };
-        objectListNode = CreateMenuNode("ObjectList", GetNodeObject(TabUIlist, 0), menuRoot);
-        generationNode = CreateMenuNode("Generation", GetNodeObject(TabUIlist, 1), menuRoot);
-        advanceGenerationNode = CreateMenuNode("AdvanceGeneration", GetAdvanceGenerationButton()?.gameObject, generationNode);
-        CreateMenuNode("GenomeViewer", GetGenomeViewerButton()?.gameObject, generationNode);
-        CreateMenuNode("GenomeInjector", GetGenomeInjectorButton()?.gameObject, generationNode);
+        menuRootBranch = new UITreeBranch();
+        objectListBranch = CreateBranch(ObjectList_tab_00, menuRootBranch);
+        generationBranch = CreateBranch(GenController_tab_01, menuRootBranch);
+        advanceGenerationBranch = CreateBranch(GetAdvanceGenerationButton()?.gameObject, generationBranch);
+        CreateBranch(GetGenomeViewerButton()?.gameObject, generationBranch);
+        CreateBranch(GetGenomeInjectorButton()?.gameObject, generationBranch);
     }
 
-    MenuNode CreateMenuNode(string name, GameObject uiObject, MenuNode parent)
+    UITreeBranch CreateBranch(GameObject entity, UITreeBranch parent)
     {
-        MenuNode node = new MenuNode
+        UITreeBranch branch = new UITreeBranch
         {
-            name = name,
-            uiObject = uiObject,
+            entity = entity,
             parent = parent
         };
 
         if (parent != null)
-            parent.children.Add(node);
+            parent.children.Add(branch);
 
-        return node;
+        return branch;
     }
 
-    GameObject GetNodeObject(List<GameObject> list, int index)
+    void SetBranchOpen(UITreeBranch branch, bool open)
     {
-        if (list == null || index < 0 || index >= list.Count)
-            return null;
-
-        return list[index];
-    }
-
-    void HideBranch(MenuNode node)
-    {
-        if (node == null)
+        if (branch == null)
             return;
 
-        if (node.uiObject != null)
-            node.uiObject.SetActive(false);
-
-        foreach (var child in node.children)
-            HideBranch(child);
+        branch.isOpen = open;
     }
 
-    void HideChildren(MenuNode node)
+    void SetDirectChildrenActive(UITreeBranch branch, bool active)
     {
-        if (node == null)
+        if (branch == null)
             return;
 
-        foreach (var child in node.children)
-            HideBranch(child);
-    }
-
-    void ShowDirectChildren(MenuNode node)
-    {
-        if (node == null)
-            return;
-
-        foreach (var child in node.children)
+        foreach (var child in branch.children)
         {
-            if (child.uiObject != null)
-                child.uiObject.SetActive(true);
+            SetBranchOpen(child, active);
+            if (child.entity != null)
+                child.entity.SetActive(active);
         }
+    }
+
+    void SetDescendantsActive(UITreeBranch branch, bool active)
+    {
+        if (branch == null)
+            return;
+
+        foreach (var child in branch.children)
+        {
+            SetBranchOpen(child, active);
+            if (child.entity != null)
+                child.entity.SetActive(active);
+
+            SetDescendantsActive(child, active);
+        }
+    }
+
+    void CloseDescendants(UITreeBranch branch)
+    {
+        SetDescendantsActive(branch, false);
     }
 
     void ShowMenuRootButtons()
     {
         EnsureMenuTree();
-        HideBranch(objectListNode);
-        HideBranch(generationNode);
+        CloseDescendants(objectListBranch);
+        CloseDescendants(generationBranch);
 
-        if (objectListNode.uiObject != null)
-            objectListNode.uiObject.SetActive(true);
+        if (objectListBranch.entity != null)
+            objectListBranch.entity.SetActive(true);
 
-        if (generationNode.uiObject != null)
-            generationNode.uiObject.SetActive(true);
+        if (generationBranch.entity != null)
+            generationBranch.entity.SetActive(true);
     }
 
     void HideAllMenuBranches()
     {
         EnsureMenuTree();
-        HideBranch(objectListNode);
-        HideBranch(generationNode);
+        CloseDescendants(objectListBranch);
+        CloseDescendants(generationBranch);
+        if (objectListBranch.entity != null)
+            objectListBranch.entity.SetActive(false);
+        if (generationBranch.entity != null)
+            generationBranch.entity.SetActive(false);
     }
 
     /// <summary>
@@ -117,8 +119,9 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseGenerationBranch();
-        if (objectListNode.uiObject != null)
-            objectListNode.uiObject.SetActive(true);
+        SetBranchOpen(objectListBranch, true);
+        if (objectListBranch.entity != null)
+            objectListBranch.entity.SetActive(true);
 
         isObjectListVisible = true;
         RefreshObjectSources();
@@ -136,9 +139,10 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseObjectListBranch();
-        if (generationNode.uiObject != null)
-            generationNode.uiObject.SetActive(true);
-        ShowDirectChildren(generationNode);
+        SetBranchOpen(generationBranch, true);
+        if (generationBranch.entity != null)
+            generationBranch.entity.SetActive(true);
+        SetDirectChildrenActive(generationBranch, true);
 
         isObjectListVisible = false;
         ClearObjectList();
@@ -156,8 +160,9 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        if (advanceGenerationNode.uiObject != null)
-            advanceGenerationNode.uiObject.SetActive(true);
+        SetBranchOpen(advanceGenerationBranch, true);
+        if (advanceGenerationBranch.entity != null)
+            advanceGenerationBranch.entity.SetActive(true);
         if (generationController != null)
         {
             generationController.HideGenomePanels();
@@ -174,7 +179,7 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        ShowDirectChildren(generationNode);
+        SetDirectChildrenActive(generationBranch, true);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(true);
@@ -191,7 +196,7 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         OpenGenerationBranch();
-        ShowDirectChildren(generationNode);
+        SetDirectChildrenActive(generationBranch, true);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(false);
@@ -201,7 +206,7 @@ public partial class WorldUIManager
 
     void HideGenerationBranchContent()
     {
-        foreach (GameObject go in GencontrollerUIlist)
+        foreach (GameObject go in EnumerateGenerationButtons())
         {
             if (go == null) continue;
             go.SetActive(false);
@@ -284,11 +289,13 @@ public partial class WorldUIManager
         EnsureMenuTree();
         isObjectListVisible = false;
         isStatusVisible = false;
+        SetBranchOpen(objectListBranch, false);
+        CloseDescendants(objectListBranch);
         HideStatusUI();
         ClearObjectList();
         ClearStateview();
-        if (objectListNode.uiObject != null)
-            objectListNode.uiObject.SetActive(true);
+        if (objectListBranch.entity != null)
+            objectListBranch.entity.SetActive(true);
     }
 
     /// <summary>
@@ -298,10 +305,11 @@ public partial class WorldUIManager
     void CloseGenerationBranch()
     {
         EnsureMenuTree();
-        HideChildren(generationNode);
+        SetBranchOpen(generationBranch, false);
+        CloseDescendants(generationBranch);
         HideGenerationBranchContent();
-        if (generationNode.uiObject != null)
-            generationNode.uiObject.SetActive(true);
+        if (generationBranch.entity != null)
+            generationBranch.entity.SetActive(true);
     }
 
     /// <summary>
@@ -313,7 +321,7 @@ public partial class WorldUIManager
         EnsureMenuTree();
         if (generationController != null)
             generationController.SetGenomeViewerVisible(false);
-        ShowDirectChildren(generationNode);
+        SetDirectChildrenActive(generationBranch, true);
     }
 
     /// <summary>
@@ -325,15 +333,15 @@ public partial class WorldUIManager
         EnsureMenuTree();
         if (generationController != null)
             generationController.SetGenomeInjectorVisible(false);
-        ShowDirectChildren(generationNode);
+        SetDirectChildrenActive(generationBranch, true);
     }
 
     bool AreGenerationBranchControlsVisible()
     {
         EnsureMenuTree();
-        foreach (var child in generationNode.children)
+        foreach (var child in generationBranch.children)
         {
-            if (child.uiObject != null && child.uiObject.activeSelf)
+            if (child.entity != null && child.entity.activeSelf)
                 return true;
         }
 

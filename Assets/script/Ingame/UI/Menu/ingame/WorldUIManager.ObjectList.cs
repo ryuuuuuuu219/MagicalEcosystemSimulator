@@ -6,6 +6,7 @@ public partial class WorldUIManager
 {
     List<GameObject> createdUI = new();
     category currentObjectListCategory = category.grass;
+    int runtimeObjectSelectId;
 
     public void ClearObjectList()
     {
@@ -76,6 +77,7 @@ public partial class WorldUIManager
     {
         EnsureMenuTree();
         ClearObjectList();
+        runtimeObjectSelectId = 0;
 
         GameObject root = CreateObjectListRoot(mainCanvas.transform);
         Transform content = CreateObjectListContent(root.transform);
@@ -146,7 +148,7 @@ public partial class WorldUIManager
         {
             currentObjectListCategory = PreviousCategory(currentObjectListCategory);
             DisplayObjectList();
-        });
+        }, "StateViewPageDown_leaf_00x1");
 
         GameObject labelRoot = new GameObject("CategoryLabelRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
         labelRoot.transform.SetParent(header.transform, false);
@@ -160,7 +162,7 @@ public partial class WorldUIManager
         {
             currentObjectListCategory = NextCategory(currentObjectListCategory);
             DisplayObjectList();
-        });
+        }, "StateViewPageUp_leaf_00x2");
     }
 
     category NextCategory(category value)
@@ -280,7 +282,7 @@ public partial class WorldUIManager
 
     void ShowStatusButtons()
     {
-        foreach (var go in StatusUIlist)
+        foreach (GameObject go in EnumerateStatusButtons())
         {
             if (go == null) continue;
             go.SetActive(true);
@@ -362,7 +364,8 @@ public partial class WorldUIManager
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
 
         GameObject mainButton = Instantiate(buttonPrefab, entry.transform);
-        mainButton.name = obj.name + "_Button";
+        mainButton.name = $"ObjectSelect_branch_00{ToRuntimeBranchId(runtimeObjectSelectId)}";
+        runtimeObjectSelectId++;
         TextMeshProUGUI label = mainButton.GetComponentInChildren<TextMeshProUGUI>(true);
         if (label != null)
             label.text = obj.name;
@@ -382,10 +385,10 @@ public partial class WorldUIManager
         });
     }
 
-    void CreateControlButton(Transform parent, string text, UnityEngine.Events.UnityAction action)
+    void CreateControlButton(Transform parent, string text, UnityEngine.Events.UnityAction action, string objectName)
     {
         GameObject buttonObj = Instantiate(buttonPrefab, parent);
-        buttonObj.name = text + "_Button";
+        buttonObj.name = objectName;
 
         LayoutElement layout = buttonObj.GetComponent<LayoutElement>();
         if (layout == null)
@@ -402,6 +405,23 @@ public partial class WorldUIManager
         Button button = buttonObj.GetComponent<Button>();
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(action);
+    }
+
+    static string ToRuntimeBranchId(int value)
+    {
+        const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        if (value < 0)
+            value = 0;
+
+        if (value < alphabet.Length)
+            return alphabet[value].ToString();
+
+        int high = value / alphabet.Length;
+        int low = value % alphabet.Length;
+        if (high >= alphabet.Length)
+            high = alphabet.Length - 1;
+
+        return $"{alphabet[high]}{alphabet[low]}";
     }
 
     TextMeshProUGUI CreateChildLabel(Transform parent, string textValue, float fontSize, TextAlignmentOptions alignment)

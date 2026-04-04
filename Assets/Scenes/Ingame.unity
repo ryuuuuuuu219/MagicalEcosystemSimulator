@@ -268,7 +268,7 @@ GameObject:
   - component: {fileID: 130017599}
   - component: {fileID: 130017598}
   m_Layer: 0
-  m_Name: detail
+  m_Name: Detail_leaf_00x0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -705,20 +705,19 @@ MonoBehaviour:
   virtualGaugePlaneDistance: 2.5
   selectedGaugeScale: 1.3
   isWorldMenuVisible: 0
-  TabUIlist:
-  - {fileID: 1761905698}
-  - {fileID: 1918911322}
   isObjectListVisible: 0
   isStatusVisible: 0
-  StatusUIlist:
-  - {fileID: 130017596}
-  - {fileID: 2000826648}
-  - {fileID: 552820848}
-  StatusinfoUIlist: []
-  GencontrollerUIlist:
-  - {fileID: 1820534860}
-  - {fileID: 1732111179}
-  - {fileID: 712363545}
+  Menu_root_0: {fileID: 1375890860}
+  ObjectList_tab_00: {fileID: 1761905698}
+  GenController_tab_01: {fileID: 1918911322}
+  Detail_leaf_00x0: {fileID: 130017596}
+  StateViewPageDown_leaf_00x1: {fileID: 2000826648}
+  StateViewPageUp_leaf_00x2: {fileID: 552820848}
+  viewDisplayFoundationRoot: {fileID: 1424883385}
+  uiFreqRoot: {fileID: 1280072391}
+  LogView_branch_010: {fileID: 1820534860}
+  GenomeInjector_branch_011: {fileID: 1732111179}
+  AdvanceGeneration_branch_012: {fileID: 712363545}
   mainCanvas: {fileID: 1901035749}
   mainCamera: {fileID: 330585545}
   text_follow: {fileID: 981598554}
@@ -1220,6 +1219,10 @@ MonoBehaviour:
   initialGrassCount: 30
   initialHerbivoreCount: 30
   initialPredatorCount: 15
+  grassCountPerGeneration: 100
+  herbivoreCountPerGeneration: 30
+  predatorCountPerGeneration: 10
+  maxSpawnAttemptsPerEntity: 64
   grasses: []
   radius: 8
   density: 8.13
@@ -1643,7 +1646,7 @@ GameObject:
   - component: {fileID: 712363548}
   - component: {fileID: 712363547}
   m_Layer: 0
-  m_Name: advance gen page
+  m_Name: AdvanceGeneration_branch_012
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1943,6 +1946,7 @@ MonoBehaviour:
   saveOutputGenome: 1
   generationIndex: 1
   varySeedPerGeneration: 1
+  selectedInjectorCategory: 1
   selectedPhasePage: 0
   selectedGenerationPage: 0
   herbivoreGenomeViewerRoot: {fileID: 0}
@@ -2651,7 +2655,7 @@ GameObject:
   - component: {fileID: 1375890863}
   - component: {fileID: 1375890862}
   m_Layer: 0
-  m_Name: manu root
+  m_Name: Menu_root_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3134,7 +3138,7 @@ GameObject:
   - component: {fileID: 1732111182}
   - component: {fileID: 1732111181}
   m_Layer: 0
-  m_Name: set genome page
+  m_Name: GenomeInjector_branch_011
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3403,7 +3407,7 @@ GameObject:
   - component: {fileID: 1761905701}
   - component: {fileID: 1761905700}
   m_Layer: 0
-  m_Name: list tab
+  m_Name: ObjectList_tab_00
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3672,7 +3676,7 @@ GameObject:
   - component: {fileID: 1820534863}
   - component: {fileID: 1820534862}
   m_Layer: 0
-  m_Name: log page
+  m_Name: LogView_branch_010
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3918,7 +3922,7 @@ GameObject:
   - component: {fileID: 1918911325}
   - component: {fileID: 1918911324}
   m_Layer: 0
-  m_Name: gen tab
+  m_Name: GenController_tab_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

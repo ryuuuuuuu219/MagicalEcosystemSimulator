@@ -12,16 +12,41 @@ public partial class WorldUIManager : MonoBehaviour
     [Header("Debug Toggle")]
     [FormerlySerializedAs("showWorldMenu")]
     [SerializeField] bool isWorldMenuVisible = false;
-    [SerializeField] List<GameObject> TabUIlist = new();
     [FormerlySerializedAs("showObjectList")]
     [SerializeField] bool isObjectListVisible = false;
     [FormerlySerializedAs("showStatus")]
     [SerializeField] bool isStatusVisible = false;
-    [SerializeField] List<GameObject> StatusUIlist = new();
-    [SerializeField] List<GameObject> StatusinfoUIlist = new();
 
-    [SerializeField] List<GameObject> GencontrollerUIlist = new();
-    List<List<GameObject>> UIlist = new();
+    [Header("UI Branch References")]
+    /// <summary>
+    /// UITreeBranch に対応する SerializeField 命名規則の正式仕様。
+    /// 形式は「機能_階層_ID」。
+    /// ID の桁数は階層数を表し、各桁の値はその階層での通し番号 ID を表す。
+    /// 9 を超える値が必要な場合は 0-9 の後に A-Z を使って拡張する。
+    /// root は最上位階層を表す固定名として扱う。
+    /// 固定ボタンの正式名は Menu_root_0, ObjectList_tab_00, GenController_tab_01。
+    /// </summary>
+    [SerializeField] GameObject Menu_root_0;
+    [SerializeField] GameObject ObjectList_tab_00;
+    [SerializeField] GameObject GenController_tab_01;
+    /// <summary>
+    /// StateView は ObjectList 配下として扱う。
+    /// 動的生成ボタンには実行時 ID を振る。
+    /// ObjectList 配下の正式名は ObjectSelect_branch_00x, Detail_leaf_00x0,
+    /// StateViewPageDown_leaf_00x1, StateViewPageUp_leaf_00x2。
+    /// </summary>
+    [SerializeField] GameObject Detail_leaf_00x0;
+    [SerializeField] GameObject StateViewPageDown_leaf_00x1;
+    [SerializeField] GameObject StateViewPageUp_leaf_00x2;
+    [SerializeField] GameObject viewDisplayFoundationRoot;
+    [SerializeField] GameObject uiFreqRoot;
+    /// <summary>
+    /// GenController 配下の正式名は LogView_branch_010, GenomeInjector_branch_011,
+    /// AdvanceGeneration_branch_012。
+    /// </summary>
+    [SerializeField] GameObject LogView_branch_010;
+    [SerializeField] GameObject GenomeInjector_branch_011;
+    [SerializeField] GameObject AdvanceGeneration_branch_012;
 
     [Header("References")]
     public Canvas mainCanvas;
@@ -97,30 +122,19 @@ public partial class WorldUIManager : MonoBehaviour
     private void Start()
     {
         EnsureSceneButtonBindings();
-
-        UIlist = new() { GencontrollerUIlist, StatusUIlist, StatusinfoUIlist, TabUIlist };
         RectTransform rect = waveImage.GetComponent<RectTransform>();
         InitWaveTexture((int)rect.rect.width, (int)rect.rect.height);
         ClearTextureTransparent();
         text_f = text_follow.GetComponent<TextMeshProUGUI>();
 
-        if (viewDisplayFoundation != null && !StatusinfoUIlist.Contains(viewDisplayFoundation))
-            StatusinfoUIlist.Add(viewDisplayFoundation);
-
-        if (UI_freq != null && !StatusinfoUIlist.Contains(UI_freq.gameObject))
-            StatusinfoUIlist.Add(UI_freq.gameObject);
-
         InitializeVirtualGaugeManager();
         InitializeVirtualGaugeCanvas();
         UpdateVirtualGaugeVisibility();
 
-        foreach (var c in UIlist)
+        foreach (GameObject go in EnumerateInitialUiObjects())
         {
-            foreach (var go in c)
-            {
-                if (go == null) continue;
-                go.SetActive(false);
-            }
+            if (go == null) continue;
+            go.SetActive(false);
         }
     }
 
@@ -299,7 +313,7 @@ public partial class WorldUIManager : MonoBehaviour
 
     void EnsureSceneButtonBindings()
     {
-        menuRootButton = ResolveButton(menuRootButton, "manu root", "Menu");
+        menuRootButton = GetButton(Menu_root_0);
 
         EnsureMenuButtonRelay(menuRootButton);
         BindSceneButton(GetObjectListButton(), Onclickbutton1);
@@ -312,52 +326,59 @@ public partial class WorldUIManager : MonoBehaviour
         BindSceneButton(GetGenomeInjectorButton(), Onclickbutton2_3);
     }
 
-    Button GetObjectListButton() => ResolveButton(GetButton(TabUIlist, 0), "list tab");
+    Button GetObjectListButton() => GetButton(ObjectList_tab_00);
 
-    Button GetGenerationButton() => ResolveButton(GetButton(TabUIlist, 1), "gen tab");
+    Button GetGenerationButton() => GetButton(GenController_tab_01);
 
-    Button GetStateButton() => ResolveButton(GetButton(StatusUIlist, 0), "detail");
+    Button GetStateButton() => GetButton(Detail_leaf_00x0);
 
-    Button GetPageDownButton() => ResolveButton(GetButton(StatusUIlist, 1), "<");
+    Button GetPageDownButton() => GetButton(StateViewPageDown_leaf_00x1);
 
-    Button GetPageUpButton() => ResolveButton(GetButton(StatusUIlist, 2), ">");
+    Button GetPageUpButton() => GetButton(StateViewPageUp_leaf_00x2);
 
-    Button GetAdvanceGenerationButton() => ResolveButton(GetButton(GencontrollerUIlist, 2), "advance gen page", "AdvanceGeneration");
+    Button GetAdvanceGenerationButton() => GetButton(AdvanceGeneration_branch_012);
 
-    Button GetGenomeViewerButton() => ResolveButton(GetButton(GencontrollerUIlist, 0), "log page", "Log view");
+    Button GetGenomeViewerButton() => GetButton(LogView_branch_010);
 
-    Button GetGenomeInjectorButton() => ResolveButton(GetButton(GencontrollerUIlist, 1), "set genome page");
+    Button GetGenomeInjectorButton() => GetButton(GenomeInjector_branch_011);
 
-    Button GetButton(List<GameObject> list, int index)
+    Button GetButton(GameObject go)
     {
-        GameObject go = GetNodeObject(list, index);
         return go != null ? go.GetComponent<Button>() : null;
     }
 
-    Button ResolveButton(Button button, string objectName, string labelText = null)
+    IEnumerable<GameObject> EnumerateInitialUiObjects()
     {
-        if (button != null)
-            return button;
+        yield return ObjectList_tab_00;
+        yield return GenController_tab_01;
+        yield return Detail_leaf_00x0;
+        yield return StateViewPageDown_leaf_00x1;
+        yield return StateViewPageUp_leaf_00x2;
+        yield return viewDisplayFoundationRoot != null ? viewDisplayFoundationRoot : viewDisplayFoundation;
+        yield return uiFreqRoot != null ? uiFreqRoot : (UI_freq != null ? UI_freq.gameObject : null);
+        yield return LogView_branch_010;
+        yield return GenomeInjector_branch_011;
+        yield return AdvanceGeneration_branch_012;
+    }
 
-        Transform root = mainCanvas != null ? mainCanvas.transform : transform;
-        if (root == null)
-            return null;
+    IEnumerable<GameObject> EnumerateStatusButtons()
+    {
+        yield return Detail_leaf_00x0;
+        yield return StateViewPageDown_leaf_00x1;
+        yield return StateViewPageUp_leaf_00x2;
+    }
 
-        Transform found = root.Find(objectName);
-        if (found != null && found.TryGetComponent<Button>(out var namedButton))
-            return namedButton;
+    IEnumerable<GameObject> EnumerateStatusInfoObjects()
+    {
+        yield return viewDisplayFoundationRoot != null ? viewDisplayFoundationRoot : viewDisplayFoundation;
+        yield return uiFreqRoot != null ? uiFreqRoot : (UI_freq != null ? UI_freq.gameObject : null);
+    }
 
-        if (string.IsNullOrEmpty(labelText))
-            return null;
-
-        foreach (var candidate in root.GetComponentsInChildren<Button>(true))
-        {
-            TextMeshProUGUI label = candidate.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (label != null && string.Equals(label.text, labelText, StringComparison.Ordinal))
-                return candidate;
-        }
-
-        return null;
+    IEnumerable<GameObject> EnumerateGenerationButtons()
+    {
+        yield return LogView_branch_010;
+        yield return GenomeInjector_branch_011;
+        yield return AdvanceGeneration_branch_012;
     }
 
     static void BindSceneButton(Button button, UnityAction action)
