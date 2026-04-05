@@ -1,0 +1,26 @@
+4.場の評価・可視化連携
+
+目的
+- threat / heat の場データを生成側から行動判断側へ渡し、必要なら可視化ともつなぐ。
+
+対象ファイル
+- Assets/script/Ingame/AI/threatmap_calc.cs
+- Assets/script/Ingame/AI/ThreatMapsGenerator.cs
+- Assets/script/Ingame/balance/ResourceDispenser.cs
+
+作業項目
+1. データ生成経路の確認
+- threat map と heat field がどこで生成・更新されるかを確認する。
+
+2. 行動参照APIの整理
+- AI が参照する値の単位、座標系、更新頻度をそろえる。
+
+3. 欠損時のフォールバック設計
+- データ未生成時に null やゼロ扱いで破綻しないようにする。
+
+4. 可視化確認
+- デバッグ表示やログで場の強弱と行動結果を照合できるようにする。
+
+完了条件
+- AI 側から threat / heat の場を安定して参照できる。
+- 場データと行動変化の対応を確認する手段がある。

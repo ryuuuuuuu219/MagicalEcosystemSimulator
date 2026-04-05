@@ -1,0 +1,26 @@
+3.行動ベクトル統合
+
+目的
+- threat / heat を既存の移動合成に組み込み、草食・肉食・共通ロジックで整合を取る。
+
+対象ファイル
+- Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs
+- Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs
+- Assets/script/Ingame/AI/AnimalAICommon.cs
+
+作業項目
+1. 現在の移動合成確認
+- 餌、脅威、wander、境界、地形補正の合成箇所を洗い出す。
+
+2. threat / heat の差し込み位置決定
+- 共通ロジックに寄せる部分と種別ごとに持つ部分を分ける。
+
+3. 優先度と重みの実装
+- 単純加算で済むか、状態ごとに重み切り替えするかを反映する。
+
+4. デバッグ出力追加
+- 合成前後ベクトル、主要スコア、状態遷移理由をログや可視化用に出せるようにする。
+
+完了条件
+- threat / heat を含んだ移動方向が実際の移動へ反映される。
+- herbivore / predator 間で共通化すべき判断が整理されている。
