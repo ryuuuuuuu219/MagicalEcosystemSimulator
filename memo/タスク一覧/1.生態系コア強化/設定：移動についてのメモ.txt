@@ -1,0 +1,216 @@
+動物の移動についてのメモ
+
+field 関連の設計資料は `設定：field設計まとめ.txt` に分離した。
+このファイルでは、現在のスクリプトが実際に使っている移動アルゴリズムを整理する。
+
+
+◇対象スクリプト
+
+- `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
+- `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+- `Assets/script/Ingame/AI/AnimalAICommon.cs`
+
+
+◇更新モデル
+
+- 草食、肉食ともに `Update()` で知覚、記憶更新、進行方向ベクトル計算を行う
+- 実際の移動、回転、エネルギー消費は `FixedUpdate()` で処理する
+- 専用の `AI step = 1 sec` は未実装
+
+
+◇全体像
+
+現在の移動は「行動ごとのベクトルを作り、重み付き合成し、慣性つき移動へ渡す」構成になっている。
+
+基本の流れ：
+
+1. 視界と記憶から target 候補を更新する
+2. `food / prey`、`threat`、`boundary`、`wander` の各ベクトルを作る
+3. 各ベクトルへ重みを掛けて合成する
+4. 地形法線へ沿うように補正する
+5. `AnimalAICommon.ApplyMovement()` へ渡し、平滑化された移動と回転を行う
+
+
+◇知覚と記憶
+
+- 脅威や prey は即時検知だけでなく memory に保持する
+- memory は `AnimalAICommon.TickMemory()` で時間減衰し、`Remember()` で更新される
+- 実際の探索対象は memory から `BuildObjectCache()` で取り出したキャッシュを参照する
+- つまり現状は「現在視界 + 短期記憶」で動いている
+
+
+◇草食動物のアルゴリズム
+
+#### 1. food ベクトル
+
+- `ComputeFoodVector()` で現在 target がなければ記憶済み grass を走査する
+- `IsGrassSafe()` を通った草だけを候補にする
+- target までの方向を正規化ベクトルとして返す
+- 重みは距離に応じて `1 - dist / visionDistance`
+- `eatDistance` 以内なら移動せず摂食へ移る
+
+#### 2. threat ベクトル
+
+- `ComputeThreatVector()` で predator ごとの反対方向ベクトルを合算する
+- threat 強度は `AnimalAICommon.ComputeThreatLevel()` を使う
+- これは `exp((detectDistance - distance) / detectDistance)` 型の指数関数で、近い脅威ほど急激に強くなる
+
+#### 3. 近接回避
+
+- `ComputeEvasionVector()` を別に持つ
+- `evasionDistance` 以内に predator が入ると、最も近い predator から離れる方向を基準に回避方向を作る
+- 方向は `±evasionAngle` だけランダムに振る
+- `evasionDuration` のあいだ継続し、`evasionCooldown` 中は再発動しない
+- `zigzagAmplitude` と `zigzagFrequency` があると、横揺れを入れたジグザグ回避になる
+
+#### 4. wander ベクトル
+
+- `ComputeWanderVector()` で基底方向を `wanderWaves` による角度波形で回す
+- 波形未設定時は `metabolismRate` を使った簡易サイン波を使う
+- 基底方向は基本的に `food + boundary`、なければ `transform.forward`
+
+#### 5. ベクトル合成
+
+草食の `ComputeTotalVector()` は概ね次で構成される。
+
+```text
+total =
+  wFood * vFood +
+  wThreat * vThreat +
+  1.0 * vBoundary +
+  wWander * vWander
+```
+
+- `wFood = clamp01(foodWeight) * genome.foodWeight`
+- `wThreat = clamp(threatWeight, 0..2) * genome.predatorWeight`
+- `wWander = clamp01(1 - clamp01(wFood) - clamp01(wThreat))`
+- threat が `escapeThreshold` を超えると、food と wander は 25% まで落とされる
+- 合成後に `AdjustMovementVectorForTerrain()` で地形法線方向に補正する
+- 合成結果がほぼ 0 のときは curiosity つき wander をフォールバックとして使う
+
+要するに草食は、
+「餌へ向かう attraction」と「捕食者から離れる repulsion」を、
+境界回避と wander で補う weighted sum ベースの steering になっている。
+
+
+◇肉食動物のアルゴリズム
+
+#### 1. prey ベクトル
+
+- `ComputePreyVector()` は記憶済み prey のうち最短距離の対象を選ぶ
+- `disengageDistance` を超える prey は追跡対象から外す
+- prey が生存中なら chase を作る
+- prey が死亡済みなら単純に死体方向へ向かい、`eatDistance` 以内で摂食へ移る
+
+#### 2. proportional navigation
+
+- 生存 prey の追跡には `ComputeProportionalNavigationVector()` の補正が入る
+- つまり単純な「今いる場所へ向かう追跡」ではなく、相手の移動速度を見て先回り方向を少し足している
+- これはミサイル誘導の proportional navigation を簡略化した追跡補正として読める
+
+#### 3. threat ベクトル
+
+- `ComputeThreatVector()` は草食と同様、脅威方向の反対ベクトルを指数重みで合算する
+- threat が強いと chase と wander の重みを落とす
+
+#### 4. wander ベクトル
+
+- `ComputeWanderVector()` は基底方向を `wanderWaves` で回す
+- 基底方向は `prey + boundary`、なければ前方
+
+#### 5. ベクトル合成
+
+肉食の `ComputeTotalVector()` は概ね次で構成される。
+
+```text
+total =
+  wPrey * vPrey +
+  wThreat * vThreat +
+  1.0 * vBoundary +
+  wWander * vWander
+```
+
+- `wPrey = clamp01(preyWeight) * genome.chaseWeight`
+- `wThreat = clamp(threatWeight, 0..2) * genome.threatWeight`
+- `wWander = clamp01(1 - clamp01(wPrey) - clamp01(wThreat))`
+- threat が 0.5 を超えると prey と wander は 25% まで落とされる
+- 合成後に `AdjustMovementVectorForTerrain()` で地形補正を行う
+
+#### 6. 停止ヒステリシス
+
+- `stopMoveThreshold` と `resumeMoveThreshold` を持つ
+- 合成ベクトルの大きさが小さすぎると movement suppression に入り停止する
+- 再開は stop 閾値より高い resume 閾値を超えたときだけ
+- これは停止と再開を別閾値にするヒステリシス制御で、細かい振動を防ぐためのもの
+
+
+◇境界回避
+
+- `AnimalAICommon.ComputeBoundaryVector()` を使う
+- terrain の四辺までの距離を調べ、margin 以内に入ったときだけ有効になる
+- 強さは `1 - distNearBoundary / margin`
+- 方向は terrain 中央へ向かうベクトル
+
+つまり現状は、不可視壁だけで止めるのではなく、
+「端に近いほど中央へ押し返すソフトなポテンシャル場」を加えている。
+
+
+◇地形追従
+
+- `AdjustMovementVectorForTerrain()` で移動方向を地面法線へ投影している
+- `ApplyMovement()` 側でも ground normal を取り、速度ベクトルと forward を地面に沿わせて処理する
+- `ClampRotation()` も地形に合わせた姿勢補正として使われる
+
+要するに平面 2D steering をそのまま使うのではなく、
+「地面に投影した方向」を使う斜面追従型の移動になっている。
+
+
+◇移動の運動モデル
+
+`AnimalAICommon.ApplyMovement()` は、単純な transform 加算ではなく、
+慣性つきの平滑化 steering + 速度追従モデルになっている。
+
+主要な処理：
+
+- 入力ベクトル `total` の大きさを `moveDemand` として読む
+- `inertialMoveVector` と `inertialFacingVector` を `Vector3.Slerp` で平滑化する
+- 旋回角が大きいほど `turnPenalty` を掛け、目標速度を落とす
+- `currentSpeed` は `MoveTowards` で目標速度へ漸近する
+- `currentVelocity` は desired velocity へ `MoveTowards` する
+- 回頭量は `turnForce * dt` を上限に制限する
+- 入力がないときは braking を掛けながら慣性を減衰させる
+
+これは性格としては、
+- Reynolds 系 steering の「ベクトル合成」
+- 低域通過フィルタつきの方向平滑化
+- 速度と回頭のレート制限
+
+を合わせたものになっている。
+
+
+◇エネルギー消費との接続
+
+- 実際の運動後に `MovementTelemetry` を元に energy cost を計算している
+- `moveDemand`、`accelerationDemand`、`brakingDemand`、`turnDemand` が取れる
+- つまり移動アルゴリズムと代謝コストはすでに接続されている
+
+
+◇現時点で未統合なもの
+
+- threat map のグリッド勾配を読んで動く本格的な場追従
+- heat field を安全行動へ使う移動判断
+- mana field を使う移動判断
+- 群れ指揮ベクトル、`GroupIntent`、派閥形成
+- 縄張り / 拠点ベース巡回
+- 視界隠蔽バイオームを使った離脱
+
+
+◇まとめ
+
+現在の移動アルゴリズムは、
+「知覚・記憶ベースで target を持ち、food/prey・threat・boundary・wander を weighted sum で合成し、
+その結果を慣性つき・回頭制限つきの地形追従運動モデルへ渡す」
+という構造になっている。
+
+草食は回避寄りの steering、肉食は追跡寄りの steering だが、
+基礎骨格はかなり共通化されている。
