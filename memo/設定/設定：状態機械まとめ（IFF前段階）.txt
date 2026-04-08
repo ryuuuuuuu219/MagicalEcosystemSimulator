@@ -1,0 +1,158 @@
+状態機械まとめ（IFF前段階）
+
+目的
+- IFF 導入前の段階で、行動状態の最小構成を固定する。
+- herbivore / predator / 共通AI で共有できる状態名と遷移条件の土台を用意する。
+- threat map / heat field / 餌 / prey / wander / 境界 の関係を、状態機械の観点から整理する。
+
+前提
+- この段階では IFF に基づく未認識 / 認識 / 警戒 / 警告 / 許可の詳細状態はまだ導入しない。
+- threat map は移動欲求ベクトルの一成分として扱う。
+- threat map は状態遷移の単独決定因には使わない。
+- 状態遷移は、直接視認、距離、攻撃イベント、記憶、heat、境界、縄張りなどの条件で決める。
+
+採用する基本状態
+- 探索
+- 回避
+- 追跡
+- 戦闘
+- 離脱
+
+状態の役割
+
+- 探索
+  食料・獲物・安全経路を探す基底状態。
+  明確な脅威も強い誘引もないときの通常移動を担当する。
+
+- 回避
+  脅威、熱、境界、近接危険から離れる状態。
+  近接回避と広域回避を含むが、必要なら後で分離できるようにしておく。
+
+- 追跡
+  prey または food の明確な候補へ向かう状態。
+  predator 側では主に獲物追跡、herbivore 側では food 誘引の強い接近を含めてもよい。
+
+- 戦闘
+  攻撃が成立する距離・角度・クールダウン条件に入り、実際に攻撃判定を試みる状態。
+
+- 離脱
+  追跡または戦闘を継続せず、安全側へ抜ける状態。
+  回避と似るが、こちらは「交戦や接近を打ち切る」意味を明示する。
+
+現状実装との対応
+- 草食は `ComputeEvasionVector()` の `evasionW > 0` が最優先で、これは `回避` に相当する。
+- 草食の `wThreat > max(0.1, genome.escapeThreshold)` による food / wander 抑制も `回避` に相当する。
+- 草食の `isFood == true` による停止は、`追跡` から摂食処理へ入った局面とみなす。
+- 肉食の `GetBestRememberedPrey()` によるターゲット選定は `追跡` に相当する。
+- 肉食の `TryCombatActions()` 成功は `戦闘` に相当する。
+- 肉食の `wThreat > 0.5` による prey / wander 抑制は、実質的には `離脱` または強い `回避` の入口に相当する。
+- 現状は明示 enum より、距離・記憶・重み・一時フラグで暗黙遷移している。
+
+状態ごとの発火条件 / 停止条件
+
+- 探索
+  発火条件:
+  `threatWeight < escapeThreshold`
+  かつ `heatWeight < heatAvoidThreshold`
+  かつ有効な `food / prey` ターゲットがない、または誘引重みが小さいとき。
+  停止条件:
+  `foodWeight > searchExitFoodThreshold`
+  または `preyWeight > searchExitPreyThreshold`
+  または `threatWeight >= escapeThreshold`
+  または `heatWeight >= heatAvoidThreshold`
+
+- 回避
+  発火条件:
+  `threatWeight >= escapeThreshold`
+  または `evasionW > 0`
+  または `heatWeight >= heatAvoidThreshold`
+  または `boundaryWeight >= boundaryAvoidThreshold`
+  停止条件:
+  `threatWeight < escapeThreshold - escapeHysteresis`
+  かつ `evasionTimer <= 0`
+  かつ `heatWeight < heatAvoidThreshold - heatHysteresis`
+  かつ `boundaryWeight < boundaryAvoidThreshold - boundaryHysteresis`
+
+- 追跡
+  発火条件:
+  有効な `currentTarget` または記憶ターゲットが存在し、
+  `foodWeight > chaseEnterFoodThreshold`
+  または `preyWeight > chaseEnterPreyThreshold`
+  かつ `threatWeight < chaseBlockThreatThreshold`
+  のとき。
+  停止条件:
+  ターゲット消失
+  または記憶失効
+  または `threatWeight >= chaseBlockThreatThreshold`
+  または `heatWeight >= heatAvoidThreshold`
+  または攻撃可能距離に入り `戦闘` へ移行したとき。
+
+- 戦闘
+  発火条件:
+  `追跡` 中の対象が攻撃条件を満たし、
+  距離・角度・クールダウン条件が成立し、
+  `TryCombatActions()` 相当の攻撃判定を試みるとき。
+  停止条件:
+  対象死亡
+  または対象喪失
+  または `attackCooldown` 中で有効攻撃が成立しない状態が継続
+  またはエネルギー不足
+  または `離脱` 条件成立時。
+
+- 離脱
+  発火条件:
+  `追跡` または `戦闘` 中に `threatWeight >= disengageThreatThreshold`
+  または `heatWeight >= disengageHeatThreshold`
+  または縄張り / 境界 / 体力 / エネルギー条件により交戦継続が不利になったとき。
+  停止条件:
+  `threatWeight < disengageThreatThreshold - disengageHysteresis`
+  かつ `heatWeight < disengageHeatThreshold - disengageHeatHysteresis`
+  かつ交戦対象との距離が十分離れ、
+  再追跡条件を満たさないとき。
+
+状態遷移の基本順
+- 通常は `探索` を基底状態とする。
+- 強い脅威、近接危険、heat、境界は `回避` を優先する。
+- 有効な prey / food 候補があり、かつ脅威が低いときは `追跡` へ移る。
+- 追跡対象が攻撃可能条件を満たしたときは `戦闘` へ移る。
+- 戦闘継続が不利、または危険が高いときは `離脱` へ移る。
+- 離脱完了後は `探索` へ戻る。
+
+優先順位ルール
+- 近接回避は最優先とする。
+- 次に広域回避を評価する。
+- 追跡は、回避系の閾値を超えていないときのみ有効にする。
+- 戦闘は、追跡成立中かつ攻撃条件成立時のみ有効にする。
+- 離脱は、追跡・戦闘の継続より優先される安全側遷移とする。
+
+ベクトル合成との対応
+- `threat map` は回避・経路選好の補助入力として使う。
+- `threat map` は `回避` と `離脱` の移動方向には効かせてよい。
+- `threat map` は `探索` と `追跡` においても、危険地帯を避ける補正として使ってよい。
+- ただし `threat map` 単独では状態遷移を決めない。
+- `heat field` は回避要因としても誘引要因としても扱いうるが、少なくとも `heatAvoidThreshold` を超える局面では `回避` を優先する。
+
+実装時の推奨
+- まずは `探索 / 回避 / 追跡 / 戦闘 / 離脱` を enum 化する。
+- 明示状態を持っても、移動ベクトル自体は引き続き `food / prey / threat / boundary / wander / threat map / heat` の合成でよい。
+- 状態遷移の判定にはヒステリシスを入れる。
+- `threatWeight` と `heatWeight` は、発火閾値と停止閾値を分ける。
+- ログは初期段階では Debug.Log でよく、少なくとも `stateFrom`、`stateTo`、`reason`、`threatWeight`、`foodWeight`、`preyWeight`、`heatWeight` を出せるようにする。
+
+IFF 導入後に分離予定の状態
+- 警戒
+- 警告
+- 許可
+- 認識 / 未認識
+
+保留事項
+- herbivore の food 接近を `探索` の一部に置くか、`追跡` に含めるか。
+- `heat field` を回避専用にするか、適温誘引まで含めるか。
+- 縄張り侵入を `回避` の原因に置くか、`離脱` / `警戒` の原因に置くか。
+- 共通AI と個別AI の境界をどこで切るか。
+
+最小完了条件
+- 5 状態の名称と役割が固定されている。
+- 各状態の発火条件と停止条件が文章で追える。
+- 実装側が参照する閾値名の置き場が決まっている。
+- IFF 未導入でも、回避・追跡・戦闘・離脱の順序がぶれない。
