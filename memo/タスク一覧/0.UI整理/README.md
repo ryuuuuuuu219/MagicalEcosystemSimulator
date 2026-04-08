@@ -10,7 +10,9 @@
 ## 現状
 
 - `document/ユーザー向け/説明書.txt` は存在。
-- 長期UI項目は `資料` 配下に分散。
+- UI整理の主要メモはこのフォルダ直下に集約済み。
+- `メニュー整備予定(長期目標).txt` は企画・構造整理用。
+- `メニュー整備予定(簡易化一覧).txt` は実装追跡用。
 
 ## 作業区分
 
@@ -30,9 +32,8 @@
 - 第二候補: 世代更新詳細設定 UI（相選択 + mutation on/off）
 - 第三候補: カメラ追従方式切替 UI
 - 対象ファイル:
-  - `memo/タスク一覧/0.UI整理/資料/メニュー整備予定(長期目標).txt`
-  - `memo/タスク一覧/0.UI整理/資料/実装機能候補一覧.txt`
-  - `memo/タスク一覧/0.UI整理/資料/拡張方針.txt`
+  - `memo/タスク一覧/0.UI整理/メニュー整備予定(長期目標).txt`
+  - `memo/タスク一覧/0.UI整理/メニュー整備予定(簡易化一覧).txt`
 
 上記順序で決定
 
@@ -40,7 +41,7 @@
 - threat/heat を開発者専用か公開対象か明文化。
 - 公開する場合は最小導線を定義。
 - 対象ファイル:
-  - `memo/タスク一覧/0.UI整理/資料/メニュー整備予定(長期目標).txt`
+  - `memo/タスク一覧/0.UI整理/メニュー整備予定(長期目標).txt`
   - `Assets/script/Ingame/AI/threatmap_calc.cs`
   - `Assets/script/Ingame/AI/ThreatMapsGenerator.cs`
   - `Assets/script/Ingame/balance/ResourceDispenser.cs`
@@ -62,6 +63,11 @@
   - `Assets/script/Ingame/UI/WorldUIManager.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.PropertySources.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.PendingActions.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.PendingSettings.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.PendingSettings.Sections.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.PendingHelpers.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs`
 
@@ -71,5 +77,5 @@
 
 ## 資料
 
-- `資料/メニュー整備予定(長期目標).txt`
-
+- `メニュー整備予定(長期目標).txt`
+- `メニュー整備予定(簡易化一覧).txt`
