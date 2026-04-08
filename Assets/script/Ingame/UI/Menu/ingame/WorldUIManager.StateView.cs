@@ -16,6 +16,10 @@ public partial class WorldUIManager
 
     public void Onclick_State()
     {
+        if (IsDuplicateUiInvoke(ref lastStateInvokeFrame, nameof(Onclick_State)))
+            return;
+
+        Debug.Log($"[WorldUI] Onclick_State before toggle target={currentTarget?.name ?? "null"} objectListVisible={isObjectListVisible} statusVisible={isStatusVisible}");
         isStatusVisible = !isStatusVisible;
         if (IsStateViewVisible)
         {
@@ -26,6 +30,7 @@ public partial class WorldUIManager
             }
 
             Stateview(stateViewPage);
+            Debug.Log($"[WorldUI] Onclick_State opened page={stateViewPage}");
         }
         else
         {
@@ -34,11 +39,16 @@ public partial class WorldUIManager
                 if (item == null) continue;
                 item.SetActive(false);
             }
+
+            Debug.Log("[WorldUI] Onclick_State closed");
         }
     }
 
     public void Onclick_PageUp()
     {
+        if (IsDuplicateUiInvoke(ref lastPageUpInvokeFrame, nameof(Onclick_PageUp)))
+            return;
+
         if (!IsStateViewVisible) return;
 
         stateViewPage = (stateViewPage + 1) % stateViewPageCount;
@@ -47,6 +57,9 @@ public partial class WorldUIManager
 
     public void Onclick_PageDown()
     {
+        if (IsDuplicateUiInvoke(ref lastPageDownInvokeFrame, nameof(Onclick_PageDown)))
+            return;
+
         if (!IsStateViewVisible) return;
 
         stateViewPage = (stateViewPage - 1 + stateViewPageCount) % stateViewPageCount;

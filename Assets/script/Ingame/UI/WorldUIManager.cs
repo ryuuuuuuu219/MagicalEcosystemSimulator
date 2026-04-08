@@ -86,6 +86,9 @@ public partial class WorldUIManager : MonoBehaviour
     int lastGenomeViewerInvokeFrame = -1;
     int lastGenomeInjectorInvokeFrame = -1;
     int lastPropertiesInvokeFrame = -1;
+    int lastStateInvokeFrame = -1;
+    int lastPageDownInvokeFrame = -1;
+    int lastPageUpInvokeFrame = -1;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
 
     void Awake()

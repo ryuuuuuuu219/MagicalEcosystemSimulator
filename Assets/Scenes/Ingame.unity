@@ -1455,7 +1455,7 @@ MonoBehaviour:
   waterHeight: 6.75
   terrain: {fileID: 0}
   isgenerating: 0
-  playerHueShift: 0.6
+  playerHueShift: 0.09
   playerSaturation: 0.8
   playerValue: 0.6
   randomHueRange: 0.1

@@ -286,7 +286,10 @@ public partial class WorldUIManager
         {
             if (go == null) continue;
             go.SetActive(true);
+            go.transform.SetAsLastSibling();
         }
+
+        Debug.Log($"[WorldUI] ShowStatusButtons target={currentTarget?.name ?? "null"} objectListVisible={isObjectListVisible} statusVisible={isStatusVisible}");
     }
 
     [Header("button Prefabs")]
