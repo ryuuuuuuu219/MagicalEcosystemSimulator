@@ -27,4 +27,19 @@ public class VirtualGaugeManager : MonoBehaviour
     {
         Instance = this;
     }
+
+    public void SetGaugeVisibility(bool visible, bool showHerbivores, bool showPredators)
+    {
+        showVirtualGauges = visible;
+        showHerbivoreGauges = showHerbivores;
+        showPredatorGauges = showPredators;
+    }
+
+    public void SetGaugeDisplayOptions(bool showHealth, bool showEnergy, bool showCarbon, float alpha)
+    {
+        showHealthGauge = showHealth;
+        showEnergyGauge = showEnergy;
+        showCarbonText = showCarbon;
+        gaugeAlpha = Mathf.Clamp01(alpha);
+    }
 }

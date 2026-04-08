@@ -15,6 +15,7 @@ public partial class WorldUIManager
     UITreeBranch menuRootBranch;
     UITreeBranch objectListBranch;
     UITreeBranch generationBranch;
+    UITreeBranch propertiesBranch;
     UITreeBranch advanceGenerationBranch;
 
     void EnsureMenuTree()
@@ -25,6 +26,7 @@ public partial class WorldUIManager
         menuRootBranch = new UITreeBranch();
         objectListBranch = CreateBranch(ObjectList_tab_00, menuRootBranch);
         generationBranch = CreateBranch(GenController_tab_01, menuRootBranch);
+        propertiesBranch = CreateBranch(GetPropertiesButton()?.gameObject, menuRootBranch);
         advanceGenerationBranch = CreateBranch(GetAdvanceGenerationButton()?.gameObject, generationBranch);
         CreateBranch(GetGenomeViewerButton()?.gameObject, generationBranch);
         CreateBranch(GetGenomeInjectorButton()?.gameObject, generationBranch);
@@ -90,12 +92,17 @@ public partial class WorldUIManager
         EnsureMenuTree();
         CloseDescendants(objectListBranch);
         CloseDescendants(generationBranch);
+        CloseDescendants(propertiesBranch);
+        SetPendingSettingsVisible(false);
 
         if (objectListBranch.entity != null)
             objectListBranch.entity.SetActive(true);
 
         if (generationBranch.entity != null)
             generationBranch.entity.SetActive(true);
+
+        if (propertiesBranch.entity != null)
+            propertiesBranch.entity.SetActive(true);
     }
 
     void HideAllMenuBranches()
@@ -103,10 +110,14 @@ public partial class WorldUIManager
         EnsureMenuTree();
         CloseDescendants(objectListBranch);
         CloseDescendants(generationBranch);
+        CloseDescendants(propertiesBranch);
+        SetPendingSettingsVisible(false);
         if (objectListBranch.entity != null)
             objectListBranch.entity.SetActive(false);
         if (generationBranch.entity != null)
             generationBranch.entity.SetActive(false);
+        if (propertiesBranch.entity != null)
+            propertiesBranch.entity.SetActive(false);
     }
 
     /// <summary>
@@ -119,6 +130,8 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseGenerationBranch();
+        ClosePropertiesBranch();
+        SetPendingSettingsVisible(false);
         SetBranchOpen(objectListBranch, true);
         if (objectListBranch.entity != null)
             objectListBranch.entity.SetActive(true);
@@ -139,6 +152,7 @@ public partial class WorldUIManager
         EnsureMenuTree();
         ShowMenuRootButtons();
         CloseObjectListBranch();
+        ClosePropertiesBranch();
         SetBranchOpen(generationBranch, true);
         if (generationBranch.entity != null)
             generationBranch.entity.SetActive(true);
@@ -150,6 +164,18 @@ public partial class WorldUIManager
         ClearStateview();
         if (generationController != null)
             generationController.HideGenomePanels();
+    }
+
+    void OpenPropertiesBranch()
+    {
+        EnsureMenuTree();
+        ShowMenuRootButtons();
+        CloseObjectListBranch();
+        CloseGenerationBranch();
+        SetBranchOpen(propertiesBranch, true);
+        if (propertiesBranch.entity != null)
+            propertiesBranch.entity.SetActive(true);
+        SetPendingSettingsVisible(true);
     }
 
     /// <summary>
@@ -280,6 +306,17 @@ public partial class WorldUIManager
         OpenGenomeInjectorBranch();
     }
 
+    void TogglePropertiesBranch()
+    {
+        if (IsPropertiesBranchOpen())
+        {
+            ClosePropertiesBranch();
+            return;
+        }
+
+        OpenPropertiesBranch();
+    }
+
     /// <summary>
     /// オブジェクト一覧ブランチと状態表示 UI を閉じます。
     /// </summary>
@@ -310,6 +347,16 @@ public partial class WorldUIManager
         HideGenerationBranchContent();
         if (generationBranch.entity != null)
             generationBranch.entity.SetActive(true);
+    }
+
+    void ClosePropertiesBranch()
+    {
+        EnsureMenuTree();
+        SetBranchOpen(propertiesBranch, false);
+        CloseDescendants(propertiesBranch);
+        SetPendingSettingsVisible(false);
+        if (propertiesBranch.entity != null)
+            propertiesBranch.entity.SetActive(true);
     }
 
     /// <summary>
@@ -362,5 +409,15 @@ public partial class WorldUIManager
         return generationController != null &&
                generationController.herbivoreGenomeInjectorRoot != null &&
                generationController.herbivoreGenomeInjectorRoot.activeSelf;
+    }
+
+    bool IsPropertiesBranchOpen()
+    {
+        EnsureMenuTree();
+        return propertiesBranch != null &&
+               propertiesBranch.entity != null &&
+               propertiesBranch.entity.activeSelf &&
+               pendingSettingsPanelRoot != null &&
+               pendingSettingsPanelRoot.activeSelf;
     }
 }

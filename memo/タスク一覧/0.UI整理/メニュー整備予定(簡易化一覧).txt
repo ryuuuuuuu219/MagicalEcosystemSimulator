@@ -3,48 +3,48 @@
 元資料: `メニュー整備予定(長期目標).txt`
 
 ## 1. 初回リリース後に回した項目
-- カメラ追従方式の切替 UI
-- predator DNA export
-- 状態表示 UI のページ切替導線整理
-- 状態表示 UI から DNA ビューア導線整理
-- 一斉世代更新の詳細設定 UI
-- パフォーマンス監視メニュー導線整理
+- カメラ追従方式の切替 UI 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:257-266` の `RotationThenlooking` 分岐、定義 `Assets/script/Ingame/UI/WorldUIManager.cs:56`〕
+- predator DNA export 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs:146-150`、`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:613-619,1083-1085`〕
+- 状態表示 UI のページ切替導線整理 〔該当: `Assets/script/Ingame/UI/WorldUIManager.cs:30-31,318-320`、`Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs:40-53,86-183`〕
+- 状態表示 UI から DNA ビューア導線整理 〔該当候補: 状態表示の DNA 表示 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs:112-117,146-150`、Genome Viewer 側 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:174-184`。直結導線は未実装〕
+- 一斉世代更新の詳細設定 UI 〔該当: パラメータ定義 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:15-36`、実行 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:381-421`、表示導線 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:156-167`〕
+- パフォーマンス監視メニュー導線整理 〔該当候補: 監視本体 `Assets/script/Ingame/Diagnostics/PerformanceBudgetMonitor.cs:4`。UI / メニュー導線は未実装〕
 
 ## 2. 実装済み（維持・改善対象）
-- カメラ操作: リストから注目（`SetTarget`）
-- カメラ操作: リスト展開、カテゴリ切替
-- カメラ操作: ステータス閲覧（detail 開閉、草食/肉食分岐）
-- カメラ操作: 詳細ページ切替（`<` / `>`）
-- 注目時カメラ: 真上視点（`RotationThenlooking == false`）
-- 世代交代: 遺伝子一覧展開（Genome Viewer）
-- 世代交代: 単体スポーン（Genome Injector）
-- 世代交代: 一斉世代更新の実行呼び出し
+- カメラ操作: リストから注目（`SetTarget`） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:345-385`, `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:246-281`〕
+- カメラ操作: リスト展開、カテゴリ切替 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:116-129,218-227`、カテゴリ切替 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:122-166`〕
+- カメラ操作: ステータス閲覧（detail 開閉、草食/肉食分岐） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs:17-38,86-183`〕
+- カメラ操作: 詳細ページ切替（`<` / `>`） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs:40-53`、ボタン配線 `Assets/script/Ingame/UI/WorldUIManager.cs:304-306`〕
+- 注目時カメラ: 真上視点（`RotationThenlooking == false`） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:257-266`〕
+- 世代交代: 遺伝子一覧展開（Genome Viewer） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:174-184,248-257`、UI本体 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:79-88,151-204,442-454`〕
+- 世代交代: 単体スポーン（Genome Injector） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:190-199,263-272`、UI本体 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:89-97,206-246,460-468,545-633`〕
+- 世代交代: 一斉世代更新の実行呼び出し 〔該当: 呼び出し `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.MenuTree.cs:156-167`、実行本体 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:381-421,432-439`〕
 
 ## 3. 部分実装（UI化が必要）
-- 注目時カメラ: 追従方式切替（フラグはあるがUI整理不足）
-- 世代更新: 相選択（内部パラメータあり、UI限定的）
+- 注目時カメラ: 追従方式切替（フラグはあるがUI整理不足） 〔該当: フラグ定義 `Assets/script/Ingame/UI/WorldUIManager.cs:56`、利用 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:257-266`。切替UIは未実装〕
+- 世代更新: 相選択（内部パラメータあり、UI限定的） 〔該当: `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:19,42-49,484-526`。Injector 側の相切替はあるが、AdvanceGeneration 詳細UIとしては未整備〕
 
 ## 4. 未実装（UIなし）
-- タイムスケール調整 UI
-- エネルギー消費パラメータ調整 UI
-- 地形パラメータ調整 UI
-- 初期スポーン数調整 UI
-- 追加スポーンレート調整 UI
-- 選択レイヤー切替 UI（Inspector設定のみ）
-- 動物上ゲージの表示設定 UI
-  - 表示ステータス選択（HP/炭素/エネルギー）
-  - 表示対象相切替（草食/肉食）
-  - 透明度調整
-- カメラプリセット選択 UI
-  - 中央上空
-  - ランダム注目
-- 世代更新の詳細設定 UI（スクロール整理）
-  - 評価軸
-  - 入力モード
-  - 対象相
-  - 交配ON/OFF、交配モード
-  - 突然変異ON/OFF、確率、レンジ
-  - 遺伝子保存ON/OFF
+- タイムスケール調整 UI 〔該当コード未発見。関連候補は `Assets/script/Ingame/UI/FreeCameraController.cs:10,41` の unscaledTime 使用のみ〕
+- エネルギー消費パラメータ調整 UI 〔内部パラメータ: `Assets/script/Ingame/balance/ResourceDispenser.cs:21-31`。UIなし〕
+- 地形パラメータ調整 UI 〔内部パラメータ: `Assets/script/Ingame/WorldGenerator.cs:60-71,132-199`。UIなし〕
+- 初期スポーン数調整 UI 〔内部パラメータ: `Assets/script/Ingame/balance/ResourceDispenser.cs:33-41,61-73`。UIなし〕
+- 追加スポーンレート調整 UI 〔近い定義は世代ごとの数 `Assets/script/Ingame/balance/ResourceDispenser.cs:38-41,299-305`。レートUIなし〕
+- 選択レイヤー切替 UI（Inspector設定のみ） 〔内部パラメータ: `Assets/script/Ingame/UI/WorldUIManager.cs:58`, クリック判定 `Assets/script/Ingame/UI/WorldUIManager.cs:136-137`。UIなし〕
+- 動物上ゲージの表示設定 UI 〔内部パラメータ: `Assets/script/Ingame/UI/VirtualGaugeManager.cs:7-24`、表示反映 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs:72-81,164-171`。UIなし〕
+  - 表示ステータス選択（HP/炭素/エネルギー） 〔内部パラメータ: `Assets/script/Ingame/UI/VirtualGaugeManager.cs:11-13`、描画使用 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs` 内〕
+  - 表示対象相切替（草食/肉食） 〔内部パラメータ: `Assets/script/Ingame/UI/VirtualGaugeManager.cs:9-10`、判定 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.VirtualGauge.cs:169-171`〕
+  - 透明度調整 〔内部パラメータ: `Assets/script/Ingame/UI/VirtualGaugeManager.cs:15-24`。UIなし〕
+- カメラプリセット選択 UI 〔UIなし。近い処理は初期中央配置 `Assets/script/Ingame/UI/FreeCameraController.cs:31-37`、注目時真上固定 `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs:262-266`〕
+  - 中央上空 〔該当: `Assets/script/Ingame/UI/FreeCameraController.cs:31-37`〕
+  - ランダム注目 〔該当コード未発見〕
+- 世代更新の詳細設定 UI（スクロール整理） 〔内部パラメータ: `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:15-36`、実行反映 `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:907-1405`。専用UIなし〕
+  - 評価軸 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:16,909,938,1128-1137`〕
+  - 入力モード 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:17-18,913-916,942-945`〕
+  - 対象相 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:19,42-49,396-407`〕
+  - 交配ON/OFF、交配モード 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:22-23,1141,1179,1318-1328`〕
+  - 突然変異ON/OFF、確率、レンジ 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:26-31,1229,1262,1376-1384`〕
+  - 遺伝子保存ON/OFF 〔`Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs:33-36,402-414`〕
 
 ## 5. 最短実装順（提案）
 1. カメラ追従方式切替 UI（真上/現在値維持）

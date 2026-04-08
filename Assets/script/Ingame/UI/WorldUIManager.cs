@@ -29,6 +29,7 @@ public partial class WorldUIManager : MonoBehaviour
     [SerializeField] GameObject Menu_root_0;
     [SerializeField] GameObject ObjectList_tab_00;
     [SerializeField] GameObject GenController_tab_01;
+    [SerializeField] GameObject Properties_tab_02;
     /// <summary>
     /// StateView は ObjectList 配下として扱う。
     /// 動的生成ボタンには実行時 ID を振る。
@@ -84,10 +85,12 @@ public partial class WorldUIManager : MonoBehaviour
     int lastAdvanceGenerationInvokeFrame = -1;
     int lastGenomeViewerInvokeFrame = -1;
     int lastGenomeInjectorInvokeFrame = -1;
+    int lastPropertiesInvokeFrame = -1;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
 
     void Awake()
     {
+        EnsurePendingUiPropertySources();
         EnsureSceneButtonBindings();
     }
 
@@ -121,6 +124,7 @@ public partial class WorldUIManager : MonoBehaviour
 
     private void Start()
     {
+        EnsurePendingUiPropertySources();
         EnsureSceneButtonBindings();
         RectTransform rect = waveImage.GetComponent<RectTransform>();
         InitWaveTexture((int)rect.rect.width, (int)rect.rect.height);
@@ -272,6 +276,14 @@ public partial class WorldUIManager : MonoBehaviour
         ToggleGenomeInjectorBranch();
     }
 
+    public void Onclickbutton3()
+    {
+        if (IsDuplicateUiInvoke(ref lastPropertiesInvokeFrame, nameof(Onclickbutton3)))
+            return;
+
+        TogglePropertiesBranch();
+    }
+
     void UpdateFollowText()
     {
         if (text_f == null)
@@ -324,11 +336,14 @@ public partial class WorldUIManager : MonoBehaviour
         BindSceneButton(GetAdvanceGenerationButton(), Onclickbutton2_1);
         BindSceneButton(GetGenomeViewerButton(), Onclickbutton2_2);
         BindSceneButton(GetGenomeInjectorButton(), Onclickbutton2_3);
+        BindSceneButton(GetPropertiesButton(), Onclickbutton3);
     }
 
     Button GetObjectListButton() => GetButton(ObjectList_tab_00);
 
     Button GetGenerationButton() => GetButton(GenController_tab_01);
+
+    Button GetPropertiesButton() => GetButton(Properties_tab_02);
 
     Button GetStateButton() => GetButton(Detail_leaf_00x0);
 
@@ -351,6 +366,7 @@ public partial class WorldUIManager : MonoBehaviour
     {
         yield return ObjectList_tab_00;
         yield return GenController_tab_01;
+        yield return Properties_tab_02;
         yield return Detail_leaf_00x0;
         yield return StateViewPageDown_leaf_00x1;
         yield return StateViewPageUp_leaf_00x2;
