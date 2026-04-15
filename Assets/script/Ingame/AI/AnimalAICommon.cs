@@ -542,6 +542,22 @@ public static class AnimalAICommon
 
 
 
+    public static void PrepareCorpseRigidbody(GameObject obj, float linearDamping = 4f, float angularDamping = 2f)
+
+    {
+
+        if (obj == null || !obj.TryGetComponent<Rigidbody>(out var rb))
+
+            return;
+
+        Vector3 velocity = rb.linearVelocity;
+        rb.linearVelocity = new Vector3(0f, Mathf.Min(velocity.y, 0f), 0f);
+        rb.angularVelocity = Vector3.zero;
+        rb.linearDamping = Mathf.Max(rb.linearDamping, linearDamping);
+        rb.angularDamping = Mathf.Max(rb.angularDamping, angularDamping);
+
+    }
+
     public static void TickMemory(List<(GameObject obj, float time)> memory, float deltaTime)
 
 
@@ -5832,7 +5848,6 @@ public class CreatureCollisionProfile : MonoBehaviour
 
 
 }
-
 
 
 

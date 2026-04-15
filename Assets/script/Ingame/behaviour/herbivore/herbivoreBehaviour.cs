@@ -300,6 +300,14 @@ public class herbivoreBehaviour : MonoBehaviour
 
             currentVelocity = Vector3.zero;
 
+            currentSpeed = 0f;
+
+            inertialMoveVector = Vector3.zero;
+
+            inertialFacingVector = Vector3.zero;
+
+            AnimalAICommon.PrepareCorpseRigidbody(gameObject);
+
         }
 
     }
@@ -1571,6 +1579,5 @@ public class herbivoreBehaviour : MonoBehaviour
     }
 
 }
-
 
 
