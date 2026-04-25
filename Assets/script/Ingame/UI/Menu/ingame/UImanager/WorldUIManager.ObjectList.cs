@@ -75,7 +75,6 @@ public partial class WorldUIManager
 
     void DisplayObjectList()
     {
-        EnsureMenuTree();
         ClearObjectList();
         runtimeObjectSelectId = 0;
 

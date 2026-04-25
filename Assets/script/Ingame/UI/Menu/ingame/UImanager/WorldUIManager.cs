@@ -4,93 +4,10 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public partial class WorldUIManager : MonoBehaviour
 {
-    [Header("Debug Toggle")]
-    [FormerlySerializedAs("showWorldMenu")]
-    [SerializeField] bool isWorldMenuVisible = false;
-    [FormerlySerializedAs("showObjectList")]
-    [SerializeField] bool isObjectListVisible = false;
-    [FormerlySerializedAs("showStatus")]
-    [SerializeField] bool isStatusVisible = false;
-
-    [Header("UI Branch References")]
-    /// <summary>
-    /// UITreeBranch に対応する SerializeField 命名規則の正式仕様。
-    /// 形式は「機能_階層_ID」。
-    /// ID の桁数は階層数を表し、各桁の値はその階層での通し番号 ID を表す。
-    /// 9 を超える値が必要な場合は 0-9 の後に A-Z を使って拡張する。
-    /// root は最上位階層を表す固定名として扱う。
-    /// 固定ボタンの正式名は Menu_root_0, ObjectList_tab_00, GenController_tab_01。
-    /// </summary>
-    [SerializeField] GameObject Menu_root_0;
-    [SerializeField] GameObject ObjectList_tab_00;
-    [SerializeField] GameObject GenController_tab_01;
-    [SerializeField] GameObject Properties_tab_02;
-    /// <summary>
-    /// StateView は ObjectList 配下として扱う。
-    /// 動的生成ボタンには実行時 ID を振る。
-    /// ObjectList 配下の正式名は ObjectSelect_branch_00x, Detail_leaf_00x0,
-    /// StateViewPageDown_leaf_00x1, StateViewPageUp_leaf_00x2。
-    /// </summary>
-    [SerializeField] GameObject Detail_leaf_00x0;
-    [SerializeField] GameObject StateViewPageDown_leaf_00x1;
-    [SerializeField] GameObject StateViewPageUp_leaf_00x2;
-    [SerializeField] GameObject viewDisplayFoundationRoot;
-    [SerializeField] GameObject uiFreqRoot;
-    /// <summary>
-    /// GenController 配下の正式名は LogView_branch_010, GenomeInjector_branch_011,
-    /// AdvanceGeneration_branch_012。
-    /// </summary>
-    [SerializeField] GameObject LogView_branch_010;
-    [SerializeField] GameObject GenomeInjector_branch_011;
-    [SerializeField] GameObject AdvanceGeneration_branch_012;
-
-    [Header("References")]
-    public Canvas mainCanvas;
-    public Camera mainCamera;
-
-    [Header("UI")]
-    [SerializeField] GameObject text_follow;
-    TextMeshProUGUI text_f;
-
-    [Header("Manager State")]
-    public GameObject grassManager;
-    public GameObject herbivoreManager;
-    public GameObject predatorManager;
-    public AdvanceGenerationController generationController;
-
-    GameObject currentTarget;
-    public bool RotationThenlooking = false;
-
-    [SerializeField] LayerMask selectableLayer;
-
-    [SerializeField] GameObject viewDisplayFoundation;
-    [SerializeField] UnityEngine.UI.RawImage waveImage;
-    [SerializeField] TextMeshProUGUI UI_freq;
-
-    Texture2D waveTexture;
-    Color32[] pixelBuffer;
-    int stateViewPage = 0;
-    const int stateViewPageCount = 4;
-    string currentHerbivoreDnaCode = string.Empty;
-    Button herbivoreDnaCopyButton;
-    Button menuRootButton;
-    int lastMenuInvokeFrame = -1;
-    int lastObjectListInvokeFrame = -1;
-    int lastGenerationInvokeFrame = -1;
-    int lastAdvanceGenerationInvokeFrame = -1;
-    int lastGenomeViewerInvokeFrame = -1;
-    int lastGenomeInjectorInvokeFrame = -1;
-    int lastPropertiesInvokeFrame = -1;
-    int lastStateInvokeFrame = -1;
-    int lastPageDownInvokeFrame = -1;
-    int lastPageUpInvokeFrame = -1;
-    bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
-
     void Awake()
     {
         EnsurePendingUiPropertySources();
@@ -137,6 +54,7 @@ public partial class WorldUIManager : MonoBehaviour
         InitializeVirtualGaugeManager();
         InitializeVirtualGaugeCanvas();
         UpdateVirtualGaugeVisibility();
+        InitializeMenuBranchVisibility();
 
         foreach (GameObject go in EnumerateInitialUiObjects())
         {
@@ -328,7 +246,7 @@ public partial class WorldUIManager : MonoBehaviour
 
     void EnsureSceneButtonBindings()
     {
-        menuRootButton = GetButton(Menu_root_0);
+        menuRootButton = GetButton(menuRootBranch);
 
         EnsureMenuButtonRelay(menuRootButton);
         BindSceneButton(GetObjectListButton(), Onclickbutton1);
@@ -342,49 +260,54 @@ public partial class WorldUIManager : MonoBehaviour
         BindSceneButton(GetPropertiesButton(), Onclickbutton3);
     }
 
-    Button GetObjectListButton() => GetButton(ObjectList_tab_00);
+    Button GetObjectListButton() => GetButton(objectListBranch);
 
-    Button GetGenerationButton() => GetButton(GenController_tab_01);
+    Button GetGenerationButton() => GetButton(generationBranch);
 
-    Button GetPropertiesButton() => GetButton(Properties_tab_02);
+    Button GetPropertiesButton() => GetButton(propertiesBranch);
 
-    Button GetStateButton() => GetButton(Detail_leaf_00x0);
+    Button GetStateButton() => GetButton(detailBranch);
 
-    Button GetPageDownButton() => GetButton(StateViewPageDown_leaf_00x1);
+    Button GetPageDownButton() => GetButton(stateViewPageDownBranch);
 
-    Button GetPageUpButton() => GetButton(StateViewPageUp_leaf_00x2);
+    Button GetPageUpButton() => GetButton(stateViewPageUpBranch);
 
-    Button GetAdvanceGenerationButton() => GetButton(AdvanceGeneration_branch_012);
+    Button GetAdvanceGenerationButton() => GetButton(advanceGenerationBranch);
 
-    Button GetGenomeViewerButton() => GetButton(LogView_branch_010);
+    Button GetGenomeViewerButton() => GetButton(genomeViewerBranch);
 
-    Button GetGenomeInjectorButton() => GetButton(GenomeInjector_branch_011);
+    Button GetGenomeInjectorButton() => GetButton(genomeInjectorBranch);
 
     Button GetButton(GameObject go)
     {
         return go != null ? go.GetComponent<Button>() : null;
     }
 
+    Button GetButton(UITreeBranch branch)
+    {
+        return branch != null ? branch.GetComponent<Button>() : null;
+    }
+
     IEnumerable<GameObject> EnumerateInitialUiObjects()
     {
-        yield return ObjectList_tab_00;
-        yield return GenController_tab_01;
-        yield return Properties_tab_02;
-        yield return Detail_leaf_00x0;
-        yield return StateViewPageDown_leaf_00x1;
-        yield return StateViewPageUp_leaf_00x2;
+        yield return GetBranchObject(objectListBranch);
+        yield return GetBranchObject(generationBranch);
+        yield return GetBranchObject(propertiesBranch);
+        yield return GetBranchObject(detailBranch);
+        yield return GetBranchObject(stateViewPageDownBranch);
+        yield return GetBranchObject(stateViewPageUpBranch);
         yield return viewDisplayFoundationRoot != null ? viewDisplayFoundationRoot : viewDisplayFoundation;
         yield return uiFreqRoot != null ? uiFreqRoot : (UI_freq != null ? UI_freq.gameObject : null);
-        yield return LogView_branch_010;
-        yield return GenomeInjector_branch_011;
-        yield return AdvanceGeneration_branch_012;
+        yield return GetBranchObject(genomeViewerBranch);
+        yield return GetBranchObject(genomeInjectorBranch);
+        yield return GetBranchObject(advanceGenerationBranch);
     }
 
     IEnumerable<GameObject> EnumerateStatusButtons()
     {
-        yield return Detail_leaf_00x0;
-        yield return StateViewPageDown_leaf_00x1;
-        yield return StateViewPageUp_leaf_00x2;
+        yield return GetBranchObject(detailBranch);
+        yield return GetBranchObject(stateViewPageDownBranch);
+        yield return GetBranchObject(stateViewPageUpBranch);
     }
 
     IEnumerable<GameObject> EnumerateStatusInfoObjects()
@@ -395,9 +318,14 @@ public partial class WorldUIManager : MonoBehaviour
 
     IEnumerable<GameObject> EnumerateGenerationButtons()
     {
-        yield return LogView_branch_010;
-        yield return GenomeInjector_branch_011;
-        yield return AdvanceGeneration_branch_012;
+        yield return GetBranchObject(genomeViewerBranch);
+        yield return GetBranchObject(genomeInjectorBranch);
+        yield return GetBranchObject(advanceGenerationBranch);
+    }
+
+    static GameObject GetBranchObject(UITreeBranch branch)
+    {
+        return branch != null ? branch.gameObject : null;
     }
 
     static void BindSceneButton(Button button, UnityAction action)

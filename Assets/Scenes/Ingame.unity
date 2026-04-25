@@ -267,6 +267,7 @@ GameObject:
   - component: {fileID: 130017600}
   - component: {fileID: 130017599}
   - component: {fileID: 130017598}
+  - component: {fileID: 130017601}
   m_Layer: 0
   m_Name: Detail_leaf_00x0
   m_TagString: Untagged
@@ -388,6 +389,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 130017596}
   m_CullTransparentMesh: 1
+--- !u!114 &130017601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 130017596}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1761905698}
+  children: []
+  eachID: 000000000000000000000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &235934166
 GameObject:
   m_ObjectHideFlags: 0
@@ -536,6 +554,7 @@ GameObject:
   - component: {fileID: 263081605}
   - component: {fileID: 263081604}
   - component: {fileID: 263081603}
+  - component: {fileID: 263081606}
   m_Layer: 0
   m_Name: Properties_tab_02
   m_TagString: Untagged
@@ -657,6 +676,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 263081601}
   m_CullTransparentMesh: 1
+--- !u!114 &263081606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 263081601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1375890860}
+  children: []
+  eachID: 0000000002000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &304815924
 GameObject:
   m_ObjectHideFlags: 0
@@ -970,28 +1006,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d78e907217b64524aa409114eff90e1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldUIManager
-  buttonPrefab: {fileID: 917908890042239740, guid: d88dca1fd91a5b84c8b37955758a48c5, type: 3}
-  worldGenerator: {fileID: 0}
-  resourceDispenser: {fileID: 0}
-  freeFlyCamera: {fileID: 0}
-  performanceBudgetMonitor: {fileID: 0}
-  virtualGaugePlaneDistance: 2.5
-  selectedGaugeScale: 1.3
   isWorldMenuVisible: 0
   isObjectListVisible: 0
   isStatusVisible: 0
-  Menu_root_0: {fileID: 1375890860}
-  ObjectList_tab_00: {fileID: 1761905698}
-  GenController_tab_01: {fileID: 1918911322}
-  Properties_tab_02: {fileID: 263081601}
-  Detail_leaf_00x0: {fileID: 130017596}
-  StateViewPageDown_leaf_00x1: {fileID: 2000826648}
-  StateViewPageUp_leaf_00x2: {fileID: 552820848}
+  menuRootBranch: {fileID: 1375890865}
+  objectListBranch: {fileID: 1761905703}
+  generationBranch: {fileID: 1918911327}
+  propertiesBranch: {fileID: 263081606}
+  advanceGenerationBranch: {fileID: 712363550}
+  genomeViewerBranch: {fileID: 1820534865}
+  genomeInjectorBranch: {fileID: 1732111184}
+  detailBranch: {fileID: 130017601}
+  stateViewPageDownBranch: {fileID: 2000826653}
+  stateViewPageUpBranch: {fileID: 552820853}
   viewDisplayFoundationRoot: {fileID: 1424883385}
   uiFreqRoot: {fileID: 1280072391}
-  LogView_branch_010: {fileID: 1820534860}
-  GenomeInjector_branch_011: {fileID: 1732111179}
-  AdvanceGeneration_branch_012: {fileID: 712363545}
   mainCanvas: {fileID: 1901035749}
   mainCamera: {fileID: 330585545}
   text_follow: {fileID: 981598554}
@@ -1006,6 +1035,13 @@ MonoBehaviour:
   viewDisplayFoundation: {fileID: 1424883385}
   waveImage: {fileID: 1398678402}
   UI_freq: {fileID: 1280072392}
+  buttonPrefab: {fileID: 917908890042239740, guid: d88dca1fd91a5b84c8b37955758a48c5, type: 3}
+  worldGenerator: {fileID: 468752399}
+  resourceDispenser: {fileID: 468752400}
+  freeFlyCamera: {fileID: 330585548}
+  performanceBudgetMonitor: {fileID: 1336561803}
+  virtualGaugePlaneDistance: 2.5
+  selectedGaugeScale: 1.3
 --- !u!120 &330585550
 LineRenderer:
   serializedVersion: 2
@@ -1650,6 +1686,7 @@ GameObject:
   - component: {fileID: 552820852}
   - component: {fileID: 552820851}
   - component: {fileID: 552820850}
+  - component: {fileID: 552820853}
   m_Layer: 0
   m_Name: '>'
   m_TagString: Untagged
@@ -1771,6 +1808,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 552820848}
   m_CullTransparentMesh: 1
+--- !u!114 &552820853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 552820848}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1761905698}
+  children: []
+  eachID: 000000000000000002000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &658949463
 GameObject:
   m_ObjectHideFlags: 0
@@ -1919,6 +1973,7 @@ GameObject:
   - component: {fileID: 712363549}
   - component: {fileID: 712363548}
   - component: {fileID: 712363547}
+  - component: {fileID: 712363550}
   m_Layer: 0
   m_Name: AdvanceGeneration_branch_012
   m_TagString: Untagged
@@ -2040,6 +2095,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 712363545}
   m_CullTransparentMesh: 1
+--- !u!114 &712363550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712363545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1918911322}
+  children: []
+  eachID: 000000000100000002000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -2256,7 +2328,7 @@ GameObject:
   - component: {fileID: 981598557}
   - component: {fileID: 981598556}
   m_Layer: 0
-  m_Name: UI1
+  m_Name: 'follow:'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2928,6 +3000,7 @@ GameObject:
   - component: {fileID: 1375890864}
   - component: {fileID: 1375890863}
   - component: {fileID: 1375890862}
+  - component: {fileID: 1375890865}
   m_Layer: 0
   m_Name: Menu_root_0
   m_TagString: Untagged
@@ -3049,6 +3122,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1375890860}
   m_CullTransparentMesh: 1
+--- !u!114 &1375890865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375890860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 0}
+  children:
+  - {fileID: 1761905698}
+  - {fileID: 1918911322}
+  - {fileID: 263081601}
+  eachID: 00000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &1398678399
 GameObject:
   m_ObjectHideFlags: 0
@@ -3411,6 +3504,7 @@ GameObject:
   - component: {fileID: 1732111183}
   - component: {fileID: 1732111182}
   - component: {fileID: 1732111181}
+  - component: {fileID: 1732111184}
   m_Layer: 0
   m_Name: GenomeInjector_branch_011
   m_TagString: Untagged
@@ -3532,6 +3626,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1732111179}
   m_CullTransparentMesh: 1
+--- !u!114 &1732111184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732111179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1918911322}
+  children: []
+  eachID: 000000000100000001000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &1753364035
 GameObject:
   m_ObjectHideFlags: 0
@@ -3680,6 +3791,7 @@ GameObject:
   - component: {fileID: 1761905702}
   - component: {fileID: 1761905701}
   - component: {fileID: 1761905700}
+  - component: {fileID: 1761905703}
   m_Layer: 0
   m_Name: ObjectList_tab_00
   m_TagString: Untagged
@@ -3801,6 +3913,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1761905698}
   m_CullTransparentMesh: 1
+--- !u!114 &1761905703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1761905698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1375890860}
+  children:
+  - {fileID: 130017596}
+  - {fileID: 2000826648}
+  - {fileID: 552820848}
+  eachID: 0000000000000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &1807516062
 GameObject:
   m_ObjectHideFlags: 0
@@ -3949,6 +4081,7 @@ GameObject:
   - component: {fileID: 1820534864}
   - component: {fileID: 1820534863}
   - component: {fileID: 1820534862}
+  - component: {fileID: 1820534865}
   m_Layer: 0
   m_Name: LogView_branch_010
   m_TagString: Untagged
@@ -4070,6 +4203,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1820534860}
   m_CullTransparentMesh: 1
+--- !u!114 &1820534865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1820534860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1918911322}
+  children: []
+  eachID: 000000000100000000000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &1901035748
 GameObject:
   m_ObjectHideFlags: 0
@@ -4196,6 +4346,7 @@ GameObject:
   - component: {fileID: 1918911326}
   - component: {fileID: 1918911325}
   - component: {fileID: 1918911324}
+  - component: {fileID: 1918911327}
   m_Layer: 0
   m_Name: GenController_tab_01
   m_TagString: Untagged
@@ -4317,6 +4468,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1918911322}
   m_CullTransparentMesh: 1
+--- !u!114 &1918911327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1918911322}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1375890860}
+  children:
+  - {fileID: 1820534860}
+  - {fileID: 1732111179}
+  - {fileID: 712363545}
+  eachID: 0000000001000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &2000826648
 GameObject:
   m_ObjectHideFlags: 0
@@ -4329,6 +4500,7 @@ GameObject:
   - component: {fileID: 2000826652}
   - component: {fileID: 2000826651}
   - component: {fileID: 2000826650}
+  - component: {fileID: 2000826653}
   m_Layer: 0
   m_Name: <
   m_TagString: Untagged
@@ -4450,6 +4622,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000826648}
   m_CullTransparentMesh: 1
+--- !u!114 &2000826653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000826648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b8bc1ba5459ca2e8892c118c7f50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITreeBranch
+  parent: {fileID: 1761905698}
+  children: []
+  eachID: 000000000000000001000000
+  pushOnPointerEvent: 0
+  isOpen: 0
 --- !u!1 &2021543148
 GameObject:
   m_ObjectHideFlags: 0
