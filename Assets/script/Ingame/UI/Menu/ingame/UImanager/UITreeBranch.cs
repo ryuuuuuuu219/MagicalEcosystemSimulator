@@ -81,7 +81,7 @@ public sealed class UITreeBranch : MonoBehaviour, IPointerClickHandler, ISubmitH
                 continue;
 
             bool visible = branch == visibleBranch;
-            branch.SetOpen(false);
+            branch.isOpen = false;
             branch.gameObject.SetActive(visible);
         }
     }
@@ -90,45 +90,6 @@ public sealed class UITreeBranch : MonoBehaviour, IPointerClickHandler, ISubmitH
     {
         branches.Clear();
         branches.AddRange(FindObjectsByType<UITreeBranch>(FindObjectsInactive.Include, FindObjectsSortMode.None));
-    }
-
-    public void SetOpen(bool open)
-    {
-        isOpen = open;
-    }
-
-    public void SetVisible(bool visible)
-    {
-        gameObject.SetActive(visible && IsParentOpen());
-    }
-
-    public void SetDirectChildrenVisible(bool visible)
-    {
-        foreach (GameObject child in children)
-        {
-            if (child == null || !child.TryGetComponent<UITreeBranch>(out var branch))
-                continue;
-
-            if (!visible)
-                branch.SetOpen(false);
-
-            branch.SetVisible(visible);
-        }
-    }
-
-    public void SetDescendantsVisible(bool visible)
-    {
-        foreach (GameObject child in children)
-        {
-            if (child == null || !child.TryGetComponent<UITreeBranch>(out var branch))
-                continue;
-
-            if (!visible)
-                branch.SetOpen(false);
-
-            branch.SetVisible(visible);
-            branch.SetDescendantsVisible(visible);
-        }
     }
 
     public bool HasActiveChild()
@@ -195,11 +156,4 @@ public sealed class UITreeBranch : MonoBehaviour, IPointerClickHandler, ISubmitH
         return parent == null;
     }
 
-    bool IsParentOpen()
-    {
-        if (parent == null)
-            return true;
-
-        return !parent.TryGetComponent<UITreeBranch>(out var parentBranch) || parentBranch.isOpen;
-    }
 }

@@ -628,7 +628,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 330585549}
         m_TargetAssemblyTypeName: WorldUIManager, Assembly-CSharp
-        m_MethodName: Onclickbutton2
+        m_MethodName: Onclickbutton3
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

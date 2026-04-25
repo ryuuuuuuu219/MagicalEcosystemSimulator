@@ -22,14 +22,8 @@ public partial class WorldUIManager
 
     void HideAllMenuBranches()
     {
-        SetBranchOpen(menuRootBranch, false);
-        SetBranchDescendantsVisible(objectListBranch, false);
-        SetBranchDescendantsVisible(generationBranch, false);
-        SetBranchDescendantsVisible(propertiesBranch, false);
+        UITreeBranch.HideAllExcept(menuRootBranch);
         SetPendingSettingsVisible(false);
-        SetBranchVisible(objectListBranch, false);
-        SetBranchVisible(generationBranch, false);
-        SetBranchVisible(propertiesBranch, false);
     }
 
     /// <summary>
@@ -39,9 +33,8 @@ public partial class WorldUIManager
     /// <seealso cref="CloseObjectListBranch"/>
     void OpenObjectListBranch()
     {
-        ShowMenuRootButtons();
-        CloseGenerationBranch();
-        ClosePropertiesBranch();
+        ResetObjectListState(false);
+        HideGenerationBranchContent();
         SetPendingSettingsVisible(false);
         PushBranch(objectListBranch);
 
@@ -58,24 +51,14 @@ public partial class WorldUIManager
     /// <seealso cref="CloseGenerationBranch"/>
     void OpenGenerationBranch()
     {
-        ShowMenuRootButtons();
-        CloseObjectListBranch();
-        ClosePropertiesBranch();
+        PrepareGenerationBranch();
         PushBranch(generationBranch);
-
-        isObjectListVisible = false;
-        ClearObjectList();
-        HideStatusUI();
-        ClearStateview();
-        if (generationController != null)
-            generationController.HideGenomePanels();
     }
 
     void OpenPropertiesBranch()
     {
-        ShowMenuRootButtons();
-        CloseObjectListBranch();
-        CloseGenerationBranch();
+        ResetObjectListState(true);
+        HideGenerationBranchContent();
         PushBranch(propertiesBranch);
         SetPendingSettingsVisible(true);
     }
@@ -86,7 +69,7 @@ public partial class WorldUIManager
     /// <seealso cref="OpenGenerationBranch"/>
     void OpenAdvanceGenerationBranch()
     {
-        OpenGenerationBranch();
+        PrepareGenerationBranch();
         PushBranch(advanceGenerationBranch);
         if (generationController != null)
         {
@@ -102,8 +85,8 @@ public partial class WorldUIManager
     /// <seealso cref="CloseGenomeViewerBranch"/>
     void OpenGenomeViewerBranch()
     {
-        OpenGenerationBranch();
-        PushBranch(generationBranch);
+        PrepareGenerationBranch();
+        PushBranch(genomeViewerBranch);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(true);
@@ -118,8 +101,8 @@ public partial class WorldUIManager
     /// <seealso cref="CloseGenomeInjectorBranch"/>
     void OpenGenomeInjectorBranch()
     {
-        OpenGenerationBranch();
-        PushBranch(generationBranch);
+        PrepareGenerationBranch();
+        PushBranch(genomeInjectorBranch);
         if (generationController != null)
         {
             generationController.SetGenomeViewerVisible(false);
@@ -129,12 +112,6 @@ public partial class WorldUIManager
 
     void HideGenerationBranchContent()
     {
-        foreach (GameObject go in EnumerateGenerationButtons())
-        {
-            if (go == null) continue;
-            go.SetActive(false);
-        }
-
         if (generationController != null)
             generationController.HideGenomePanels();
     }
@@ -220,14 +197,8 @@ public partial class WorldUIManager
     /// <seealso cref="OpenObjectListBranch"/>
     void CloseObjectListBranch()
     {
-        isObjectListVisible = false;
-        isStatusVisible = false;
-        SetBranchOpen(objectListBranch, false);
-        SetBranchDescendantsVisible(objectListBranch, false);
-        HideStatusUI();
-        ClearObjectList();
-        ClearStateview();
-        SetBranchVisible(objectListBranch, true);
+        ResetObjectListState(true);
+        PushBranch(menuRootBranch);
     }
 
     /// <summary>
@@ -236,18 +207,14 @@ public partial class WorldUIManager
     /// <seealso cref="OpenGenerationBranch"/>
     void CloseGenerationBranch()
     {
-        SetBranchOpen(generationBranch, false);
-        SetBranchDescendantsVisible(generationBranch, false);
         HideGenerationBranchContent();
-        SetBranchVisible(generationBranch, true);
+        PushBranch(menuRootBranch);
     }
 
     void ClosePropertiesBranch()
     {
-        SetBranchOpen(propertiesBranch, false);
-        SetBranchDescendantsVisible(propertiesBranch, false);
         SetPendingSettingsVisible(false);
-        SetBranchVisible(propertiesBranch, true);
+        PushBranch(menuRootBranch);
     }
 
     /// <summary>
@@ -310,27 +277,22 @@ public partial class WorldUIManager
         branch.Push();
     }
 
-    static void SetBranchOpen(UITreeBranch branch, bool open)
+    void ResetObjectListState(bool clearList)
     {
-        if (branch == null)
-            return;
+        isObjectListVisible = false;
+        isStatusVisible = false;
 
-        branch.SetOpen(open);
+        HideStatusUI();
+        ClearStateview();
+        if (clearList)
+            ClearObjectList();
     }
 
-    static void SetBranchVisible(UITreeBranch branch, bool visible)
+    void PrepareGenerationBranch()
     {
-        if (branch == null)
-            return;
-
-        branch.SetVisible(visible);
-    }
-
-    static void SetBranchDescendantsVisible(UITreeBranch branch, bool visible)
-    {
-        if (branch == null)
-            return;
-
-        branch.SetDescendantsVisible(visible);
+        ResetObjectListState(true);
+        SetPendingSettingsVisible(false);
+        isObjectListVisible = false;
+        HideGenerationBranchContent();
     }
 }
