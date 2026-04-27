@@ -216,11 +216,15 @@ public class predatorBehaviour : MonoBehaviour
 
     {
 
-        if (IsDead) return;
+        if (IsDead || amount <= 0f) return;
 
 
+
+        float appliedDamage = Mathf.Min(health, amount);
 
         health -= amount;
+
+        DamageNumberLibrary.ShowDamage(transform.position, appliedDamage);
 
         if (health <= 0f)
 

@@ -131,6 +131,7 @@ public static class PredatorCombatLibrary
         }
 
         EmitThreatPulse(context, genome, 1f);
+        float damage = Mathf.Max(0f, genome.biteDamage) * ComputeAttackPowerCoefficient(clock);
         AttackTraceLibrary.DrawBiteProjection(
             context.targetPosition,
             genome.attackTraceScale,
@@ -139,7 +140,7 @@ public static class PredatorCombatLibrary
         result = new CombatResult
         {
             performed = true,
-            damage = Mathf.Max(0f, genome.biteDamage) * ComputeAttackPowerCoefficient(clock),
+            damage = damage,
             energyCost = Mathf.Max(0f, genome.biteEnergyCost),
             copyTargetVelocity = true,
             inheritedVelocity = Flatten(context.targetVelocity),
@@ -174,6 +175,7 @@ public static class PredatorCombatLibrary
         }
 
         EmitThreatPulse(context, genome, 1.25f);
+        float damage = Mathf.Max(0f, genome.meleeDamage) * ComputeAttackPowerCoefficient(clock);
         AttackTraceLibrary.DrawMeleeArc(
             context.targetPosition,
             context.attacker.forward,
@@ -185,7 +187,7 @@ public static class PredatorCombatLibrary
         result = new CombatResult
         {
             performed = true,
-            damage = Mathf.Max(0f, genome.meleeDamage) * ComputeAttackPowerCoefficient(clock),
+            damage = damage,
             energyCost = Mathf.Max(0f, genome.meleeEnergyCost),
             nextState = state
         };
