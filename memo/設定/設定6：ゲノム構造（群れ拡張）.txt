@@ -13,18 +13,12 @@
 群れ判断:
 - commandPower
   - 群れ全体へ意思決定を伝播させる強さ。
-- loyalty
-  - リーダーや群れ方針への追従度。
-- rebelliousness
-  - 単独行動へ逸脱しやすい度合い。
 - formationPreference
   - 密集、横列、包囲などの基本隊形傾向。
 - encirclementBias
   - 包囲を選ぶ重み。
 - retreatThreshold
   - 群れとして離脱判断へ移る閾値。
-- allyTrustDecay
-  - 味方評価が時間で低下する強さ。
 - hostileFixation
   - 特定敵への執着継続度。
 

@@ -144,15 +144,12 @@ DNA形式:
 - chargeDamageScale
 - chargeEnergyCost
 - chargeContactPadding
-- chargeAttackClock
 - biteArc
 - biteDamage
 - biteEnergyCost
-- biteAttackClock
 - meleeArc
 - meleeDamage
 - meleeEnergyCost
-- meleeAttackClock
 
 攻撃痕跡・脅威場:
 - attackThreatPulseScore
@@ -166,7 +163,7 @@ DNA形式:
 
 初期化・補正:
 - `predatorManager.ValidateOrRandomize` が未設定値を検出してランダム生成する。
-- 不正判定には移動、視覚、獲物検出、攻撃クロック、攻撃ダメージ、`visionWaves` が含まれる。
+- 不正判定には移動、視覚、獲物検出、攻撃ダメージ、`visionWaves` が含まれる。
 - 補正後は `CreatureBalanceTuning.NormalizePredatorGenome` を通る。
 - 戦闘系の既定値は `CreatureBalanceTuning.ApplyPredatorCombatDefaults` でも設定される。
 
@@ -211,6 +208,7 @@ DNA形式:
   - 草食: `HG:` + Base64 binary
   - 捕食: `PGJ:` + JSON
 - 捕食には旧攻撃パラメータと複合攻撃パラメータが併存している。
+- 個別周期系の攻撃パラメータは簡略化のため設計から削除対象とし、攻撃頻度はクールダウンとエネルギーへ寄せる。
 - `WaveGene` は共通だが、視覚波形と徘徊波形の意味づけがコード外でまだ明確に分かれていない。
 - 群知性、魔法適性、支配種段階に直結する遺伝子は未実装。
 - 体力・エネルギー上限は現行ゲノムではなく固定バランス値寄りの扱い。

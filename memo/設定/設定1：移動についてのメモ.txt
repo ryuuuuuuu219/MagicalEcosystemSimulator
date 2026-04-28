@@ -200,7 +200,7 @@ total =
 - threat map のグリッド勾配を読んで動く本格的な場追従
 - heat field を安全行動へ使う移動判断
 - mana field を使う移動判断
-- 群れ指揮ベクトル、`GroupIntent`、派閥形成
+- 群れ指揮ベクトル、`GroupIntent`、分派・反抗
 - 縄張り / 拠点ベース巡回
 - 視界隠蔽バイオームを使った離脱
 

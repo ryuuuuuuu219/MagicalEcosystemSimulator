@@ -5,12 +5,11 @@ IFF定義（Identification Friend or Foe）
 
 ◇識別軸
 - speciesID（種族ID）: 種としての識別
-- factionID（派閥ID）: 同種内の所属識別
 - phase（相）: 捕食段階・役割識別（IFFの直接判定には使わない）
 
 ◇基本判定（最終出力）
-- speciesID が一致 かつ factionID が一致: Friendly
-- speciesID が不一致 かつ 敵対条件を満たす: Hostile
+- speciesID が一致: Friendly
+- 敵対条件を満たす: Hostile
 - 上記以外: Neutral
 
 補足:
@@ -47,7 +46,7 @@ IFF定義（Identification Friend or Foe）
 - Warning は威嚇行動と退避機会の提示を行う最終通告段階とする。
 
 ◇擬似コード
-if (target.speciesID == self.speciesID && target.factionID == self.factionID)
+if (target.speciesID == self.speciesID)
     status = Friendly;
 else if (target satisfies hostility trigger)
     status = Hostile;
@@ -65,3 +64,4 @@ else
 - phase は「食物連鎖段階の参照軸」であり、Friendly 判定の条件には使わない。
 - 戦闘システム側で IFF の基礎判定を持ち、群知性側では共有・拡張して使う。
 - Hostile でない相手を攻撃する場合は、縄張り侵入、攻撃被害、指揮者指定、捕食対象化などの理由を必ず持つ。
+- 群れ内のばらつきは、必要になった場合のみ隊形・役割・距離補正で扱う。

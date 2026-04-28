@@ -87,7 +87,6 @@ phase 昇格時に speciesID を確率で付与・更新する。
 草食	HP				35		ダメージを受けると減少、0で死亡			なし
 草食	攻撃力				なし		攻撃手段なし					なし
 捕食	HP				55		ダメージを受けると減少、0で死亡			なし
-捕食	chargeDamageScale		0.6 - 1.2	突進ダメージ = scale × 相対速度 × 攻撃係数	あり
-捕食	biteDamage			4 - 8		噛みつきダメージ = biteDamage × 攻撃係数	あり
-捕食	meleeDamage			6 - 12		近接ダメージ = meleeDamage × 攻撃係数		あり
-捕食	charge/bite/meleeAttackClock	0.9 - 1.8	攻撃頻度と攻撃係数に影響			あり
+捕食	chargeDamageScale		0.6 - 1.2	突進ダメージ = scale × 相対速度		あり
+捕食	biteDamage			4 - 8		噛みつき基礎ダメージ				あり
+捕食	meleeDamage			6 - 12		近接基礎ダメージ				あり
