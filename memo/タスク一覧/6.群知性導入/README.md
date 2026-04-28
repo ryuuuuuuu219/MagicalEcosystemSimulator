@@ -1,4 +1,4 @@
-﻿# 6.群知性導入
+# 6.群知性導入
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 
@@ -19,30 +19,30 @@
 1. 群れ意思決定モデルの確定
 - GroupIntent、リーダー選出、共有規則を定義する。
 - 対象ファイル:
-  - `memo/タスク一覧/6.群知性導入/設定：群知性.txt`
-  - `memo/設定/IFF定義.txt`
+  - `memo/設定/設定6：群知性.txt`
+  - `memo/設定/設定共通：IFF定義.txt`
 
 2. 群れ拡張ゲノムの確定
 - 役割分担に必要な遺伝項目を確定する。
 - 対象ファイル:
-  - `memo/タスク一覧/6.群知性導入/設定：ゲノム構造（群れ拡張）.txt`
-  - `memo/設定/設定：ゲノム構造設計.txt`
+  - `memo/設定/設定6：ゲノム構造（群れ拡張）.txt`
+  - `memo/設定/設定共通：ゲノム構造設計.txt`
 
 ### 本実装
 
 1. 群れ管理と意図共有
 - 群れ単位のターゲット/行動共有を実装する。
 - 対象ファイル:
-  - `Assets/script/Ingame/behaviour/predator/predatorManager.cs`
-  - `Assets/script/Ingame/behaviour/herbivore/herbivoreManager.cs`
+  - `Assets/script/Ingame/Creatures/Predator/predatorManager.cs`
+  - `Assets/script/Ingame/Creatures/Herbivore/herbivoreManager.cs`
   - `Assets/script/Ingame/AI/AnimalAICommon.cs`
 
 2. 戦闘・UI連動
 - 群れ状態を戦闘判断と観測UIへ反映する。
 - 対象ファイル:
-  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
-  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.StateView.cs`
-  - `Assets/script/Ingame/UI/Menu/ingame/WorldUIManager.ObjectList.cs`
+  - `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/UImanager/WorldUIManager.StateView.cs`
+  - `Assets/script/Ingame/UI/Menu/ingame/UImanager/WorldUIManager.ObjectList.cs`
 
 ## 完了条件
 
@@ -53,5 +53,5 @@
 ## 参照
 
 - `../0.遺伝子設計変更/現状の遺伝子構造まとめ.txt`
-- `./設定：群知性.txt`
-- `./設定：ゲノム構造（群れ拡張）.txt`
+- `../../設定/設定6：群知性.txt`
+- `../../設定/設定6：ゲノム構造（群れ拡張）.txt`

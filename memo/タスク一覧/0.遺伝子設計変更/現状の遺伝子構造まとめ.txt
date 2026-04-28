@@ -7,12 +7,12 @@
 遺伝子設計変更の前提として、現行コード上のゲノム構造、DNA形式、世代継承処理を整理する。
 
 参照元コード:
-- Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs
-- Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs
-- Assets/script/Ingame/AI/PredatorCombatLibrary.cs
-- Assets/script/Ingame/AI/GenomeSerializer.cs
-- Assets/script/Ingame/behaviour/herbivore/herbivoreManager.cs
-- Assets/script/Ingame/behaviour/predator/predatorManager.cs
+- Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs
+- Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs
+- Assets/script/Ingame/Combat/PredatorCombatLibrary.cs
+- Assets/script/Ingame/Genome/GenomeSerializer.cs
+- Assets/script/Ingame/Creatures/Herbivore/herbivoreManager.cs
+- Assets/script/Ingame/Creatures/Predator/predatorManager.cs
 - Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs
 
 ---

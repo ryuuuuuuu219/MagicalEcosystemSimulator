@@ -43,14 +43,14 @@
 
 以下のファイルは影響が大きいため、変更時は依存関係と挙動を慎重に確認する。
 
-- `Assets/script/herbivore/herbivoreBehaviour.cs`
-- `Assets/script/predator/predatorBehaviour.cs`
-- `Assets/script/UI/Menu/AdvanceGenerationController.cs`
-- `Assets/script/UI/WorldUIManager.cs`
-- `Assets/script/UI/Menu/WorldUIManager.StateView.cs`
-- `Assets/script/ResourceDispenser.cs`
-- `Assets/script/AI/threatmap_calc.cs`
-- `Assets/script/AI/ThreatMapsGenerator.cs`
+- `Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs`
+- `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
+- `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
+- `Assets/script/Ingame/UI/Menu/ingame/UImanager/WorldUIManager.cs`
+- `Assets/script/Ingame/UI/Menu/ingame/UImanager/WorldUIManager.StateView.cs`
+- `Assets/script/Ingame/Environment/ResourceDispenser.cs`
+- `Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs`
+- `Assets/script/Ingame/AI/ThreatMap/ThreatMapsGenerator.cs`
 
 ## AI オーケストレーター運用
 

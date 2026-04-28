@@ -1,4 +1,4 @@
-﻿# 7.学習と進化
+# 7.学習と進化
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 
@@ -18,14 +18,14 @@
 1. 学習状態と進化指標の定義
 - 使用確率、解放状態、感情パラメータを定義する。
 - 対象ファイル:
-  - `memo/タスク一覧/7.学習と進化/設定：遺伝システム.txt`
-  - `memo/タスク一覧/7.学習と進化/設定：感情パラメーター.txt`
+  - `memo/設定/設定7：遺伝システム.txt`
+  - `memo/設定/設定7：感情パラメーター.txt`
 
 2. ゲノム構造との接続整理
 - 継承項目の責務を整理する。
 - 対象ファイル:
-  - `memo/設定/設定：ゲノム構造設計.txt`
-  - `memo/タスク一覧/6.群知性導入/設定：ゲノム構造（群れ拡張）.txt`
+  - `memo/設定/設定共通：ゲノム構造設計.txt`
+  - `memo/設定/設定6：ゲノム構造（群れ拡張）.txt`
 
 ### 本実装
 
@@ -33,15 +33,15 @@
 - 学習結果を世代更新へ反映する。
 - 対象ファイル:
   - `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
-  - `Assets/script/Ingame/AI/GenomeSerializer.cs`
-  - `Assets/script/Ingame/AI/GenomeLogger.cs`
+  - `Assets/script/Ingame/Genome/GenomeSerializer.cs`
+  - `Assets/script/Ingame/Diagnostics/GenomeLogger.cs`
 
 2. 個体挙動への反映
 - 状態量を行動選択へ反映する。
 - 対象ファイル:
-  - `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
-  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
-  - `Assets/script/Ingame/AI/GenerationLog.cs`
+  - `Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs`
+  - `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/Genome/GenerationLog.cs`
 
 ## 完了条件
 
@@ -51,6 +51,6 @@
 ## 参照
 
 - `../0.遺伝子設計変更/現状の遺伝子構造まとめ.txt`
-- `./設定：遺伝システム.txt`
-- `../../設定/設定：ゲノム構造設計.txt`
-- `./設定：感情パラメーター.txt`
+- `../../設定/設定7：遺伝システム.txt`
+- `../../設定/設定共通：ゲノム構造設計.txt`
+- `../../設定/設定7：感情パラメーター.txt`

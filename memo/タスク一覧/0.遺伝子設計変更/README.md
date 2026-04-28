@@ -19,9 +19,9 @@
 
 1. 現状構造の固定
 - 対象ファイル:
-  - `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
-  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
-  - `Assets/script/Ingame/AI/GenomeSerializer.cs`
+  - `Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs`
+  - `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/Genome/GenomeSerializer.cs`
   - `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
 - まとめ:
   - `現状の遺伝子構造まとめ.txt`

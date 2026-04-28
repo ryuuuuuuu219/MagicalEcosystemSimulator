@@ -1,4 +1,4 @@
-﻿# 4.魔素基盤構築
+# 4.魔素基盤構築
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 
@@ -19,30 +19,30 @@
 1. 魔素経済モデルの定義
 - 魔素の拡散・吸収・消費の式を確定する。
 - 対象ファイル:
-  - `memo/タスク一覧/4.魔素基盤構築/設定：経済.txt`
-  - `memo/タスク一覧/4.魔素基盤構築/設定：スケール.txt`
+  - `memo/設定/設定4：経済.txt`
+  - `memo/設定/設定4：スケール.txt`
 
 2. heat と mana の役割分離
 - 既存 heat 系との境界を設計上で明確化する。
 - 対象ファイル:
   - `memo/タスク一覧/0.遺伝子設計変更/現状の遺伝子構造まとめ.txt`
-  - `memo/タスク一覧/1.生態系コア強化/設定：移動についてのメモ.txt`
+  - `memo/設定/設定1：移動についてのメモ.txt`
 
 ### 本実装
 
 1. 環境場の実装
 - mana field グリッドと更新ループを追加する。
 - 対象ファイル:
-  - `Assets/script/Ingame/balance/ResourceDispenser.cs`
-  - `Assets/script/Ingame/AI/threatmap_calc.cs`
-  - `Assets/script/Ingame/AI/ThreatMapsGenerator.cs`
+  - `Assets/script/Ingame/Environment/ResourceDispenser.cs`
+  - `Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs`
+  - `Assets/script/Ingame/AI/ThreatMap/ThreatMapsGenerator.cs`
 
 2. 生体行動との相互作用
 - 個体能力補正を場データと接続する。
 - 対象ファイル:
-  - `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
-  - `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
-  - `Assets/script/Ingame/balance/Resource.cs`
+  - `Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs`
+  - `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
+  - `Assets/script/Ingame/Environment/Resource.cs`
 
 ## 完了条件
 
@@ -52,5 +52,5 @@
 ## 参照
 
 - `../0.遺伝子設計変更/現状の遺伝子構造まとめ.txt`
-- `./設定：経済.txt`
-- `./設定：スケール.txt`
+- `../../設定/設定4：経済.txt`
+- `../../設定/設定4：スケール.txt`

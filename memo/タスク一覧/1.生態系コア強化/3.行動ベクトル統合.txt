@@ -4,8 +4,8 @@
 - threat / heat を既存の移動合成に組み込み、草食・肉食・共通ロジックで整合を取る。
 
 対象ファイル
-- Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs
-- Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs
+- Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs
+- Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs
 - Assets/script/Ingame/AI/AnimalAICommon.cs
 
 作業項目

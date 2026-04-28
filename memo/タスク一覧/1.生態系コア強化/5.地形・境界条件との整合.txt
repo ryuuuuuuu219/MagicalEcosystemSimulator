@@ -4,8 +4,8 @@
 - threat / heat 導入後も境界回避や地形依存移動が破綻しないように整合を取る。
 
 対象ファイル
-- Assets/script/Ingame/WorldGenerator.cs
-- Assets/script/Ingame/behaviour/grassland.cs
+- Assets/script/Ingame/World/WorldGenerator.cs
+- Assets/script/Ingame/Environment/grassland.cs
 - Assets/script/Ingame/AI/AnimalAICommon.cs
 
 作業項目

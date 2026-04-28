@@ -4,9 +4,9 @@
 - threat / heat の場データを生成側から行動判断側へ渡し、必要なら可視化ともつなぐ。
 
 対象ファイル
-- Assets/script/Ingame/AI/threatmap_calc.cs
-- Assets/script/Ingame/AI/ThreatMapsGenerator.cs
-- Assets/script/Ingame/balance/ResourceDispenser.cs
+- Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs
+- Assets/script/Ingame/AI/ThreatMap/ThreatMapsGenerator.cs
+- Assets/script/Ingame/Environment/ResourceDispenser.cs
 
 作業項目
 1. データ生成経路の確認

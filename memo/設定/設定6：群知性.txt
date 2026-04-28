@@ -1,7 +1,7 @@
 ﻿群れについて
 
 前提：
-相の定義は `../3.戦闘システム拡張/設定：相の定義.txt` に従う。
+相の定義は `memo/設定/設定3：相の定義.txt` に従う。
 最終的な食物連鎖ピラミッドは
 草原 < 草食動物 < 肉食動物 < 上位肉食動物 < 支配種
 とする。
@@ -13,12 +13,14 @@
 種族ID/speciesID と 派閥ID/factionID の両方が一致した個体のみ友軍とする。
 この条件を満たした場合にのみ仲間として連携リストに追加する。
 
-◇敵対判定
-種族ID または 派閥ID のどちらか一方でも一致しない場合は、排他的な天敵同士として扱う。
-つまり群知性上の最終出力は「友軍」か「敵」の二値であり、中立常設は置かない。
+◇関係判定
+種族ID と派閥ID の両方が一致する場合は友軍とする。
+それ以外は中立または敵として扱う。
+群知性上の最終関係出力は「友軍」「中立」「敵」の三値とする。
 
 これは特に肉食動物以上に作用し、IFF の根幹ルールになる。
 肉食動物以上は同士で摂食しあうため、友軍条件から外れた個体は競争相手であり捕食対象候補でもある。
+ただし競争相手は即時 Hostile ではない。縄張り侵入、資源競合、被害、指揮者指定、恨み記録などで Hostile 化する。
 
 指揮系統？指揮力？を実数値で保存して高い方を指揮者に、グループ内の行動ベクトルをオーバーライト。
 
@@ -126,6 +128,7 @@ enum TargetStatus
     Unknown,   // 未観測
     Bogey,     // 未確認目標
     Suspect,   // 敵性疑い
+    Neutral,   // 中立
     Hostile,   // 敵
     Friendly   // 味方
 }
@@ -138,12 +141,14 @@ enum TargetStatus
 if (target.speciesID == self.speciesID && target.factionID == self.factionID)
     status = Friendly;
 
-if (target.speciesID != self.speciesID || target.factionID != self.factionID)
+if (hostility trigger is active)
     status = Hostile;
+else
+    status = Neutral;
 
 補足：
 Unknown、Bogey、Suspect は観測や識別途中の内部状態としては残してよい。
-ただし最終的な群れ行動の意思決定では Friendly か Hostile に収束させる。
+最終的な群れ行動の意思決定では Friendly / Neutral / Hostile に収束させる。
 phase は捕食段階の参照用であり、Friendly 判定そのものは speciesID と factionID の一致で決める。
 
 ◇敵確定の条件
@@ -163,7 +168,7 @@ Hostile判定は次のどれかで起こします。
 
 ◇基本ルール
 speciesID same かつ factionID same なら Friendly
-speciesID different または factionID different なら Hostile
+それ以外は Neutral を基本とし、敵対トリガー成立時に Hostile
 commandPower が近い個体同士は派閥候補
 loyalty が低い個体は追従率低下
 rebelliousness が高い個体は命令を部分拒否

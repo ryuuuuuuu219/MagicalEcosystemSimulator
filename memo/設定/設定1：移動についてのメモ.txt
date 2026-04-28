@@ -1,13 +1,13 @@
 動物の移動についてのメモ
 
-field 関連の設計資料は `設定：field設計まとめ.txt` に分離した。
+field 関連の設計資料は `memo/設定/設定1：field設計まとめ.txt` に分離した。
 このファイルでは、現在のスクリプトが実際に使っている移動アルゴリズムを整理する。
 
 
 ◇対象スクリプト
 
-- `Assets/script/Ingame/behaviour/herbivore/herbivoreBehaviour.cs`
-- `Assets/script/Ingame/behaviour/predator/predatorBehaviour.cs`
+- `Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs`
+- `Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs`
 - `Assets/script/Ingame/AI/AnimalAICommon.cs`
 
 

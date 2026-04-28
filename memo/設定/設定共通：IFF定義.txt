@@ -1,7 +1,7 @@
 IFF定義（Identification Friend or Foe）
 
 ◇目的
-個体・群れの敵味方識別を統一し、戦闘判断と行動遷移の基盤にする。
+個体・群れの関係識別を統一し、オート戦闘観察ゲームとしての戦闘判断と行動遷移の基盤にする。
 
 ◇識別軸
 - speciesID（種族ID）: 種としての識別
@@ -10,7 +10,13 @@ IFF定義（Identification Friend or Foe）
 
 ◇基本判定（最終出力）
 - speciesID が一致 かつ factionID が一致: Friendly
-- 上記以外: Hostile
+- speciesID が不一致 かつ 敵対条件を満たす: Hostile
+- 上記以外: Neutral
+
+補足:
+- Friendly は連携・被害共有・群れ行動の対象。
+- Hostile は攻撃、追跡、排除、報復の対象。
+- Neutral は常設してよい。警戒、回避、無視、縄張り圧の対象になりうるが、即時攻撃対象とは限らない。
 
 ◇中間識別状態（内部保持のみ）
 - Unknown: 未観測
@@ -18,30 +24,35 @@ IFF定義（Identification Friend or Foe）
 - Suspect: 敵性疑い
 - Warning: 威嚇・最終通告段階
 - Friendly: 味方確定
+- Neutral: 中立・未交戦
 - Hostile: 敵確定
 
 補足:
 - Unknown / Bogey / Suspect / Warning は観測や認識途中の状態として保持してよい。
-- ただし最終行動出力は Friendly か Hostile の二値に収束させる。
+- 最終関係出力は Friendly / Neutral / Hostile の三値に収束させる。
+- 行動出力はさらに Attack / Avoid / Warn / Ignore / Assist などへ分岐してよい。
 
 ◇段階状態（拡張運用）
 - 未認識 = Unknown
 - 認識 = Bogey
 - 警戒 = Suspect
 - 警告 = Warning
-- 許可 = Friendly
+- 許可 = Friendly または Neutral
 - 戦闘状態 = Hostile
 
 ◇推奨遷移
 - Unknown -> Bogey -> Suspect -> Warning -> Hostile
 - Unknown -> Bogey -> Friendly
+- Unknown -> Bogey -> Neutral
 - Warning は威嚇行動と退避機会の提示を行う最終通告段階とする。
 
 ◇擬似コード
 if (target.speciesID == self.speciesID && target.factionID == self.factionID)
     status = Friendly;
-else
+else if (target satisfies hostility trigger)
     status = Hostile;
+else
+    status = Neutral;
 
 ◇敵確定トリガー例
 - 自身が攻撃された
@@ -53,3 +64,4 @@ else
 ◇設計上の注意
 - phase は「食物連鎖段階の参照軸」であり、Friendly 判定の条件には使わない。
 - 戦闘システム側で IFF の基礎判定を持ち、群知性側では共有・拡張して使う。
+- Hostile でない相手を攻撃する場合は、縄張り侵入、攻撃被害、指揮者指定、捕食対象化などの理由を必ず持つ。
