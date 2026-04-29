@@ -1,4 +1,4 @@
-# 6.属性魔法拡張
+﻿# 6.属性魔法拡張
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 

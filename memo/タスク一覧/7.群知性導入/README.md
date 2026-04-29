@@ -1,4 +1,4 @@
-# 7.群知性導入
+﻿# 7.群知性導入
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 
