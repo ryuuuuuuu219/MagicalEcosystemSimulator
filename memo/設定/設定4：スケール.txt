@@ -1,182 +1,148 @@
-### 設計
+スケール設計
 
-#### 時間スケール/AI更新周期
+## 位置づけ
 
-frame
-Unity `Update()`
+field / 環境場を優先した時間・空間スケールの正本。
+詳細入口は `設計集約/field・環境場設計.md`。
 
-physics tick
-Unity `FixedUpdate()`
+## 時間スケール
 
-AI step
-現在は専用の 1 秒刻み step は未実装
-草食、肉食ともに `Update()` で認知、記憶更新、ベクトル計算を行う
-移動とエネルギー消費は `FixedUpdate()` で処理する
+### frame
 
-environment tick
-現在は専用の 1 秒刻み tick は未実装
-草再生は `ResourceDispenser.Update()`
-熱拡散は `HeatFieldManager.Update()`
-ThreatMap 減衰は `threatmap_calc.Update()`
+- Unity `Update()`
+- 認知、記憶更新、field debug 描画。
 
-cycle
-未実装
-昼夜変化なし
-Directional Light による熱量場全体の一様加算も未実装
+### physics tick
 
-generation
-`AdvanceGenerationController`
-手動で更新する
+- Unity `FixedUpdate()`
+- 実移動、速度、エネルギー消費。
 
+### environment tick
 
-#### 空間スケール定義
-基本単位
+現状は専用 tick 未実装。
 
-##### ワールドサイズ
-`WorldGenerator.terrainSize`
+- 草再生: `ResourceDispenser.Update()`
+- heat 拡散: `HeatFieldManager.Update()`
+- threat 減衰: `threatmap_calc.Update()`
+- mana 拡散: 未実装
 
-現在値
-デフォルト `512`
+将来は field 更新周期を統一する候補がある。
 
-用途
+### cycle
 
-生物の行動範囲
-環境グリッドのサイズ基準
+- 昼夜変化は未実装。
+- Directional Light による heat field への一様入熱も未実装。
 
-##### 環境グリッド
-`threatmap_calc.scoreCellSize`
+### generation
 
-現在値
-ThreatCell = `2m`
-`lowThreatProbeDistance = 3m`
-`lowThreatDirectionSamples = 12`
+- `AdvanceGenerationController`
+- 世代更新時に field を reset するかを field 種別ごとに決める。
+- mana field は初期案として世代更新で 0 に戻す。
 
-用途
+## 空間スケール
 
-捕食者回避
-安全方向探索
-`threatmap_calc`
+### World
 
-##### HeatField
-`HeatFieldManager.gridResolution`
+- `WorldGenerator.terrainSize`
+- 現在値: `512m`
 
-現在値
-解像度 = `96`
-ワールド `512` 基準では 1 セルあたり約 `5.33m`
+用途:
+- 生物の行動範囲。
+- field grid の座標変換基準。
 
-用途
+### ThreatMap
 
-熱拡散
-代謝熱
-分解熱
-環境熱の可視化
+- `threatmap_calc.scoreCellSize`
+- 現在値: `2m`
+- `lowThreatProbeDistance = 3m`
+- `lowThreatDirectionSamples = 12`
 
-##### ManaField（予定）
-未実装
+用途:
+- threat score。
+- 攻撃 pulse。
+- 低脅威方向探索。
 
-用途予定
+### HeatField
 
-魔素濃度
-魔法補正
-支配種進化
+- `HeatFieldManager.gridResolution`
+- 現在値: `96`
+- World `512m` 基準では 1 cell 約 `5.33m`
 
-##### AI知覚スケール
-視界
+用途:
+- heat 拡散。
+- 代謝熱。
+- 分解熱。
+- 火 / 氷属性の接続先。
 
-HerbivoreVisionDistance
-現在は固定値ではなくランダム生成
-`50m - 100m`
+### ManaField
 
-PredatorVisionDistance
-現在は固定値ではなくランダム生成
-`45m - 110m`
+- 未実装。
+- 初期候補は HeatField と同等の world-grid 変換を持つ。
+- 解像度を HeatField と揃えるか、魔法用に粗くするかは未決定。
 
-VisionAngle
+用途:
+- 魔素濃度。
+- 魔法コスト。
+- 空間魔法。
+- 支配種進化条件。
 
-Herbivore
-`4 - 9`
-現在のコード上は度数法で扱っているが値域がかなり狭いので再確認余地あり
+### 属性場
 
-Predator
-`15 - 35`
+- 未実装。
+- 火 / 氷は heat field を使う。
+- 空間は mana field を使う。
+- 風は三次元 vector field として実装する。
+- 雷の scalar field は設計しない。雷は着弾・連鎖・短時間 pulse の event として扱う。
 
-脅威検知
+### TensorField
 
-ThreatDetectDistance
+- 未実装。
+- 最初は表示・検証用。
+- 実装前に scalar / vector の共通 API を整える。
 
-Herbivore
-`20m - 80m`
+## AI知覚スケール
 
-Predator
-`15m - 65m`
+### 視界
 
-MemoryTime
+Herbivore:
+- `visionDistance`: `50m - 100m`
+- `visionAngle`: `4 - 9`
 
-Herbivore
-`1s - 5s`
+Predator:
+- `visionDistance`: `45m - 110m`
+- `visionAngle`: `15 - 35`
 
-Predator
-`2s - 8s`
+### 脅威検知
 
-行動距離
+Herbivore:
+- `threatDetectDistance`: `20m - 80m`
 
-逃走
+Predator:
+- `threatDetectDistance`: `15m - 65m`
 
-RunAwayDistance
-Herbivore `5m - 35m`
+### 記憶
 
-ContactEscapeDistance
-Herbivore `3m - 23m`
+Herbivore:
+- `memorytime`: `1s - 5s`
 
-捕食
+Predator:
+- `memorytime`: `2s - 8s`
 
-AttackRange
-Predator `1.5m - 3.0m`
+## まとめ
 
-PreferredChaseDistance
-Predator `0.8m - 3.8m`
+```text
+World       512m
+ThreatCell  2m
+HeatGrid    96 x 96
+HeatCell    約5.33m
+ManaField   未実装
+Attribute   未実装
+Tensor      未実装
+```
 
-GiveUpDistance
-Predator `60m - 130m`
+## 次に決めること
 
-群れスケール（将来）
-未実装
-
-GroupFormationRadius
-未定義
-
-EncircleRadius
-未定義
-
-LeaderInfluenceRadius
-未定義
-
-バイオームスケール
-未実装
-
-BiomePatchSize
-未定義
-
-ForestDensityRadius
-未定義
-
-GrassPatchSize
-`grassland.radius`
-現在のシーン値 = `8`
-
-グリッド関係まとめ
-
-World      `512m`
-ThreatCell `2m`
-HeatGrid   `96x96`
-HeatCell   `約5.33m`
-ManaField  `未実装`
-Biome      `未実装`
-
-つまり
-
-World
- ├ ThreatMap
- ├ HeatField
- ├ ManaField(予定)
- └ Biome(未実装)
+1. field 更新周期を `Update()` のままにするか、専用 tick にするか。
+2. ManaField の解像度を HeatField に揃えるか。
+3. 世代更新で reset する field と継続する field を分ける。
+4. field debug 描画を戦闘カメラ UI と共有できる形にする。

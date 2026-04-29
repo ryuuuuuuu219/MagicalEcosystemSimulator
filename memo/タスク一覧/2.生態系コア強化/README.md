@@ -1,4 +1,4 @@
-# 1.生態系コア強化
+# 2.生態系コア強化
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 
@@ -10,8 +10,18 @@
 
 - 餌・脅威・境界・wander の加重合成は実装済み。
 - 地形法線補正、evasion、zigzag、追跡停止閾値は一部実装済み。
-- threat map の主移動ロジック統合は未完。
-- heat field を安全行動へ使うロジックは未実装。
+- threat map の生成、可視化、攻撃時 threat pulse は実装済み。
+- heat field の生成、拡散、減衰、生体代謝・死骸分解からの加熱は実装済み。
+- threat map / heat field を主移動ロジックへ差し込む処理は未完。
+
+## 実装照合メモ（2026-04-29時点）
+
+- `Assets/Scenes/Ingame.unity` には `ThreatMapsGenerator` が配置済みで、`showThreatMap` も有効。
+- `Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs` には `AddThreatPulse` / `GetLowThreatDirection` / `EvaluateBestDirection` がある。
+- `Assets/script/Ingame/Combat/PredatorCombatLibrary.cs` では攻撃時に `AddThreatPulse` を呼ぶ。
+- `Assets/script/Ingame/Environment/HeatFieldManager.cs` には heat grid、拡散、減衰、`SampleHeat`、デバッグ描画がある。
+- `herbivoreBehaviour.cs` / `predatorBehaviour.cs` / `Resource.cs` は heat を発生させている。
+- ただし、草食・肉食の `ComputeTotalVector()` はまだ近接個体ベースの `ComputeThreatVector()` 中心で、`HeatFieldManager.SampleHeat()` や `threatmap_calc.EvaluateBestDirection()` は移動判断へ未接続。
 
 ## 作業ファイル
 
@@ -22,10 +32,10 @@
 - 地形、遮蔽、記憶の設計値を実装項目に対応づける。
 
 3. `3.行動ベクトル統合.txt`
-- threat / heat を既存の移動合成に反映する。
+- 既存の threat map / heat field 基盤を、草食・肉食の移動合成へ反映する。
 
 4. `4.場の評価・可視化連携.txt`
-- threat / heat の場データを行動判断に接続する。
+- 既存の場データ参照経路を整理し、AI 参照・ログ照合・欠損時フォールバックへ絞って接続する。
 
 5. `5.地形・境界条件との整合.txt`
 - 境界回避、地形依存移動との整合を取る。
@@ -73,7 +83,7 @@
 | 2.実装に落とす前準備 | 6 | 設定1：ゲノム構造（基礎拡張）.txt | 受け皿となるパラメータ設計 | 参照資料として有効 |
 | 2.実装に落とす前準備 | 7 | 2.行動パラメータ設計の更新.txt | genome / 固定値 / debug値 の切り分け | 未完成 |
 | 3.実コードへの統合 | 8 | 3.行動ベクトル統合.txt | 実コードに threat / heat を差し込む設計 | 未着手寄り |
-| 4.検証・可視化・地形整合 | 9 | 4.場の評価・可視化連携.txt | 場データ参照経路、ログ、可視化 | 未着手寄り |
+| 4.検証・可視化・地形整合 | 9 | 4.場の評価・可視化連携.txt | 実装済み場データの参照経路、ログ、可視化照合 | 一部実装済み・AI接続未完 |
 | 4.検証・可視化・地形整合 | 10 | 5.地形・境界条件との整合.txt | 境界、崖際、狭所での破綻確認 | 未着手寄り |
 | 将来フェーズ | 11 | 魔素の演算シミュレーション.txt | mana field の将来設計 | phase4以降寄り |
 

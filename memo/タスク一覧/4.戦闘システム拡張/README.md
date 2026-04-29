@@ -1,4 +1,4 @@
-# 3.戦闘システム拡張
+# 4.戦闘システム拡張
 
 参照元: `git show f5a7322:memo/ROADMAP.md`
 

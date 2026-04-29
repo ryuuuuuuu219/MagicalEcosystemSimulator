@@ -1,35 +1,45 @@
 3.行動ベクトル統合
 
 目的
-- threat / heat を既存の移動合成に組み込み、草食・肉食・共通ロジックで整合を取る。
+- 実装済みの threat map / heat field 基盤を既存の移動合成に組み込み、草食・肉食・共通ロジックで整合を取る。
+- threat map や heat field 自体を新規実装するのではなく、AI の `ComputeTotalVector()` から参照する形へ接続する。
 
 対象ファイル
 - Assets/script/Ingame/Creatures/Herbivore/herbivoreBehaviour.cs
 - Assets/script/Ingame/Creatures/Predator/predatorBehaviour.cs
 - Assets/script/Ingame/AI/AnimalAICommon.cs
+- Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs
+- Assets/script/Ingame/Environment/HeatFieldManager.cs
 
 作業項目
 1. 現在の移動合成確認
 - 餌、脅威、wander、境界、地形補正の合成箇所を洗い出す。
+- 現状は grass / prey / 近接 threat / boundary / wander の合成が中心で、場データ参照は未接続であることを前提にする。
 
 2. threat / heat の差し込み位置決定
 - 共通ロジックに寄せる部分と種別ごとに持つ部分を分ける。
+- `threatmap_calc.GetLowThreatDirection()` / `EvaluateBestDirection()` / `GetThreatScore()` のどれを使うか決める。
+- `HeatFieldManager.SampleHeat()` を回避ベクトル、重み補正、状態遷移理由のどこに使うか決める。
 
 3. 優先度と重みの実装
 - 単純加算で済むか、状態ごとに重み切り替えするかを反映する。
+- heat は初期段階では「危険温度からの回避」に絞り、適温誘引は別ステップに分ける。
 
 4. デバッグ出力追加
 - 合成前後ベクトル、主要スコア、状態遷移理由をログや可視化用に出せるようにする。
 
 5. 警告行動の移動連携
+- ここでは未実装の新規戦闘状態としては扱わず、`4.戦闘システム拡張` 側へ渡す前提メモに留める。
 - 警告時に通常 chase / flee とは別の威嚇行動へ切り替える条件を反映する。
 - 警告後の離脱、挑発、接近への反応ベクトルを設計に合わせて切り替える。
 
 6. 縄張り侵入への反応統合
+- ここでは場・移動評価への入力候補として整理し、敵対判定や戦闘遷移は後続へ分ける。
 - 縄張り侵入を threat / target 候補へ変換する条件を移動ベクトルへ接続する。
 - 高脅威目標からの警告に対する反応を `離脱 / 挑発` のどちらまで扱うか決める。
 - 未認識の上位相を近距離で検知したとき、反撃能力があれば戦闘状態へ移る条件をベクトル切り替え側へ反映する。
 
 完了条件
 - threat / heat を含んだ移動方向が実際の移動へ反映される。
+- heat / threat 基盤の二重実装が発生していない。
 - herbivore / predator 間で共通化すべき判断が整理されている。
