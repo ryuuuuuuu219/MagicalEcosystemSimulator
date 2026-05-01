@@ -2,6 +2,8 @@ using UnityEngine;
 
 public static class IceImpactEffect
 {
+    static Texture2D iceNoiseTexture;
+
     public static GameObject CreateSpike(Vector3 point, Vector3 normal, float height, float radius)
     {
         GameObject spike = new GameObject("Ice Spike Impact");
@@ -10,6 +12,11 @@ public static class IceImpactEffect
 
         var renderer = spike.AddComponent<MeshRenderer>();
         renderer.material = CreateIceMaterial();
+
+        var visibility = spike.AddComponent<IceShaderVisibilityController>();
+        visibility.maxRenderDistance = 80f;
+        visibility.checkInterval = 0.2f;
+        visibility.disableOutsideFrustum = true;
 
         var collider = spike.AddComponent<MeshCollider>();
         collider.sharedMesh = meshFilter.sharedMesh;
@@ -60,44 +67,102 @@ public static class IceImpactEffect
             triangles[t++] = bottomNext;
 
             triangles[t++] = 1;
-            triangles[t++] = top;
             triangles[t++] = topNext;
+            triangles[t++] = top;
 
             triangles[t++] = 0;
-            triangles[t++] = bottomNext;
             triangles[t++] = bottom;
+            triangles[t++] = bottomNext;
         }
 
         Mesh mesh = new Mesh();
         mesh.name = "IceSpike_HexPrismDoubleCone";
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.RecalculateNormals();
+        ApplyFlatTriangles(mesh, vertices, triangles);
         mesh.RecalculateBounds();
         return mesh;
     }
 
+    static void ApplyFlatTriangles(Mesh mesh, Vector3[] sourceVertices, int[] sourceTriangles)
+    {
+        Vector3[] flatVertices = new Vector3[sourceTriangles.Length];
+        int[] flatTriangles = new int[sourceTriangles.Length];
+
+        for (int i = 0; i < sourceTriangles.Length; i++)
+        {
+            flatVertices[i] = sourceVertices[sourceTriangles[i]];
+            flatTriangles[i] = i;
+        }
+
+        mesh.vertices = flatVertices;
+        mesh.triangles = flatTriangles;
+        mesh.RecalculateNormals();
+    }
+
     static Material CreateIceMaterial()
     {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        Shader shader = Shader.Find("MagicalEcosystem/Experiment/IceRefraction");
+        if (shader == null)
+            shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null)
             shader = Shader.Find("Standard");
 
         Material material = new Material(shader);
-        Color color = new Color(0.55f, 0.9f, 1f, 0.45f);
-
-        if (material.HasProperty("_BaseColor"))
-            material.SetColor("_BaseColor", color);
-        else if (material.HasProperty("_Color"))
-            material.SetColor("_Color", color);
-
-        if (material.HasProperty("_Smoothness"))
-            material.SetFloat("_Smoothness", 0.75f);
-        if (material.HasProperty("_Metallic"))
-            material.SetFloat("_Metallic", 0f);
+        if (material.HasProperty("_LightBlue"))
+            material.SetColor("_LightBlue", new Color(0.55f, 0.9f, 1f, 1f));
+        if (material.HasProperty("_DeepBlue"))
+            material.SetColor("_DeepBlue", new Color(0.02f, 0.22f, 0.55f, 1f));
+        if (material.HasProperty("_IceWhite"))
+            material.SetColor("_IceWhite", new Color(0.92f, 0.98f, 1f, 1f));
+        if (material.HasProperty("_BlueAmount"))
+            material.SetFloat("_BlueAmount", 0.42f);
+        if (material.HasProperty("_FresnelPower"))
+            material.SetFloat("_FresnelPower", 4f);
+        if (material.HasProperty("_ThicknessScale"))
+            material.SetFloat("_ThicknessScale", 0.75f);
+        if (material.HasProperty("_DistortionStrength"))
+            material.SetFloat("_DistortionStrength", 0.015f);
+        if (material.HasProperty("_NoiseScale"))
+            material.SetFloat("_NoiseScale", 4f);
+        if (material.HasProperty("_NoiseTex"))
+            material.SetTexture("_NoiseTex", GetOrCreateIceNoiseTexture());
+        if (material.HasProperty("_NoiseDistortionStrength"))
+            material.SetFloat("_NoiseDistortionStrength", 0.012f);
+        if (material.HasProperty("_CrackStrength"))
+            material.SetFloat("_CrackStrength", 0.22f);
+        if (material.HasProperty("_Alpha"))
+            material.SetFloat("_Alpha", 0.42f);
 
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         return material;
+    }
+
+    static Texture2D GetOrCreateIceNoiseTexture()
+    {
+        if (iceNoiseTexture != null)
+            return iceNoiseTexture;
+
+        const int size = 64;
+        iceNoiseTexture = new Texture2D(size, size, TextureFormat.RGBA32, true);
+        iceNoiseTexture.name = "Runtime_IceNoise";
+        iceNoiseTexture.wrapMode = TextureWrapMode.Repeat;
+        iceNoiseTexture.filterMode = FilterMode.Bilinear;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float nx = x / (float)size;
+                float ny = y / (float)size;
+                float coarse = Mathf.PerlinNoise(nx * 4.7f + 13.2f, ny * 4.7f + 41.7f);
+                float fine = Mathf.PerlinNoise(nx * 18.3f + 2.1f, ny * 18.3f + 9.6f);
+                float crack = Mathf.PerlinNoise((nx + ny) * 22.0f, (ny - nx) * 22.0f + 5.5f);
+                float fog = Mathf.Clamp01(coarse * 0.75f + fine * 0.25f);
+                iceNoiseTexture.SetPixel(x, y, new Color(fog, crack, fine, 1f));
+            }
+        }
+
+        iceNoiseTexture.Apply();
+        return iceNoiseTexture;
     }
 }

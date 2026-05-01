@@ -167,11 +167,68 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sourceCamera: {fileID: 200002}
-  attributeManager: {fileID: 100003}
   launchElement: 1
-  fallbackLaunchSpeed: 60
-  fallbackProjectileLifetime: 8
   projectileSpawnOffset: 1.2
+  currentLaunchSettings:
+    projectileColor: {r: 0.55, g: 0.9, b: 1, a: 0.8}
+    projectileSpeed: 60
+    projectileLifetime: 8
+    effectRadius: 2
+    iceSpikeHeight: 3
+    iceSpikeRadius: 0.6
+    wrapNonTerrainTargets: 1
+    envelopeLifetime: 6
+    envelopePadding: 0.25
+  fireLaunchSettings:
+    projectileColor: {r: 1, g: 0.35, b: 0.08, a: 0.85}
+    projectileSpeed: 55
+    projectileLifetime: 8
+    effectRadius: 3
+    iceSpikeHeight: 0
+    iceSpikeRadius: 0
+    wrapNonTerrainTargets: 0
+    envelopeLifetime: 5
+    envelopePadding: 0.2
+  iceLaunchSettings:
+    projectileColor: {r: 0.55, g: 0.9, b: 1, a: 0.8}
+    projectileSpeed: 60
+    projectileLifetime: 8
+    effectRadius: 2
+    iceSpikeHeight: 3
+    iceSpikeRadius: 0.6
+    wrapNonTerrainTargets: 1
+    envelopeLifetime: 6
+    envelopePadding: 0.25
+  lightningLaunchSettings:
+    projectileColor: {r: 1, g: 0.95, b: 0.25, a: 0.9}
+    projectileSpeed: 120
+    projectileLifetime: 4
+    effectRadius: 1.5
+    iceSpikeHeight: 0
+    iceSpikeRadius: 0
+    wrapNonTerrainTargets: 0
+    envelopeLifetime: 3
+    envelopePadding: 0.15
+  windLaunchSettings:
+    projectileColor: {r: 0.65, g: 1, b: 0.75, a: 0.45}
+    projectileSpeed: 75
+    projectileLifetime: 6
+    effectRadius: 4
+    iceSpikeHeight: 0
+    iceSpikeRadius: 0
+    wrapNonTerrainTargets: 0
+    envelopeLifetime: 4
+    envelopePadding: 0.3
+  spaceLaunchSettings:
+    projectileColor: {r: 0.75, g: 0.45, b: 1, a: 0.7}
+    projectileSpeed: 50
+    projectileLifetime: 7
+    effectRadius: 2.5
+    iceSpikeHeight: 0
+    iceSpikeRadius: 0
+    wrapNonTerrainTargets: 0
+    envelopeLifetime: 5
+    envelopePadding: 0.25
   iceTargetDistance: 18
   iceTargetSize: {x: 4, y: 4, z: 1}
 --- !u!114 &100003
@@ -186,57 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7a52e9d90bd481799fcb0a76bc83f51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  definitions:
-  - element: 0
-    projectileColor: {r: 1, g: 0.35, b: 0.08, a: 0.85}
-    projectileSpeed: 55
-    projectileLifetime: 8
-    effectRadius: 3
-    iceSpikeHeight: 0
-    iceSpikeRadius: 0
-    wrapNonTerrainTargets: 0
-    envelopeLifetime: 5
-    envelopePadding: 0.2
-  - element: 1
-    projectileColor: {r: 0.55, g: 0.9, b: 1, a: 0.8}
-    projectileSpeed: 60
-    projectileLifetime: 8
-    effectRadius: 2
-    iceSpikeHeight: 3
-    iceSpikeRadius: 0.6
-    wrapNonTerrainTargets: 1
-    envelopeLifetime: 6
-    envelopePadding: 0.25
-  - element: 2
-    projectileColor: {r: 1, g: 0.95, b: 0.25, a: 0.9}
-    projectileSpeed: 120
-    projectileLifetime: 4
-    effectRadius: 1.5
-    iceSpikeHeight: 0
-    iceSpikeRadius: 0
-    wrapNonTerrainTargets: 0
-    envelopeLifetime: 3
-    envelopePadding: 0.15
-  - element: 3
-    projectileColor: {r: 0.65, g: 1, b: 0.75, a: 0.45}
-    projectileSpeed: 75
-    projectileLifetime: 6
-    effectRadius: 4
-    iceSpikeHeight: 0
-    iceSpikeRadius: 0
-    wrapNonTerrainTargets: 0
-    envelopeLifetime: 4
-    envelopePadding: 0.3
-  - element: 4
-    projectileColor: {r: 0.75, g: 0.45, b: 1, a: 0.7}
-    projectileSpeed: 50
-    projectileLifetime: 7
-    effectRadius: 2.5
-    iceSpikeHeight: 0
-    iceSpikeRadius: 0
-    wrapNonTerrainTargets: 0
-    envelopeLifetime: 5
-    envelopePadding: 0.25
+  supportedElements: 0000000001000000020000000300000004000000
 --- !u!1 &100100
 GameObject:
   m_ObjectHideFlags: 0

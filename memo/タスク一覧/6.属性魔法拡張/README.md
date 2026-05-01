@@ -35,8 +35,9 @@
 
 2. 属性データ最小実装
 - 属性ID、表示色、相性、基本効果量を定義する。
-- `MagicElement` enum と `MagicAttributeManager` を属性定義の入口にする。
-- 非地形着弾時に対象を包む表現を使うか、従来の着弾点表現を使うかを属性定義フラグで切り替える。
+- `MagicElement` enum を属性定義の入口にする。
+- 実験用の飛翔体設定は `MagicMaterialExperimentLauncher` に集約し、`launchElement` 分岐で代入する。
+- 非地形着弾時に対象を包む表現を使うか、従来の着弾点表現を使うかを Launcher 側の設定フラグで切り替える。
 - 完了条件: 1つの参照元から属性名と色を取得できる。
 
 3. 攻撃表現プロトタイプ
