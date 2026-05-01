@@ -210,7 +210,7 @@ public partial class WorldUIManager
         rowFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
 
         TextMeshProUGUI rowLabel = CreateSettingsLabel(row.transform, "Label", label, 15f, TextAlignmentOptions.MidlineLeft);
-        rowLabel.enableWordWrapping = true;
+        rowLabel.textWrappingMode = TextWrappingModes.Normal;
 
         GameObject buttonLine = new GameObject("Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
         buttonLine.transform.SetParent(row.transform, false);
@@ -290,7 +290,7 @@ public partial class WorldUIManager
         label.fontSize = fontSize;
         label.color = Color.white;
         label.alignment = alignment;
-        label.enableWordWrapping = true;
+        label.textWrappingMode = TextWrappingModes.Normal;
         label.overflowMode = TextOverflowModes.Overflow;
         return label;
     }
