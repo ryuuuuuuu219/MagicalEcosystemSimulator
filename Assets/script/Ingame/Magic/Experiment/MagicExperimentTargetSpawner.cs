@@ -72,7 +72,7 @@ public class MagicExperimentTargetSpawner : MonoBehaviour
 
         Material material = new Material(shader);
         Color color = Color.HSVToRGB(Mathf.Repeat(0.53f + index * 0.06f, 1f), 0.55f, 0.95f);
-        color.a = 0.35f;
+        color.a = 1f;
 
         if (material.HasProperty("_BaseColor"))
             material.SetColor("_BaseColor", color);
@@ -84,8 +84,10 @@ public class MagicExperimentTargetSpawner : MonoBehaviour
         if (material.HasProperty("_Metallic"))
             material.SetFloat("_Metallic", 0f);
 
-        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        if (material.HasProperty("_Surface"))
+            material.SetFloat("_Surface", 0f);
+        material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
         return material;
     }
 }

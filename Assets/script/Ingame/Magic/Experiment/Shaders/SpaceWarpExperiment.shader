@@ -2,23 +2,10 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
 {
     Properties
     {
-        _WarpPower ("Quadratic Power", Range(1, 4)) = 2
-        _DistortionStrength ("Distortion Strength", Range(0, 0.35)) = 0.12
-        _RadialPushPull ("Radial Push Pull", Range(-1, 1)) = -0.35
-        _AnchorSharpness ("Anchor Sharpness", Range(1, 24)) = 9
-        _AnchorRandomness ("Anchor Randomness", Range(0, 1)) = 0.65
-        _CenterBiasStrength ("Center Bias Strength", Range(0, 1)) = 0.35
-        _BoundaryConnectPower ("Boundary Connect Power", Range(0.5, 8)) = 3
-        _EdgeStart ("Edge Start", Range(0, 0.99)) = 0.72
-        _DarkenStrength ("Distance Ratio Darken", Range(0, 4)) = 1.6
-        _CenterDarkness ("Center Darkness", Range(0, 1)) = 0.72
-        _CenterRadius ("Center Radius", Range(0.01, 1)) = 0.35
-        _FresnelPower ("Fresnel Power", Range(1, 8)) = 3.5
-        _RimColor ("Rim Color", Color) = (0.62, 0.42, 1.0, 1)
-        _RimIntensity ("Rim Intensity", Range(0, 2)) = 0.85
-        _RimAlphaBoost ("Rim Alpha Boost", Range(0, 1)) = 0.35
-        _BaseAlpha ("Base Alpha", Range(0, 1)) = 0.18
-        _ScreenRadius ("Screen Radius", Range(0.01, 1)) = 0.16
+        _WarpPower ("Distance Power", Range(1, 6)) = 3
+        _DistortionStrength ("Distortion Strength", Range(0, 1)) = 1
+        _BaseAlpha ("Base Alpha", Range(0, 1)) = 1
+        _ObjectRadius ("Object Radius", Float) = 1
     }
 
     SubShader
@@ -51,21 +38,8 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
             CBUFFER_START(UnityPerMaterial)
                 half _WarpPower;
                 half _DistortionStrength;
-                half _RadialPushPull;
-                half _AnchorSharpness;
-                half _AnchorRandomness;
-                half _CenterBiasStrength;
-                half _BoundaryConnectPower;
-                half _EdgeStart;
-                half _DarkenStrength;
-                half _CenterDarkness;
-                half _CenterRadius;
-                half _FresnelPower;
-                half4 _RimColor;
-                half _RimIntensity;
-                half _RimAlphaBoost;
                 half _BaseAlpha;
-                half _ScreenRadius;
+                half _ObjectRadius;
             CBUFFER_END
 
             struct Attributes
@@ -79,17 +53,13 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
-                float2 centerUV : TEXCOORD2;
             };
 
-            float Hash01(float n)
+            float2 ClipToScreenUV(float4 positionCS)
             {
-                return frac(sin(n * 12.9898 + 78.233) * 43758.5453);
-            }
-
-            float SignedHash(float n)
-            {
-                return Hash01(n) * 2.0 - 1.0;
+                float2 ndc = positionCS.xy / max(positionCS.w, 0.0001);
+                ndc.y *= _ProjectionParams.x;
+                return ndc * 0.5 + 0.5;
             }
 
             Varyings vert(Attributes input)
@@ -97,74 +67,40 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
                 Varyings output;
                 VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS.xyz);
                 VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
-                float4 centerCS = TransformObjectToHClip(float3(0.0, 0.0, 0.0));
-                float2 centerNdc = centerCS.xy / max(centerCS.w, 0.0001);
 
                 output.positionCS = positionInputs.positionCS;
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = normalInputs.normalWS;
-                output.centerUV = centerNdc * 0.5 + 0.5;
                 return output;
             }
 
             half4 frag(Varyings input) : SV_Target
             {
-                float2 uv = input.positionCS.xy / _ScaledScreenParams.xy;
-                float2 dir = uv - input.centerUV;
-                float radius = max(_ScreenRadius, 0.0001);
-                float r = saturate(length(dir) / radius);
-                float2 dirN = dir / max(length(dir), 0.0001);
-                float normalizedOriginalDistance = r;
+                float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
 
-                const int anchorCount = 16;
-                float anchorA = 0.0;
-                float anchorWeight = 0.0001;
+                float4 centerCS = TransformObjectToHClip(float3(0.0, 0.0, 0.0));
+                float2 centerUV = ClipToScreenUV(centerCS);
 
-                [unroll]
-                for (int i = 0; i < anchorCount; i++)
-                {
-                    float angle = (6.2831853 / anchorCount) * i;
-                    float2 anchorDir = float2(cos(angle), sin(angle));
-                    float angular = saturate(dot(dirN, anchorDir) * 0.5 + 0.5);
-                    float weight = pow(angular, _AnchorSharpness);
-                    float randomA = SignedHash((float)i + 1.37);
-                    float a = lerp(1.0, 1.0 + randomA, _AnchorRandomness);
-                    anchorA += a * weight;
-                    anchorWeight += weight;
-                }
+                float3 centerWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
+                float3 cameraRightWS = normalize(float3(UNITY_MATRIX_I_V._m00, UNITY_MATRIX_I_V._m10, UNITY_MATRIX_I_V._m20));
+                float3 cameraUpWS = normalize(float3(UNITY_MATRIX_I_V._m01, UNITY_MATRIX_I_V._m11, UNITY_MATRIX_I_V._m21));
+                float objectRadius = max(_ObjectRadius, 0.001);
 
-                anchorA /= anchorWeight;
-                anchorA += (1.0 - normalizedOriginalDistance) * _CenterBiasStrength;
+                float2 rightRadiusUV = ClipToScreenUV(TransformWorldToHClip(centerWS + cameraRightWS * objectRadius)) - centerUV;
+                float2 upRadiusUV = ClipToScreenUV(TransformWorldToHClip(centerWS + cameraUpWS * objectRadius)) - centerUV;
 
-                float boundaryFade = pow(1.0 - saturate(r), _BoundaryConnectPower);
-                float edgeFade = 1.0 - smoothstep(_EdgeStart, 1.0, r);
-                float quadraticDistance = pow(normalizedOriginalDistance, _WarpPower);
-                float radialDelta = (quadraticDistance - normalizedOriginalDistance) * anchorA;
-                float pushPullDelta = normalizedOriginalDistance * (1.0 - normalizedOriginalDistance) * _RadialPushPull * anchorA;
-                float delta = (radialDelta + pushPullDelta) * boundaryFade * edgeFade;
-                float2 offset = dirN * delta * _DistortionStrength;
-                float2 sampleUV = saturate(uv + offset);
+                float3 fromCenterWS = input.positionWS - centerWS;
+                float2 objectPlane = float2(dot(fromCenterWS, cameraRightWS), dot(fromCenterWS, cameraUpWS)) / objectRadius;
+                float r = saturate(length(objectPlane));
+                float2 dirN = objectPlane / max(length(objectPlane), 0.0001);
+
+                float outerR = pow(r, 1.0 / max(_WarpPower, 0.0001));
+                float sampleR = lerp(r, outerR, _DistortionStrength);
+                float2 samplePlane = dirN * sampleR;
+                float2 sampleUV = saturate(centerUV + rightRadiusUV * samplePlane.x + upRadiusUV * samplePlane.y);
 
                 half3 bg = SampleSceneColor(sampleUV);
-                half distanceRatio = (half)abs(delta / max(normalizedOriginalDistance, 0.02));
-                half compression = saturate(distanceRatio + abs((half)(anchorA - 1.0)) * 0.18h);
-                half darken = saturate(compression * _DarkenStrength);
-                half3 color = bg * (1.0h - darken);
-
-                half centerMask = 1.0h - smoothstep(0.0h, _CenterRadius, (half)r);
-                color *= 1.0h - centerMask * _CenterDarkness;
-
-                float3 normalWS = normalize(input.normalWS);
-                float3 viewDirWS = normalize(GetWorldSpaceViewDir(input.positionWS));
-                half ndotV = saturate(dot(normalWS, viewDirWS));
-                half fresnel = pow(1.0h - ndotV, _FresnelPower);
-                half rim = saturate(fresnel * _RimIntensity);
-
-                color = lerp(color, _RimColor.rgb, rim);
-
-                half warpVisibility = saturate(compression * 1.35h + centerMask * 0.35h);
-                half alpha = saturate(max(_BaseAlpha + fresnel * _RimAlphaBoost, warpVisibility));
-                return half4(color, alpha);
+                return half4(bg, _BaseAlpha);
             }
             ENDHLSL
         }
