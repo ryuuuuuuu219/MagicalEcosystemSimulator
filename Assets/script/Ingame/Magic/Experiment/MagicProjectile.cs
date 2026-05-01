@@ -9,6 +9,7 @@ public class MagicProjectile : MonoBehaviour
     public float iceSpikeHeight = 3f;
     public float iceSpikeRadius = 0.6f;
     public bool wrapNonTerrainTargets;
+    public float effectLifetime = 6f;
     public float envelopeLifetime = 5f;
     public float envelopePadding = 0.2f;
     public Color impactMaterialColor = Color.white;
@@ -55,8 +56,12 @@ public class MagicProjectile : MonoBehaviour
         switch (element)
         {
             case MagicElement.Ice:
-                IceImpactEffect.CreateSpike(point, normal, iceSpikeHeight, iceSpikeRadius);
+                IceImpactEffect.CreateSpike(point, normal, iceSpikeHeight, iceSpikeRadius, effectLifetime);
                 Debug.Log($"Ice projectile impact: target={target.name}, point={point}, radius={effectRadius}");
+                break;
+            case MagicElement.Space:
+                SpaceWarpImpactEffect.CreateWarp(point, normal, effectRadius, effectLifetime);
+                Debug.Log($"Space projectile impact: target={target.name}, point={point}, radius={effectRadius}");
                 break;
             default:
                 Debug.Log($"{element} projectile impact has no payload yet: target={target.name}, point={point}");

@@ -18,6 +18,8 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
 
     public Camera sourceCamera;
     public MagicElement launchElement = MagicElement.Ice;
+    public float lifetime = 8f;
+    public float effectLifetime = 6f;
     public float projectileSpawnOffset = 1.2f;
     public ProjectileLaunchSettings currentLaunchSettings;
 
@@ -82,17 +84,10 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
         envelopeLifetime = 5f,
         envelopePadding = 0.25f
     };
-
-    [Header("Experiment Targets")]
-    public float iceTargetDistance = 18f;
-    public Vector3 iceTargetSize = new Vector3(4f, 4f, 1f);
-
     void Start()
     {
         if (sourceCamera == null)
             sourceCamera = Camera.main;
-
-        EnsureIceTestTarget();
     }
 
     void Update()
@@ -120,32 +115,18 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
 
         var magicProjectile = projectile.AddComponent<MagicProjectile>();
         magicProjectile.element = launchElement;
-        magicProjectile.lifeTime = currentLaunchSettings.projectileLifetime;
+        magicProjectile.lifeTime = lifetime;
         magicProjectile.effectRadius = currentLaunchSettings.effectRadius;
         magicProjectile.iceSpikeHeight = currentLaunchSettings.iceSpikeHeight;
         magicProjectile.iceSpikeRadius = currentLaunchSettings.iceSpikeRadius;
         magicProjectile.wrapNonTerrainTargets = currentLaunchSettings.wrapNonTerrainTargets;
-        magicProjectile.envelopeLifetime = currentLaunchSettings.envelopeLifetime;
+        magicProjectile.effectLifetime = effectLifetime;
+        magicProjectile.envelopeLifetime = effectLifetime;
         magicProjectile.envelopePadding = currentLaunchSettings.envelopePadding;
         magicProjectile.impactMaterialColor = currentLaunchSettings.projectileColor;
 
         var body = projectile.GetComponent<Rigidbody>();
         body.linearVelocity = ray.direction.normalized * currentLaunchSettings.projectileSpeed;
-    }
-
-    void EnsureIceTestTarget()
-    {
-        if (GameObject.Find("Ice Experiment Target") != null || sourceCamera == null)
-            return;
-
-        GameObject target = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        target.name = "Ice Experiment Target";
-        target.transform.position = sourceCamera.transform.position + sourceCamera.transform.forward * iceTargetDistance;
-        target.transform.localScale = iceTargetSize;
-        target.transform.rotation = Quaternion.LookRotation(sourceCamera.transform.forward, Vector3.up);
-
-        var renderer = target.GetComponent<Renderer>();
-        renderer.material = CreateIceTargetMaterial();
     }
 
     void AssignLaunchSettingsByElement()
@@ -171,11 +152,6 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
                 currentLaunchSettings = iceLaunchSettings;
                 break;
         }
-    }
-
-    Material CreateIceTargetMaterial()
-    {
-        return CreateMaterial(new Color(0.35f, 0.75f, 1f, 0.35f), 0.65f);
     }
 
     static Material CreateMaterial(Color color, float smoothness)

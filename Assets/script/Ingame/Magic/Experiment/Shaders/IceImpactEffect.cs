@@ -4,7 +4,7 @@ public static class IceImpactEffect
 {
     static Texture2D iceNoiseTexture;
 
-    public static GameObject CreateSpike(Vector3 point, Vector3 normal, float height, float radius)
+    public static GameObject CreateSpike(Vector3 point, Vector3 normal, float height, float radius, float lifetime)
     {
         GameObject spike = new GameObject("Ice Spike Impact");
         var meshFilter = spike.AddComponent<MeshFilter>();
@@ -27,6 +27,7 @@ public static class IceImpactEffect
         spike.transform.position = point + normal.normalized * (height * 0.5f);
         spike.transform.up = normal.sqrMagnitude > 0.001f ? normal.normalized : Vector3.up;
 
+        Object.Destroy(spike, Mathf.Max(0.1f, lifetime));
         return spike;
     }
 

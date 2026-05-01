@@ -41,15 +41,20 @@
 - 飛翔体色、弾速、寿命、効果半径、氷棘サイズ、非地形着弾時の包み込みフラグは Launcher 側の `ProjectileLaunchSettings` に持つ。
 - 左クリック時に `AssignLaunchSettingsByElement()` で `launchElement` ごとの設定を `currentLaunchSettings` へ代入してから射出する。
 
-8. MagicAttributeManager
+8. MagicExperimentTargetSpawner
+- 標的生成専用のコンポーネント。
+- 起動時にカメラ前方へ複数の標的をランダム配置する。
+- 生成数、距離、左右上下の範囲、標的サイズ範囲、乱数シードを Inspector から調整する。
+
+9. MagicAttributeManager
 - 属性体系の入口。
 - 現段階では Fire/Ice/Lightning/Wind/Space の対応属性リストを保持し、飛翔体設定は Launcher 側に寄せる。
 - 今後、属性相性や場データ接続など、射出以外の属性管理を追加する受け口にする。
 
-9. 非地形着弾のマテリアル展開
+10. 非地形着弾のマテリアル展開
 - `wrapNonTerrainTargets` が有効な属性は、`TerrainCollider` 以外へ着弾した時に対象 collider の bounds を包む透明シェルを生成する。
 - 無効な場合は従来どおり、着弾点を基準に属性効果を発生させる。
-- 第一実験では氷だけ有効にし、`Ice Experiment Target` を包む挙動と、地形に当たった時の氷棘生成を比較する。
+- 第一実験では氷だけ有効にし、ランダム生成された `Magic Experiment Target ##` を包む挙動と、地形に当たった時の氷棘生成を比較する。
 
 第一実験: 氷
 - 参照: `../../設定/設定5：魔法：属性の考察.txt`
@@ -57,7 +62,7 @@
 - 見た目は「半透明のメッシュ（六角錐*2+六角柱）」を目安にする。
 - 氷棘には `MagicalEcosystem/Experiment/IceRefraction` を使い、背景透過、青フィルター、Fresnel 白反射、厚み濁り、ノイズ歪みを試す。
 - 背景取得のため、URP Asset の Opaque Texture を有効化する。
-- 実験場起動時に `Ice Experiment Target` をカメラ前方へ配置し、地形以外のコライダー着弾も確認できるようにする。
+- 実験場起動時に `Magic Experiment Target ##` をカメラ前方へ複数ランダム配置し、地形以外のコライダー着弾も確認できるようにする。
 
 アジャイルな進め方
 1. まずは火属性だけを縦に通す
