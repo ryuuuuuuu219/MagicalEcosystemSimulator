@@ -124,6 +124,8 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
         magicProjectile.envelopeLifetime = effectLifetime;
         magicProjectile.envelopePadding = currentLaunchSettings.envelopePadding;
         magicProjectile.impactMaterialColor = currentLaunchSettings.projectileColor;
+        magicProjectile.launchPoint = projectile.transform.position;
+        magicProjectile.projectileSpeed = currentLaunchSettings.projectileSpeed;
 
         var body = projectile.GetComponent<Rigidbody>();
         body.linearVelocity = ray.direction.normalized * currentLaunchSettings.projectileSpeed;

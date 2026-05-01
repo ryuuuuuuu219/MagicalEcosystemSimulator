@@ -13,6 +13,8 @@ public class MagicProjectile : MonoBehaviour
     public float envelopeLifetime = 5f;
     public float envelopePadding = 0.2f;
     public Color impactMaterialColor = Color.white;
+    public Vector3 launchPoint;
+    public float projectileSpeed = 1f;
 
     bool hasImpacted;
 
@@ -58,6 +60,10 @@ public class MagicProjectile : MonoBehaviour
             case MagicElement.Ice:
                 IceImpactEffect.CreateSpike(point, normal, iceSpikeHeight, iceSpikeRadius, effectLifetime);
                 Debug.Log($"Ice projectile impact: target={target.name}, point={point}, radius={effectRadius}");
+                break;
+            case MagicElement.Lightning:
+                LightningImpactEffect.Create(launchPoint, point, normal, effectRadius, projectileSpeed, effectLifetime);
+                Debug.Log($"Lightning projectile impact: target={target.name}, point={point}, radius={effectRadius}, speed={projectileSpeed}");
                 break;
             case MagicElement.Space:
                 SpaceWarpImpactEffect.CreateWarp(point, normal, effectRadius, effectLifetime);

@@ -168,9 +168,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sourceCamera: {fileID: 200002}
-  launchElement: 1
+  launchElement: 4
   lifetime: 8
-  effectLifetime: 6
+  effectLifetime: 2
   projectileSpawnOffset: 1.2
   currentLaunchSettings:
     projectileColor: {r: 0.55, g: 0.9, b: 1, a: 0.8}
@@ -258,14 +258,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sourceCamera: {fileID: 200002}
-  targetCount: 6
+  worldGenerator: {fileID: 400002}
+  targetCount: 60
   randomSeed: 1234
-  minDistance: 14
-  maxDistance: 28
-  horizontalRange: {x: -8, y: 8}
-  verticalRange: {x: -3, y: 4}
+  spawnRadius: 60
+  spawnRadiusJitter: 50
   minTargetSize: {x: 2, y: 2, z: 0.8}
   maxTargetSize: {x: 5, y: 5, z: 1.4}
+  avoidWater: 0
+  alignToTerrainNormal: 1
+  groundClearance: 20
+  maxPlacementAttempts: 20
 --- !u!1 &100100
 GameObject:
   m_ObjectHideFlags: 0
@@ -661,13 +664,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   seed: 13125
-  terrainSize: 128
-  heightmapResolution: 129
+  terrainSize: 250
+  heightmapResolution: 250
   heightScale: 20
-  noiseScale: 0.01
-  octaves: 2
-  persistence: 0.01
-  lacunarity: 0.66
+  noiseScale: 0.1
+  octaves: 6
+  persistence: 0.3
+  lacunarity: 0.6
   water: {fileID: 0}
   waterHeight: 4
   terrain: {fileID: 0}
