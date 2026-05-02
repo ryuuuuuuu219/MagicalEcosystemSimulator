@@ -58,6 +58,7 @@ public class MagicProjectile : MonoBehaviour
 
         BeginImpactFinish();
         CreateParticleImpact(point, normal);
+        MagicFieldImpactEffect.Apply(element, point, normal, effectRadius, effectLifetime);
 
         if (wrapNonTerrainTargets && target.GetComponent<TerrainCollider>() == null)
         {

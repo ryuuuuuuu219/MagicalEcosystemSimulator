@@ -59,7 +59,7 @@ public class HeatFieldManager : MonoBehaviour
     public void AddHeat(Vector3 worldPosition, float amount, float radius = 2f)
     {
         EnsureInitialized();
-        if (!initialized || amount <= 0f)
+        if (!initialized || Mathf.Approximately(amount, 0f))
             return;
 
         WorldToGrid(worldPosition, out int centerX, out int centerZ);
@@ -170,7 +170,7 @@ public class HeatFieldManager : MonoBehaviour
                 float neighborAvg = neighborSum * 0.25f;
                 float diffused = center + (neighborAvg - center) * Mathf.Clamp01(diffusionRate * dt);
                 float decayed = diffused * Mathf.Max(0f, 1f - decayRate * dt);
-                nextHeatField[x, z] = Mathf.Max(0f, decayed);
+                nextHeatField[x, z] = decayed;
             }
         }
 

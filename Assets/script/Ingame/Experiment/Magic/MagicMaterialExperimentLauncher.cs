@@ -95,11 +95,27 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
         if (sourceCamera == null)
             return;
 
+        HandleElementHotkeys();
+
         if (Input.GetMouseButtonDown(0))
         {
             AssignLaunchSettingsByElement();
             LaunchProjectileFromCamera();
         }
+    }
+
+    void HandleElementHotkeys()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            launchElement = MagicElement.Fire;
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+            launchElement = MagicElement.Ice;
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+            launchElement = MagicElement.Lightning;
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+            launchElement = MagicElement.Wind;
+        else if (Input.GetKeyDown(KeyCode.Alpha5))
+            launchElement = MagicElement.Space;
     }
 
     void LaunchProjectileFromCamera()

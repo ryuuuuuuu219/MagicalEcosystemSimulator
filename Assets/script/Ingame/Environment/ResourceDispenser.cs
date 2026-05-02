@@ -301,6 +301,7 @@ public class ResourceDispenser : MonoBehaviour
         ClearGrasslands();
         ResetGenerationCarbonState();
         HeatFieldManager.GetOrCreate().ClearAllHeat();
+        ManaFieldManager.GetOrCreate().ClearAllMana();
         ConfigureCarbonBudget(grassCountPerGeneration, herbivoreCountPerGeneration, predatorCountPerGeneration);
         SpawnGrassCount(grassCountPerGeneration);
     }
