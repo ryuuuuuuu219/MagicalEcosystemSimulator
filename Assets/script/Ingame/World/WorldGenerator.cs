@@ -49,31 +49,37 @@ public class WorldGenerator : MonoBehaviour
         float offset = 2f; // �ǂ��n�`�̒[���班�������悤�ɂ��邽�߂̃I�t�Z�b�g
         float ceilHeight = 1000f; // �\���ȍ�����m��
         GameObject invisibleWall = new GameObject("InvisibleWall_north");
+        invisibleWall.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider = invisibleWall.AddComponent<BoxCollider>();
         collider.size = new Vector3(terrainSize - offset * 2, ceilHeight, 1);
         collider.center = new Vector3(terrainSize / 2f, ceilHeight / 2f, terrainSize - offset);
 
         GameObject invisibleWall2 = new GameObject("InvisibleWall_south");
+        invisibleWall2.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider2 = invisibleWall2.AddComponent<BoxCollider>();
         collider2.size = new Vector3(terrainSize - offset * 2, ceilHeight, 1);
         collider2.center = new Vector3(terrainSize / 2f, ceilHeight / 2f, offset);
 
         GameObject invisibleWall3 = new GameObject("InvisibleWall_east");
+        invisibleWall3.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider3 = invisibleWall3.AddComponent<BoxCollider>();
         collider3.size = new Vector3(1, ceilHeight, terrainSize - offset * 2);
         collider3.center = new Vector3(terrainSize - offset, ceilHeight / 2f, terrainSize / 2f);
 
         GameObject invisibleWall4 = new GameObject("InvisibleWall_west");
+        invisibleWall4.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider4 = invisibleWall4.AddComponent<BoxCollider>();
         collider4.size = new Vector3(1, ceilHeight, terrainSize - offset * 2);
         collider4.center = new Vector3(offset, ceilHeight / 2f, terrainSize / 2f);
 
         GameObject invisibleceil = new GameObject("InvisibleWall_ceil");
+        invisibleceil.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider5 = invisibleceil.AddComponent<BoxCollider>();
         collider5.size = new Vector3(terrainSize - offset * 2, 1, terrainSize - offset * 2);
         collider5.center = new Vector3(terrainSize / 2f, ceilHeight, terrainSize / 2f);
 
         GameObject invisiblefloor = new GameObject("InvisibleWall_floor");
+        invisiblefloor.AddComponent<WorldBoundaryCollider>();
         BoxCollider collider6 = invisiblefloor.AddComponent<BoxCollider>();
         collider6.size = new Vector3(terrainSize - offset * 2, 1, terrainSize - offset * 2);
         collider6.center = new Vector3(terrainSize / 2f, -0.5f, terrainSize / 2f);
@@ -139,6 +145,7 @@ public class WorldGenerator : MonoBehaviour
         water = GameObject.CreatePrimitive(PrimitiveType.Plane);
         water.name = "Water";
         water.layer = LayerMask.NameToLayer("Water");
+        water.AddComponent<WorldWaterCollider>();
 
         water.transform.localScale = new Vector3(
             terrainSize / 10f,

@@ -52,6 +52,9 @@ public class MagicExperimentTargetSpawner : MonoBehaviour
             target.transform.localScale = scale;
             target.transform.rotation = CreateTerrainAlignedRotation(normal);
 
+            var experimentTarget = target.AddComponent<MagicExperimentTarget>();
+            experimentTarget.Initialize(i, normal, scale, alignToTerrainNormal);
+
             var renderer = target.GetComponent<Renderer>();
             renderer.material = CreateTargetMaterial(i);
         }

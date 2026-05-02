@@ -15,8 +15,10 @@ public class MagicProjectile : MonoBehaviour
     public Color impactMaterialColor = Color.white;
     public Vector3 launchPoint;
     public float projectileSpeed = 1f;
+    public bool logExpiredWithoutImpact;
 
     bool hasImpacted;
+    bool isFinishing;
 
     void Awake()
     {
@@ -31,7 +33,7 @@ public class MagicProjectile : MonoBehaviour
 
     void Start()
     {
-        Destroy(gameObject, lifeTime);
+        Invoke(nameof(ExpireWithoutImpact), Mathf.Max(0.01f, lifeTime));
     }
 
     void OnCollisionEnter(Collision collision)
@@ -45,14 +47,23 @@ public class MagicProjectile : MonoBehaviour
 
     public void ApplyImpact(Vector3 point, Vector3 normal, Collider target)
     {
-        hasImpacted = true;
+        if (isFinishing)
+            return;
+
+        if (IsEnvironmentCollider(target))
+        {
+            DestroyWithoutImpact($"hit environment collider: target={target.name}, point={point}");
+            return;
+        }
+
+        BeginImpactFinish();
         CreateParticleImpact(point, normal);
 
         if (wrapNonTerrainTargets && target.GetComponent<TerrainCollider>() == null)
         {
             MagicImpactEnvelopeEffect.Create(target, impactMaterialColor, envelopeLifetime, envelopePadding);
             Debug.Log($"{element} projectile wrapped target: target={target.name}, point={point}, radius={effectRadius}");
-            Destroy(gameObject);
+            DestroyProjectile();
             return;
         }
 
@@ -82,7 +93,70 @@ public class MagicProjectile : MonoBehaviour
                 break;
         }
 
+        DestroyProjectile();
+    }
+
+    void ExpireWithoutImpact()
+    {
+        if (isFinishing || hasImpacted)
+            return;
+
+        isFinishing = true;
+        if (logExpiredWithoutImpact)
+            Debug.Log($"{element} projectile expired without impact: position={transform.position}, lifetime={lifeTime}");
+
         Destroy(gameObject);
+    }
+
+    void OnDestroy()
+    {
+        if (!isFinishing && !hasImpacted)
+            HandleExternalDestroyWithoutImpact();
+    }
+
+    void BeginImpactFinish()
+    {
+        isFinishing = true;
+        hasImpacted = true;
+        CancelInvoke(nameof(ExpireWithoutImpact));
+    }
+
+    void DestroyProjectile()
+    {
+        CancelInvoke(nameof(ExpireWithoutImpact));
+        Destroy(gameObject);
+    }
+
+    void HandleExternalDestroyWithoutImpact()
+    {
+        if (logExpiredWithoutImpact)
+            Debug.Log($"{element} projectile destroyed without impact: position={transform.position}");
+    }
+
+    void DestroyWithoutImpact(string reason)
+    {
+        isFinishing = true;
+        CancelInvoke(nameof(ExpireWithoutImpact));
+        if (logExpiredWithoutImpact)
+            Debug.Log($"{element} projectile ended without impact effect: {reason}");
+
+        Destroy(gameObject);
+    }
+
+    static bool IsEnvironmentCollider(Collider target)
+    {
+        if (target == null)
+            return false;
+
+        if (target.GetComponent<WorldBoundaryCollider>() != null)
+            return true;
+        if (target.GetComponent<WorldWaterCollider>() != null)
+            return true;
+
+        if (target.name.StartsWith("InvisibleWall_"))
+            return true;
+
+        return target.name == "Water" || target.gameObject.layer == LayerMask.NameToLayer("Water");
     }
 
     void CreateParticleImpact(Vector3 point, Vector3 normal)
