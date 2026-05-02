@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sourceCamera: {fileID: 200002}
-  launchElement: 4
+  launchElement: 0
   lifetime: 8
   effectLifetime: 2
   projectileSpawnOffset: 1.2
