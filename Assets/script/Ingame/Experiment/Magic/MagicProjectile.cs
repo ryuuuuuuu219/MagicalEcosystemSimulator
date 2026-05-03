@@ -41,8 +41,15 @@ public class MagicProjectile : MonoBehaviour
         if (hasImpacted)
             return;
 
+        Collider target = collision.collider;
+        if (IsPassThroughCollider(target))
+        {
+            IgnoreCollisionWith(target);
+            return;
+        }
+
         ContactPoint contact = collision.GetContact(0);
-        ApplyImpact(contact.point, contact.normal, collision.collider);
+        ApplyImpact(contact.point, contact.normal, target);
     }
 
     public void ApplyImpact(Vector3 point, Vector3 normal, Collider target)
@@ -50,15 +57,22 @@ public class MagicProjectile : MonoBehaviour
         if (isFinishing)
             return;
 
-        if (IsEnvironmentCollider(target))
+        if (IsDestroyWithoutImpactCollider(target))
         {
-            DestroyWithoutImpact($"hit environment collider: target={target.name}, point={point}");
+            DestroyWithoutImpact($"hit non-impact environment collider: target={target.name}, point={point}");
+            return;
+        }
+
+        if (!ShouldExplodeOnImpact(target))
+        {
+            string targetName = target != null ? target.name : "null";
+            DestroyWithoutImpact($"hit non-impact target: target={targetName}, point={point}");
             return;
         }
 
         BeginImpactFinish();
         CreateParticleImpact(point, normal);
-        MagicFieldImpactEffect.Apply(element, point, normal, effectRadius, effectLifetime);
+        Magic2FieldManager.Apply(element, point, normal, effectRadius, effectLifetime);
 
         if (wrapNonTerrainTargets && target.GetComponent<TerrainCollider>() == null)
         {
@@ -144,20 +158,74 @@ public class MagicProjectile : MonoBehaviour
         Destroy(gameObject);
     }
 
-    static bool IsEnvironmentCollider(Collider target)
+    void IgnoreCollisionWith(Collider target)
+    {
+        if (target == null)
+            return;
+
+        Collider projectileCollider = GetComponent<Collider>();
+        if (projectileCollider != null)
+            Physics.IgnoreCollision(projectileCollider, target, true);
+    }
+
+    static bool ShouldExplodeOnImpact(Collider target)
+    {
+        return IsTerrainCollider(target) || IsCreatureCollider(target);
+    }
+
+    static bool IsTerrainCollider(Collider target)
+    {
+        return target != null && target.GetComponent<TerrainCollider>() != null;
+    }
+
+    static bool IsCreatureCollider(Collider target)
+    {
+        if (target == null)
+            return false;
+
+        if (target.GetComponentInParent<CreatureCollisionProfile>() != null)
+            return true;
+        if (target.GetComponentInParent<herbivoreBehaviour>() != null)
+            return true;
+        if (target.GetComponentInParent<predatorBehaviour>() != null)
+            return true;
+
+        int creatureLayer = LayerMask.NameToLayer("Creature");
+        if (creatureLayer < 0)
+            return false;
+
+        Transform current = target.transform;
+        while (current != null)
+        {
+            if (current.gameObject.layer == creatureLayer)
+                return true;
+
+            current = current.parent;
+        }
+
+        return false;
+    }
+
+    static bool IsPassThroughCollider(Collider target)
+    {
+        if (target == null)
+            return false;
+
+        if (target.GetComponent<WorldWaterCollider>() != null)
+            return true;
+
+        return target.name == "Water" || target.gameObject.layer == LayerMask.NameToLayer("Water");
+    }
+
+    static bool IsDestroyWithoutImpactCollider(Collider target)
     {
         if (target == null)
             return false;
 
         if (target.GetComponent<WorldBoundaryCollider>() != null)
             return true;
-        if (target.GetComponent<WorldWaterCollider>() != null)
-            return true;
 
-        if (target.name.StartsWith("InvisibleWall_"))
-            return true;
-
-        return target.name == "Water" || target.gameObject.layer == LayerMask.NameToLayer("Water");
+        return target.name.StartsWith("InvisibleWall_");
     }
 
     void CreateParticleImpact(Vector3 point, Vector3 normal)

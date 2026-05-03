@@ -6,6 +6,13 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
         _DistortionStrength ("Distortion Strength", Range(0, 1)) = 1
         _BaseAlpha ("Base Alpha", Range(0, 1)) = 1
         _ObjectRadius ("Object Radius", Float) = 1
+        _GlitchPointUV ("Glitch Point UV", Vector) = (-1, -1, 0, 0)
+        _GlitchSeed ("Glitch Seed", Float) = 0
+        _GlitchEnabled ("Glitch Enabled", Range(0, 1)) = 0
+        _GlitchLineThickness ("Glitch Line Thickness", Range(0.25, 4)) = 1
+        _FresnelColor ("Fresnel Color", Color) = (0.45, 0.85, 1, 1)
+        _FresnelPower ("Fresnel Power", Range(1, 8)) = 3
+        _FresnelStrength ("Fresnel Strength", Range(0, 2)) = 0.65
     }
 
     SubShader
@@ -40,6 +47,13 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
                 half _DistortionStrength;
                 half _BaseAlpha;
                 half _ObjectRadius;
+                float4 _GlitchPointUV;
+                float _GlitchSeed;
+                half _GlitchEnabled;
+                half _GlitchLineThickness;
+                half4 _FresnelColor;
+                half _FresnelPower;
+                half _FresnelStrength;
             CBUFFER_END
 
             struct Attributes
@@ -60,6 +74,39 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
                 float2 ndc = positionCS.xy / max(positionCS.w, 0.0001);
                 ndc.y *= _ProjectionParams.x;
                 return ndc * 0.5 + 0.5;
+            }
+
+            float DistanceToSegment(float2 queryUV, float2 segmentStart, float2 segmentEnd)
+            {
+                float2 segment = segmentEnd - segmentStart;
+                float segmentLengthSqr = max(dot(segment, segment), 0.0000001);
+                float t = saturate(dot(queryUV - segmentStart, segment) / segmentLengthSqr);
+                return length(queryUV - (segmentStart + segment * t));
+            }
+
+            float2 WarpPlaneToUV(float2 plane, float2 centerUV, float2 rightRadiusUV, float2 upRadiusUV)
+            {
+                float planeLength = length(plane);
+                float2 dirN = plane / max(planeLength, 0.0001);
+                float r = saturate(planeLength);
+                float outerR = pow(r, 1.0 / max(_WarpPower, 0.0001));
+                float sampleR = lerp(r, outerR, _DistortionStrength);
+                float2 samplePlane = dirN * sampleR;
+                return saturate(centerUV + rightRadiusUV * samplePlane.x + upRadiusUV * samplePlane.y);
+            }
+
+            float2 ScreenUVToWarpPlane(float2 screenUV, float2 centerUV, float2 rightRadiusUV, float2 upRadiusUV)
+            {
+                float2 delta = screenUV - centerUV;
+                float determinant = rightRadiusUV.x * upRadiusUV.y - rightRadiusUV.y * upRadiusUV.x;
+                if (abs(determinant) < 0.0000001)
+                    return float2(99.0, 99.0);
+
+                float invDeterminant = 1.0 / determinant;
+                return float2(
+                    (delta.x * upRadiusUV.y - delta.y * upRadiusUV.x) * invDeterminant,
+                    (rightRadiusUV.x * delta.y - rightRadiusUV.y * delta.x) * invDeterminant
+                );
             }
 
             Varyings vert(Attributes input)
@@ -94,12 +141,26 @@ Shader "MagicalEcosystem/Experiment/SpaceWarp"
                 float r = saturate(length(objectPlane));
                 float2 dirN = objectPlane / max(length(objectPlane), 0.0001);
 
-                float outerR = pow(r, 1.0 / max(_WarpPower, 0.0001));
-                float sampleR = lerp(r, outerR, _DistortionStrength);
-                float2 samplePlane = dirN * sampleR;
-                float2 sampleUV = saturate(centerUV + rightRadiusUV * samplePlane.x + upRadiusUV * samplePlane.y);
+                float2 sampleUV = WarpPlaneToUV(objectPlane, centerUV, rightRadiusUV, upRadiusUV);
 
                 half3 bg = SampleSceneColor(sampleUV);
+
+                float3 viewDirWS = normalize(GetWorldSpaceViewDir(input.positionWS));
+                float ndotV = saturate(dot(normalize(input.normalWS), viewDirWS));
+                half fresnel = pow(1.0 - ndotV, _FresnelPower) * _FresnelStrength;
+                bg = lerp(bg, _FresnelColor.rgb, saturate(fresnel));
+
+                float2 glitchStartUV = _GlitchPointUV.xy;
+                float2 glitchPlane = ScreenUVToWarpPlane(glitchStartUV, centerUV, rightRadiusUV, upRadiusUV);
+                float2 glitchEndUV = WarpPlaneToUV(glitchPlane, centerUV, rightRadiusUV, upRadiusUV);
+                float pixelWidth = max(1.0 / _ScreenParams.x, 1.0 / _ScreenParams.y) * max(_GlitchLineThickness, 0.25);
+                float2 pixelSize = max(float2(1.0 / _ScreenParams.x, 1.0 / _ScreenParams.y), float2(0.000001, 0.000001));
+                float pointMask = step(length((uv - glitchStartUV) / pixelSize), 0.75);
+                float lineMask = step(DistanceToSegment(uv, glitchStartUV, glitchEndUV), pixelWidth);
+                float insideGlitchArea = step(length(glitchPlane), 1.0);
+                float glitchMask = saturate(max(pointMask, lineMask) * _GlitchEnabled * insideGlitchArea);
+                bg = lerp(bg, half3(0.0, 0.0, 0.0), glitchMask);
+
                 return half4(bg, _BaseAlpha);
             }
             ENDHLSL

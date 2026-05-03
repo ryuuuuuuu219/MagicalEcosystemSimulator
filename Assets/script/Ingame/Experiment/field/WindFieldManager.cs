@@ -1,26 +1,23 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-[DefaultExecutionOrder(-25)]
-public class HeatFieldManager : MonoBehaviour
+[DefaultExecutionOrder(-23)]
+public class WindFieldManager : MonoBehaviour
 {
-    public static HeatFieldManager Instance { get; private set; }
+    public static WindFieldManager Instance { get; private set; }
 
     [Header("Grid")]
-    public int gridResolution = 96;
+    public int gridResolution = 32;
 
     [Header("Simulation")]
-    public float diffusionRate = 2.5f;
-    public float decayRate = 0.08f;
-    public bool debugDrawHeat = true;
-    public float debugBaseHeight = 20f;
-    public float debugHeatScale = 1f;
+    public float diffusionRate = 1.2f;
+    public float decayRate = 0.2f;
 
     [Header("AI Bridge")]
     public field2AI field2AI;
 
     Terrain terrain;
-    float[,] heatField;
-    float[,] nextHeatField;
+    Vector2[,] windField;
+    Vector2[,] nextWindField;
     float cellSizeX = 1f;
     float cellSizeZ = 1f;
     bool initialized;
@@ -44,27 +41,32 @@ public class HeatFieldManager : MonoBehaviour
             return;
 
         Simulate(Time.deltaTime);
-        DrawDebugHeatGrid();
     }
 
-    public static HeatFieldManager GetOrCreate()
+    public static WindFieldManager GetOrCreate()
     {
         if (Instance != null)
             return Instance;
 
-        HeatFieldManager existing = FindFirstObjectByType<HeatFieldManager>();
+        WindFieldManager existing = FindFirstObjectByType<WindFieldManager>();
         if (existing != null)
             return existing;
 
-        GameObject go = new GameObject("HeatFieldManager");
-        return go.AddComponent<HeatFieldManager>();
+        GameObject go = new GameObject("WindFieldManager");
+        return go.AddComponent<WindFieldManager>();
     }
 
-    public void AddHeat(Vector3 worldPosition, float amount, float radius = 2f)
+    public void AddWind(Vector3 worldPosition, Vector3 worldDirection, float strength, float radius = 4f)
     {
         EnsureInitialized();
-        if (!initialized || Mathf.Approximately(amount, 0f))
+        if (!initialized || strength <= 0f)
             return;
+
+        Vector2 direction = new Vector2(worldDirection.x, worldDirection.z);
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = Vector2.up;
+        else
+            direction.Normalize();
 
         WorldToGrid(worldPosition, out int centerX, out int centerZ);
         int radiusCellsX = Mathf.Max(1, Mathf.CeilToInt(radius / Mathf.Max(0.001f, cellSizeX)));
@@ -93,6 +95,7 @@ public class HeatFieldManager : MonoBehaviour
         if (totalWeight <= 0f)
             return;
 
+        Vector2 wind = direction * strength;
         for (int z = -radiusCellsZ; z <= radiusCellsZ; z++)
         {
             for (int x = -radiusCellsX; x <= radiusCellsX; x++)
@@ -109,19 +112,19 @@ public class HeatFieldManager : MonoBehaviour
                     continue;
 
                 float weight = Mathf.Max(0.001f, 1f - dist / Mathf.Max(radius, 0.001f));
-                heatField[gx, gz] += amount * (weight / totalWeight);
+                windField[gx, gz] += wind * (weight / totalWeight);
             }
         }
     }
 
-    public float SampleHeat(Vector3 worldPosition)
+    public Vector2 SampleWind(Vector3 worldPosition)
     {
         EnsureInitialized();
         if (!initialized)
-            return 0f;
+            return Vector2.zero;
 
         WorldToGrid(worldPosition, out int gx, out int gz);
-        return IsInside(gx, gz) ? heatField[gx, gz] : 0f;
+        return IsInside(gx, gz) ? windField[gx, gz] : Vector2.zero;
     }
 
     void ResolveField2AI()
@@ -129,23 +132,23 @@ public class HeatFieldManager : MonoBehaviour
         if (field2AI == null)
             field2AI = FindFirstObjectByType<field2AI>();
         if (field2AI != null)
-            field2AI.heatFieldManager = this;
+            field2AI.windFieldManager = this;
     }
 
-    public void ClearAllHeat()
+    public void ClearAllWind()
     {
         EnsureInitialized();
         if (!initialized)
             return;
 
-        int width = heatField.GetLength(0);
-        int height = heatField.GetLength(1);
+        int width = windField.GetLength(0);
+        int height = windField.GetLength(1);
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < height; z++)
             {
-                heatField[x, z] = 0f;
-                nextHeatField[x, z] = 0f;
+                windField[x, z] = Vector2.zero;
+                nextWindField[x, z] = Vector2.zero;
             }
         }
     }
@@ -161,8 +164,8 @@ public class HeatFieldManager : MonoBehaviour
 
         terrain = world.terrain;
         int size = Mathf.Max(8, gridResolution);
-        heatField = new float[size, size];
-        nextHeatField = new float[size, size];
+        windField = new Vector2[size, size];
+        nextWindField = new Vector2[size, size];
         cellSizeX = terrain.terrainData.size.x / (size - 1);
         cellSizeZ = terrain.terrainData.size.z / (size - 1);
         initialized = true;
@@ -170,37 +173,36 @@ public class HeatFieldManager : MonoBehaviour
 
     void Simulate(float dt)
     {
-        int width = heatField.GetLength(0);
-        int height = heatField.GetLength(1);
+        int width = windField.GetLength(0);
+        int height = windField.GetLength(1);
 
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < height; z++)
             {
-                float center = heatField[x, z];
-                float neighborSum = GetHeat(x - 1, z) + GetHeat(x + 1, z) + GetHeat(x, z - 1) + GetHeat(x, z + 1);
-                float neighborAvg = neighborSum * 0.25f;
-                float diffused = center + (neighborAvg - center) * Mathf.Clamp01(diffusionRate * dt);
-                float decayed = diffused * Mathf.Max(0f, 1f - decayRate * dt);
-                nextHeatField[x, z] = decayed;
+                Vector2 center = windField[x, z];
+                Vector2 neighborSum = GetWind(x - 1, z) + GetWind(x + 1, z) + GetWind(x, z - 1) + GetWind(x, z + 1);
+                Vector2 neighborAvg = neighborSum * 0.25f;
+                Vector2 diffused = center + (neighborAvg - center) * Mathf.Clamp01(diffusionRate * dt);
+                nextWindField[x, z] = diffused * Mathf.Max(0f, 1f - decayRate * dt);
             }
         }
 
-        var swap = heatField;
-        heatField = nextHeatField;
-        nextHeatField = swap;
+        var swap = windField;
+        windField = nextWindField;
+        nextWindField = swap;
     }
 
-    float GetHeat(int x, int z)
+    Vector2 GetWind(int x, int z)
     {
-        x = Mathf.Clamp(x, 0, heatField.GetLength(0) - 1);
-        z = Mathf.Clamp(z, 0, heatField.GetLength(1) - 1);
-        return heatField[x, z];
+        x = Mathf.Clamp(x, 0, windField.GetLength(0) - 1);
+        z = Mathf.Clamp(z, 0, windField.GetLength(1) - 1);
+        return windField[x, z];
     }
 
     bool IsInside(int x, int z)
     {
-        return x >= 0 && x < heatField.GetLength(0) && z >= 0 && z < heatField.GetLength(1);
+        return x >= 0 && x < windField.GetLength(0) && z >= 0 && z < windField.GetLength(1);
     }
 
     void WorldToGrid(Vector3 worldPosition, out int gx, out int gz)
@@ -210,33 +212,8 @@ public class HeatFieldManager : MonoBehaviour
 
         float nx = Mathf.InverseLerp(terrainPos.x, terrainPos.x + size.x, worldPosition.x);
         float nz = Mathf.InverseLerp(terrainPos.z, terrainPos.z + size.z, worldPosition.z);
-        gx = Mathf.RoundToInt(nx * (heatField.GetLength(0) - 1));
-        gz = Mathf.RoundToInt(nz * (heatField.GetLength(1) - 1));
+        gx = Mathf.RoundToInt(nx * (windField.GetLength(0) - 1));
+        gz = Mathf.RoundToInt(nz * (windField.GetLength(1) - 1));
     }
 
-    void DrawDebugHeatGrid()
-    {
-        if (!debugDrawHeat || !initialized || terrain == null)
-            return;
-
-        Vector3 terrainPos = terrain.transform.position;
-        int width = heatField.GetLength(0);
-        int height = heatField.GetLength(1);
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < height; z++)
-            {
-                float heat = heatField[x, z];
-                Vector3 start = new Vector3(
-                    terrainPos.x + x * cellSizeX,
-                    debugBaseHeight,
-                    terrainPos.z + z * cellSizeZ);
-                Vector3 end = start + Vector3.up * (heat * debugHeatScale);
-                Debug.DrawLine(start, end, Color.red, 0f, false);
-            }
-        }
-    }
 }
-
-

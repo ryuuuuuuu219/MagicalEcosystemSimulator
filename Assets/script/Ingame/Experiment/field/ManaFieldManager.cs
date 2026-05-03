@@ -14,6 +14,9 @@ public class ManaFieldManager : MonoBehaviour
     public float debugBaseHeight = 22f;
     public float debugManaScale = 1f;
 
+    [Header("AI Bridge")]
+    public field2AI field2AI;
+
     Terrain terrain;
     float[,] manaField;
     float[,] nextManaField;
@@ -30,6 +33,7 @@ public class ManaFieldManager : MonoBehaviour
         }
 
         Instance = this;
+        ResolveField2AI();
     }
 
     void Update()
@@ -125,6 +129,14 @@ public class ManaFieldManager : MonoBehaviour
         float down = GetMana(gx, gz - 1);
         float up = GetMana(gx, gz + 1);
         return new Vector2(right - left, up - down);
+    }
+
+    void ResolveField2AI()
+    {
+        if (field2AI == null)
+            field2AI = FindFirstObjectByType<field2AI>();
+        if (field2AI != null)
+            field2AI.manaFieldManager = this;
     }
 
     public void ClearAllMana()

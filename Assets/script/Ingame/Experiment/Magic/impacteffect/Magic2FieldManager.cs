@@ -1,10 +1,11 @@
 using UnityEngine;
 
-public static class MagicFieldImpactEffect
+public static class Magic2FieldManager
 {
     const float FireHeatAmount = 180f;
     const float IceHeatAmount = -130f;
     const float SpaceManaAmount = 160f;
+    const float WindFieldStrength = 90f;
     const float WindMainStrength = 1.8f;
     const float WindPulseStrength = 0.45f;
 
@@ -28,6 +29,7 @@ public static class MagicFieldImpactEffect
                 ManaFieldManager.GetOrCreate().AddMana(point, SpaceManaAmount, safeRadius * 1.8f);
                 break;
             case MagicElement.Wind:
+                WindFieldManager.GetOrCreate().AddWind(point, normal, WindFieldStrength, safeRadius * 2.4f);
                 CreateWindFieldProxy(point, normal, safeRadius, safeLifetime);
                 break;
             case MagicElement.Lightning:

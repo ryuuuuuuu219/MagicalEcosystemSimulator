@@ -3,6 +3,7 @@ using UnityEngine;
 public static class WindImpactEffect
 {
     const int SpawnIntervalFrames = 8;
+    const float FieldLayerStrength = 18f;
     public const float LayerLifetime = 1.15f;
 
     public static GameObject Create(Vector3 point, Vector3 normal, float radius, float lifetime)
@@ -22,6 +23,8 @@ public static class WindImpactEffect
 
     public static void CreateLayer(Transform parent, string name, float radius, float lifetime, float rotationOffset)
     {
+        AddWindFieldLayerPulse(parent, radius, rotationOffset);
+
         GameObject wind = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         wind.name = name;
         wind.transform.SetParent(parent, false);
@@ -49,6 +52,16 @@ public static class WindImpactEffect
         controller.Initialize(renderer.material, radius, lifetime, expandTarget);
 
         Object.Destroy(wind, Mathf.Max(0.05f, lifetime));
+    }
+
+    static void AddWindFieldLayerPulse(Transform parent, float radius, float rotationOffset)
+    {
+        if (parent == null)
+            return;
+
+        Vector3 direction = new Vector3(Mathf.Cos(rotationOffset), 0f, Mathf.Sin(rotationOffset));
+        float strength = FieldLayerStrength * Mathf.Max(0.2f, radius);
+        WindFieldManager.GetOrCreate().AddWind(parent.position, direction, strength, Mathf.Max(1f, radius * 1.6f));
     }
 
     static Material CreateWindMaterial(float rotationOffset)

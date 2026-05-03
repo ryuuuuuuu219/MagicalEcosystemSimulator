@@ -10,21 +10,28 @@ public class FieldToUI : MonoBehaviour
     {
         ThreatMap,
         HeatField,
-        ManaField
+        ManaField,
+        WindField
     }
 
     public WorldGenerator worldGenerator;
     public HeatFieldManager heatFieldManager;
     public ManaFieldManager manaFieldManager;
+    public WindFieldManager windFieldManager;
     public threatmap_calc threatMap;
     public Camera uiCamera;
 
     [Header("Grid")]
     public int gridResolution = 32;
-    public float gridHeight = 20f;
+    public float gridHeight = 30f;
     [Range(0f, 1f)] public float gridAlpha = 0.4f;
     [Range(0f, 0.2f)] public float gridCellGapRatio = 0.04f;
     public float updateInterval = 0.2f;
+
+    [Header("Wind Lines")]
+    public bool drawWindLines = true;
+    public float windLineScale = 0.08f;
+    public float windMinMagnitude = 0.02f;
 
     FieldView currentView = FieldView.HeatField;
     TMP_Dropdown dropdown;
@@ -67,6 +74,8 @@ public class FieldToUI : MonoBehaviour
             heatFieldManager = FindFirstObjectByType<HeatFieldManager>();
         if (manaFieldManager == null)
             manaFieldManager = FindFirstObjectByType<ManaFieldManager>();
+        if (windFieldManager == null)
+            windFieldManager = FindFirstObjectByType<WindFieldManager>();
         if (threatMap == null)
             threatMap = FindFirstObjectByType<threatmap_calc>();
         if (uiCamera == null)
@@ -137,7 +146,8 @@ public class FieldToUI : MonoBehaviour
         {
             new("threat map"),
             new("heat field"),
-            new("mana field")
+            new("mana field"),
+            new("wind field")
         };
         result.value = 1;
         result.onValueChanged.AddListener(OnDropdownChanged);
@@ -154,7 +164,7 @@ public class FieldToUI : MonoBehaviour
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -4f);
-        rect.sizeDelta = new Vector2(0f, 128f);
+        rect.sizeDelta = new Vector2(0f, 168f);
         template.GetComponent<Image>().color = new Color(0.03f, 0.04f, 0.05f, 0.95f);
 
         GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
@@ -174,7 +184,7 @@ public class FieldToUI : MonoBehaviour
         contentRect.anchorMax = new Vector2(1f, 1f);
         contentRect.pivot = new Vector2(0.5f, 1f);
         contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0f, 126f);
+        contentRect.sizeDelta = new Vector2(0f, 166f);
 
         VerticalLayoutGroup layout = content.GetComponent<VerticalLayoutGroup>();
         layout.childControlHeight = true;
@@ -331,6 +341,7 @@ public class FieldToUI : MonoBehaviour
         {
             0 => FieldView.ThreatMap,
             2 => FieldView.ManaField,
+            3 => FieldView.WindField,
             _ => FieldView.HeatField
         };
         UpdateFieldView(true);
@@ -376,6 +387,8 @@ public class FieldToUI : MonoBehaviour
         gridMesh.colors32 = gridColors;
         minText.text = $"min {min:0.00}";
         maxText.text = $"max {max:0.00}";
+
+        DrawWindFieldLines();
     }
 
     static float EvaluateSignedGradientPosition(float value, float min, float max)
@@ -396,8 +409,27 @@ public class FieldToUI : MonoBehaviour
         {
             FieldView.ThreatMap => threatMap != null ? threatMap.GetThreatScore(new Vector2(position.x, position.z)) : 0f,
             FieldView.ManaField => manaFieldManager != null ? manaFieldManager.SampleMana(position) : 0f,
+            FieldView.WindField => windFieldManager != null ? windFieldManager.SampleWind(position).magnitude : 0f,
             _ => heatFieldManager != null ? heatFieldManager.SampleHeat(position) : 0f
         };
+    }
+
+    void DrawWindFieldLines()
+    {
+        if (!drawWindLines || currentView != FieldView.WindField || windFieldManager == null || gridSamplePositions == null)
+            return;
+
+        float scale = Mathf.Max(0.001f, windLineScale);
+        for (int i = 0; i < gridSamplePositions.Length; i++)
+        {
+            Vector3 start = gridSamplePositions[i];
+            Vector2 wind = windFieldManager.SampleWind(start);
+            if (wind.magnitude < windMinMagnitude)
+                continue;
+
+            Vector3 end = start + new Vector3(wind.x, 0f, wind.y) * scale;
+            Debug.DrawLine(start, end, Color.green, updateInterval, false);
+        }
     }
 
     static Color EvaluateGradient(float t, float alpha)

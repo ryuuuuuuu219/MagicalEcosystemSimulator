@@ -53,6 +53,16 @@ public static class SpaceWarpImpactEffect
             material.SetFloat("_BaseAlpha", 1f);
         if (material.HasProperty("_ObjectRadius"))
             material.SetFloat("_ObjectRadius", Mathf.Max(0.1f, radius));
+        if (material.HasProperty("_GlitchEnabled"))
+            material.SetFloat("_GlitchEnabled", 0f);
+        if (material.HasProperty("_GlitchLineThickness"))
+            material.SetFloat("_GlitchLineThickness", 1f);
+        if (material.HasProperty("_FresnelColor"))
+            material.SetColor("_FresnelColor", new Color(0.45f, 0.85f, 1f, 1f));
+        if (material.HasProperty("_FresnelPower"))
+            material.SetFloat("_FresnelPower", 3f);
+        if (material.HasProperty("_FresnelStrength"))
+            material.SetFloat("_FresnelStrength", 0.65f);
         material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         return material;
@@ -68,6 +78,8 @@ sealed class SpaceWarpImpactController : MonoBehaviour
     float startDistortion;
     float startBaseAlpha;
     Vector3 startScale;
+    int lastGlitchFrame = -1;
+    float currentSeed;
 
     public void Initialize(Material targetMaterial, float radius, float effectLifetime)
     {
@@ -84,6 +96,7 @@ sealed class SpaceWarpImpactController : MonoBehaviour
             startDistortion = material.GetFloat("_DistortionStrength");
         if (material.HasProperty("_BaseAlpha"))
             startBaseAlpha = material.GetFloat("_BaseAlpha");
+        PickGlitchPixel();
     }
 
     void Update()
@@ -102,6 +115,9 @@ sealed class SpaceWarpImpactController : MonoBehaviour
             material.SetFloat("_DistortionStrength", startDistortion);
         if (material.HasProperty("_BaseAlpha"))
             material.SetFloat("_BaseAlpha", startBaseAlpha);
+
+        if (Time.frameCount != lastGlitchFrame && Time.frameCount % 3 == 0)
+            PickGlitchPixel();
     }
 
     void UpdateObjectRadius()
@@ -112,5 +128,66 @@ sealed class SpaceWarpImpactController : MonoBehaviour
         Vector3 scale = transform.lossyScale;
         float diameter = Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
         material.SetFloat("_ObjectRadius", Mathf.Max(0.001f, diameter * 0.5f));
+    }
+
+    void PickGlitchPixel()
+    {
+        lastGlitchFrame = Time.frameCount;
+
+        if (material == null)
+            return;
+
+        Camera camera = Camera.main;
+        if (camera == null || Screen.width <= 0 || Screen.height <= 0)
+        {
+            SetGlitchEnabled(false);
+            return;
+        }
+
+        Vector3 center = transform.position;
+        float radius = Mathf.Max(0.001f, Mathf.Max(transform.lossyScale.x, Mathf.Max(transform.lossyScale.y, transform.lossyScale.z)) * 0.5f);
+        Vector3 cameraRight = camera.transform.right;
+        Vector3 cameraUp = camera.transform.up;
+
+        Vector3 centerViewport3 = camera.WorldToViewportPoint(center);
+        if (centerViewport3.z <= camera.nearClipPlane)
+        {
+            SetGlitchEnabled(false);
+            return;
+        }
+
+        Vector2 centerUV = new Vector2(centerViewport3.x, centerViewport3.y);
+        Vector3 rightViewport3 = camera.WorldToViewportPoint(center + cameraRight * radius);
+        Vector3 upViewport3 = camera.WorldToViewportPoint(center + cameraUp * radius);
+        Vector2 rightRadiusUV = new Vector2(rightViewport3.x, rightViewport3.y) - centerUV;
+        Vector2 upRadiusUV = new Vector2(upViewport3.x, upViewport3.y) - centerUV;
+
+        Vector2 plane = Random.insideUnitCircle;
+        Vector2 uv = centerUV + rightRadiusUV * plane.x + upRadiusUV * plane.y;
+        if (uv.x < 0f || uv.x > 1f || uv.y < 0f || uv.y > 1f)
+        {
+            SetGlitchEnabled(false);
+            return;
+        }
+
+        float pixelX = Mathf.Clamp(Mathf.Floor(uv.x * Screen.width) + 0.5f, 0.5f, Screen.width - 0.5f);
+        float pixelY = Mathf.Clamp(Mathf.Floor(uv.y * Screen.height) + 0.5f, 0.5f, Screen.height - 0.5f);
+        Vector2 pixelUV = new Vector2(pixelX / Screen.width, pixelY / Screen.height);
+
+        if (material.HasProperty("_GlitchPointUV"))
+            material.SetVector("_GlitchPointUV", new Vector4(pixelUV.x, pixelUV.y, 0f, 0f));
+        if (material.HasProperty("_GlitchSeed"))
+        {
+            currentSeed += 1f;
+            material.SetFloat("_GlitchSeed", currentSeed);
+        }
+
+        SetGlitchEnabled(true);
+    }
+
+    void SetGlitchEnabled(bool enabled)
+    {
+        if (material != null && material.HasProperty("_GlitchEnabled"))
+            material.SetFloat("_GlitchEnabled", enabled ? 1f : 0f);
     }
 }
