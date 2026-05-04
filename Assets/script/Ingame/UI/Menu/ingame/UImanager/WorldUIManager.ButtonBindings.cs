@@ -20,6 +20,8 @@ public partial class WorldUIManager
         BindSceneButton(GetButton(genomeViewerBranch), Onclickbutton2_2);
         BindSceneButton(GetButton(genomeInjectorBranch), Onclickbutton2_3);
         BindSceneButton(GetButton(propertiesBranch), Onclickbutton3);
+        BindSceneButton(GetButton(fieldViewingTab), OnclickFieldViewing);
+        BindSceneButton(GetButton(disturbanceTab), OnclickDisturbance);
     }
 
     public void Menu()
@@ -81,6 +83,18 @@ public partial class WorldUIManager
             TogglePropertiesBranch();
     }
 
+    public void OnclickFieldViewing()
+    {
+        if (!IsDuplicateUiInvoke(ref lastFieldViewingInvokeFrame))
+            ToggleFieldViewingBranch();
+    }
+
+    public void OnclickDisturbance()
+    {
+        if (!IsDuplicateUiInvoke(ref lastDisturbanceInvokeFrame))
+            ToggleDisturbanceBranch();
+    }
+
     IEnumerable<GameObject> EnumerateInitialUiObjects()
     {
         yield return GetBranchObject(objectListBranch);
@@ -94,6 +108,10 @@ public partial class WorldUIManager
         yield return GetBranchObject(genomeViewerBranch);
         yield return GetBranchObject(genomeInjectorBranch);
         yield return GetBranchObject(advanceGenerationBranch);
+        yield return GetBranchObject(fieldViewingTab);
+        yield return GetBranchObject(fieldViewingDropdownBranch);
+        yield return GetBranchObject(disturbanceTab);
+        yield return GetBranchObject(disturbanceElementBranch);
     }
 
     IEnumerable<GameObject> EnumerateStatusButtons()

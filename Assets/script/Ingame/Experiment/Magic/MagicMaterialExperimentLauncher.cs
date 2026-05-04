@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MagicMaterialExperimentLauncher : MonoBehaviour
 {
@@ -89,11 +90,16 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
 
         HandleElementHotkeys();
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !IsPointerOverUi())
         {
             AssignLaunchSettingsByElement();
             LaunchProjectile();
         }
+    }
+
+    static bool IsPointerOverUi()
+    {
+        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
     }
 
     void HandleElementHotkeys()

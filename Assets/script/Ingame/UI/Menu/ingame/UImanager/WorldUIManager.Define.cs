@@ -34,6 +34,10 @@ public partial class WorldUIManager
     [SerializeField] UITreeBranch stateViewPageDownBranch;
     [FormerlySerializedAs("StateViewPageUp_leaf_00x2")]
     [SerializeField] UITreeBranch stateViewPageUpBranch;
+    [SerializeField] UITreeBranch fieldViewingTab;
+    [SerializeField] UITreeBranch fieldViewingDropdownBranch;
+    [SerializeField] UITreeBranch disturbanceTab;
+    [SerializeField] UITreeBranch disturbanceElementBranch;
     [SerializeField] GameObject viewDisplayFoundationRoot;
     [SerializeField] GameObject uiFreqRoot;
 
@@ -77,5 +81,7 @@ public partial class WorldUIManager
     int lastStateInvokeFrame = -1;
     int lastPageDownInvokeFrame = -1;
     int lastPageUpInvokeFrame = -1;
+    int lastFieldViewingInvokeFrame = -1;
+    int lastDisturbanceInvokeFrame = -1;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
 }

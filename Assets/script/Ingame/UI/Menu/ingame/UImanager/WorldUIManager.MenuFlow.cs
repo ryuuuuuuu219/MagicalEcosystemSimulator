@@ -59,8 +59,29 @@ public partial class WorldUIManager
     {
         ResetObjectListState(true);
         HideGenerationBranchContent();
+        HideExperimentBranchContent();
         PushBranch(propertiesBranch);
         SetPendingSettingsVisible(true);
+    }
+
+    void OpenFieldViewingBranch()
+    {
+        ResetObjectListState(true);
+        HideGenerationBranchContent();
+        SetPendingSettingsVisible(false);
+        SetExperimentBranchContentVisible(fieldViewingDropdownBranch, true);
+        SetExperimentBranchContentVisible(disturbanceElementBranch, false);
+        PushBranch(fieldViewingTab);
+    }
+
+    void OpenDisturbanceBranch()
+    {
+        ResetObjectListState(true);
+        HideGenerationBranchContent();
+        SetPendingSettingsVisible(false);
+        SetExperimentBranchContentVisible(fieldViewingDropdownBranch, false);
+        SetExperimentBranchContentVisible(disturbanceElementBranch, true);
+        PushBranch(disturbanceTab);
     }
 
     /// <summary>
@@ -114,6 +135,18 @@ public partial class WorldUIManager
     {
         if (generationController != null)
             generationController.HideGenomePanels();
+    }
+
+    void HideExperimentBranchContent()
+    {
+        SetExperimentBranchContentVisible(fieldViewingDropdownBranch, false);
+        SetExperimentBranchContentVisible(disturbanceElementBranch, false);
+    }
+
+    static void SetExperimentBranchContentVisible(UITreeBranch branch, bool visible)
+    {
+        if (branch != null)
+            branch.gameObject.SetActive(visible);
     }
 
     /// <summary>
@@ -191,6 +224,28 @@ public partial class WorldUIManager
         OpenPropertiesBranch();
     }
 
+    void ToggleFieldViewingBranch()
+    {
+        if (IsFieldViewingBranchOpen())
+        {
+            CloseFieldViewingBranch();
+            return;
+        }
+
+        OpenFieldViewingBranch();
+    }
+
+    void ToggleDisturbanceBranch()
+    {
+        if (IsDisturbanceBranchOpen())
+        {
+            CloseDisturbanceBranch();
+            return;
+        }
+
+        OpenDisturbanceBranch();
+    }
+
     /// <summary>
     /// オブジェクト一覧ブランチと状態表示 UI を閉じます。
     /// </summary>
@@ -214,6 +269,18 @@ public partial class WorldUIManager
     void ClosePropertiesBranch()
     {
         SetPendingSettingsVisible(false);
+        PushBranch(menuRootBranch);
+    }
+
+    void CloseFieldViewingBranch()
+    {
+        SetExperimentBranchContentVisible(fieldViewingDropdownBranch, false);
+        PushBranch(menuRootBranch);
+    }
+
+    void CloseDisturbanceBranch()
+    {
+        SetExperimentBranchContentVisible(disturbanceElementBranch, false);
         PushBranch(menuRootBranch);
     }
 
@@ -269,6 +336,22 @@ public partial class WorldUIManager
                pendingSettingsPanelRoot.activeSelf;
     }
 
+    bool IsFieldViewingBranchOpen()
+    {
+        return fieldViewingTab != null &&
+               fieldViewingTab.gameObject.activeSelf &&
+               fieldViewingDropdownBranch != null &&
+               fieldViewingDropdownBranch.gameObject.activeSelf;
+    }
+
+    bool IsDisturbanceBranchOpen()
+    {
+        return disturbanceTab != null &&
+               disturbanceTab.gameObject.activeSelf &&
+               disturbanceElementBranch != null &&
+               disturbanceElementBranch.gameObject.activeSelf;
+    }
+
     static void PushBranch(UITreeBranch branch)
     {
         if (branch == null)
@@ -284,6 +367,7 @@ public partial class WorldUIManager
 
         HideStatusUI();
         ClearStateview();
+        HideExperimentBranchContent();
         if (clearList)
             ClearObjectList();
     }
@@ -293,6 +377,7 @@ public partial class WorldUIManager
         ResetObjectListState(true);
         SetPendingSettingsVisible(false);
         isObjectListVisible = false;
+        HideExperimentBranchContent();
         HideGenerationBranchContent();
     }
 }

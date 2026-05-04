@@ -20,6 +20,9 @@ public class FieldToUI : MonoBehaviour
     public WindFieldManager windFieldManager;
     public threatmap_calc threatMap;
     public Camera uiCamera;
+    public Transform screenUiParent;
+    public Transform worldGridParent;
+    public bool buildOwnCanvas = true;
 
     [Header("Grid")]
     public int gridResolution = 32;
@@ -35,9 +38,11 @@ public class FieldToUI : MonoBehaviour
 
     FieldView currentView = FieldView.HeatField;
     TMP_Dropdown dropdown;
+    GameObject screenUiRoot;
     TextMeshProUGUI minText;
     TextMeshProUGUI maxText;
     Mesh gridMesh;
+    GameObject gridObject;
     Color32[] gridColors;
     Vector3[] gridSamplePositions;
     float[] gridValues;
@@ -46,6 +51,18 @@ public class FieldToUI : MonoBehaviour
     static readonly Color LowColor = new Color(0.1f, 0.35f, 1f, 0.4f);
     static readonly Color MidColor = new Color(0.1f, 0.85f, 0.25f, 0.4f);
     static readonly Color HighColor = new Color(1f, 0.1f, 0.05f, 0.4f);
+
+    void OnEnable()
+    {
+        if (gridObject != null)
+            gridObject.SetActive(true);
+    }
+
+    void OnDisable()
+    {
+        if (gridObject != null)
+            gridObject.SetActive(false);
+    }
 
     void Start()
     {
@@ -71,11 +88,11 @@ public class FieldToUI : MonoBehaviour
         if (worldGenerator == null)
             worldGenerator = FindFirstObjectByType<WorldGenerator>();
         if (heatFieldManager == null)
-            heatFieldManager = FindFirstObjectByType<HeatFieldManager>();
+            heatFieldManager = HeatFieldManager.GetOrCreate();
         if (manaFieldManager == null)
-            manaFieldManager = FindFirstObjectByType<ManaFieldManager>();
+            manaFieldManager = ManaFieldManager.GetOrCreate();
         if (windFieldManager == null)
-            windFieldManager = FindFirstObjectByType<WindFieldManager>();
+            windFieldManager = WindFieldManager.GetOrCreate();
         if (threatMap == null)
             threatMap = FindFirstObjectByType<threatmap_calc>();
         if (uiCamera == null)
@@ -86,18 +103,34 @@ public class FieldToUI : MonoBehaviour
     {
         EnsureEventSystem();
 
-        GameObject canvasObj = new GameObject("FieldToUICanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        Canvas canvas = canvasObj.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 250;
+        Transform rootParent = screenUiParent != null ? screenUiParent : transform;
+        if (buildOwnCanvas && screenUiParent == null)
+        {
+            screenUiRoot = new GameObject("FieldToUICanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            Canvas canvas = screenUiRoot.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 250;
 
-        CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+            CanvasScaler scaler = screenUiRoot.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+        }
+        else
+        {
+            screenUiRoot = new GameObject("FieldViewingPanel", typeof(RectTransform), typeof(Image));
+            screenUiRoot.transform.SetParent(rootParent, false);
+            RectTransform panelRect = screenUiRoot.GetComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0f, 1f);
+            panelRect.anchorMax = new Vector2(0f, 1f);
+            panelRect.pivot = new Vector2(0f, 1f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(320f, 220f);
+            screenUiRoot.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.62f);
+        }
 
-        dropdown = CreateDropdown(canvasObj.transform);
-        CreateGauge(canvasObj.transform);
+        dropdown = CreateDropdown(screenUiRoot.transform, screenUiParent != null);
+        CreateGauge(screenUiRoot.transform, screenUiParent != null);
     }
 
     void EnsureEventSystem()
@@ -109,15 +142,15 @@ public class FieldToUI : MonoBehaviour
         eventSystem.transform.SetParent(transform, false);
     }
 
-    TMP_Dropdown CreateDropdown(Transform parent)
+    TMP_Dropdown CreateDropdown(Transform parent, bool integratedLayout)
     {
         GameObject root = new GameObject("FieldDropdown", typeof(RectTransform), typeof(Image), typeof(TMP_Dropdown));
         root.transform.SetParent(parent, false);
         RectTransform rect = root.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-24f, -24f);
+        rect.anchorMin = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+        rect.anchorMax = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+        rect.pivot = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+        rect.anchoredPosition = integratedLayout ? new Vector2(16f, -16f) : new Vector2(-24f, -24f);
         rect.sizeDelta = new Vector2(260f, 42f);
 
         Image background = root.GetComponent<Image>();
@@ -215,16 +248,16 @@ public class FieldToUI : MonoBehaviour
         return template;
     }
 
-    void CreateGauge(Transform parent)
+    void CreateGauge(Transform parent, bool integratedLayout)
     {
         GameObject gauge = new GameObject("FieldColorGauge", typeof(RectTransform), typeof(RawImage));
         gauge.transform.SetParent(parent, false);
         RectTransform rect = gauge.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 0.5f);
-        rect.anchorMax = new Vector2(1f, 0.5f);
+        rect.anchorMin = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 0.5f);
+        rect.anchorMax = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 0.5f);
         rect.pivot = new Vector2(1f, 0.5f);
-        rect.anchoredPosition = new Vector2(-150f, 0f);
-        rect.sizeDelta = new Vector2(22f, 260f);
+        rect.anchoredPosition = integratedLayout ? new Vector2(286f, -126f) : new Vector2(-150f, 0f);
+        rect.sizeDelta = new Vector2(22f, integratedLayout ? 148f : 260f);
 
         Texture2D texture = new Texture2D(1, 128, TextureFormat.RGBA32, false);
         texture.wrapMode = TextureWrapMode.Clamp;
@@ -240,18 +273,18 @@ public class FieldToUI : MonoBehaviour
         image.color = Color.white;
 
         maxText = CreateText("FieldMaxText", parent, "max 0.00", 15f, TextAlignmentOptions.MidlineLeft);
-        ConfigureGaugeLabel(maxText.rectTransform, new Vector2(-142f, 130f));
+        ConfigureGaugeLabel(maxText.rectTransform, integratedLayout, new Vector2(16f, -78f), new Vector2(-142f, 130f));
 
         minText = CreateText("FieldMinText", parent, "min 0.00", 15f, TextAlignmentOptions.MidlineLeft);
-        ConfigureGaugeLabel(minText.rectTransform, new Vector2(-142f, -130f));
+        ConfigureGaugeLabel(minText.rectTransform, integratedLayout, new Vector2(16f, -176f), new Vector2(-142f, -130f));
     }
 
-    void ConfigureGaugeLabel(RectTransform rect, Vector2 position)
+    void ConfigureGaugeLabel(RectTransform rect, bool integratedLayout, Vector2 integratedPosition, Vector2 overlayPosition)
     {
-        rect.anchorMin = new Vector2(1f, 0.5f);
-        rect.anchorMax = new Vector2(1f, 0.5f);
+        rect.anchorMin = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 0.5f);
+        rect.anchorMax = integratedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 0.5f);
         rect.pivot = new Vector2(0f, 0.5f);
-        rect.anchoredPosition = position;
+        rect.anchoredPosition = integratedLayout ? integratedPosition : overlayPosition;
         rect.sizeDelta = new Vector2(120f, 24f);
     }
 
@@ -323,7 +356,11 @@ public class FieldToUI : MonoBehaviour
         gridMesh.RecalculateBounds();
 
         GameObject gridObj = new GameObject("FieldToUI Virtual Grid", typeof(MeshFilter), typeof(MeshRenderer));
-        gridObj.transform.SetParent(transform, false);
+        gridObject = gridObj;
+        gridObj.transform.SetParent(worldGridParent, false);
+        gridObj.transform.position = Vector3.zero;
+        gridObj.transform.rotation = Quaternion.identity;
+        gridObj.transform.localScale = Vector3.one;
         gridObj.GetComponent<MeshFilter>().sharedMesh = gridMesh;
 
         Shader shader = Shader.Find("MagicalEcosystem/Experiment/FieldGridVertexColor");
