@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 public partial class WorldUIManager
 {
     List<GameObject> createdUI = new();
     category currentObjectListCategory = category.grass;
     int runtimeObjectSelectId;
+    const float objectListIdleAlpha = 0.3f;
+    const float objectListHoverAlpha = 0.8f;
 
     public void ClearObjectList()
     {
@@ -98,7 +101,7 @@ public partial class WorldUIManager
 
     GameObject CreateObjectListRoot(Transform parent)
     {
-        GameObject root = new GameObject("ObjectListRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        GameObject root = new GameObject("ObjectListRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement), typeof(CanvasGroup), typeof(ObjectListHoverAlpha));
         root.transform.SetParent(parent, false);
         createdUI.Add(root);
 
@@ -111,7 +114,10 @@ public partial class WorldUIManager
         rect.sizeDelta = new Vector2(canvasRect.rect.width * 0.75f, canvasRect.rect.height * (2f / 3f));
 
         Image bg = root.GetComponent<Image>();
-        bg.color = new Color(0f, 0f, 0f, 0.7f);
+        bg.color = new Color(0f, 0f, 0f, 0.9f);
+
+        ObjectListHoverAlpha hoverAlpha = root.GetComponent<ObjectListHoverAlpha>();
+        hoverAlpha.Initialize(root.GetComponent<CanvasGroup>(), objectListIdleAlpha, objectListHoverAlpha);
 
         LayoutElement layout = root.GetComponent<LayoutElement>();
         layout.ignoreLayout = true;
@@ -120,7 +126,7 @@ public partial class WorldUIManager
 
     void CreateCategorySwitch(Transform parent)
     {
-        GameObject header = new GameObject("CategorySwitch", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        GameObject header = new GameObject("CategorySwitch", typeof(RectTransform), typeof(LayoutElement));
         header.transform.SetParent(parent, false);
 
         RectTransform rect = header.GetComponent<RectTransform>();
@@ -130,38 +136,105 @@ public partial class WorldUIManager
         rect.anchoredPosition = new Vector2(0f, -6f);
         rect.offsetMin = new Vector2(6f, 0f);
         rect.offsetMax = new Vector2(-6f, 0f);
-        rect.sizeDelta = new Vector2(0f, 30f);
+        rect.sizeDelta = new Vector2(0f, 48f);
 
         LayoutElement layout = header.GetComponent<LayoutElement>();
-        layout.preferredHeight = 30f;
+        layout.preferredHeight = 48f;
 
-        HorizontalLayoutGroup group = header.GetComponent<HorizontalLayoutGroup>();
-        group.childControlWidth = false;
-        group.childControlHeight = true;
-        group.childForceExpandWidth = false;
-        group.childForceExpandHeight = false;
-        group.spacing = 6f;
-        group.padding = new RectOffset(4, 4, 4, 4);
+        Transform sharedRowRoot = CreateHeaderSharedRowRoot(header.transform);
+        Transform topLine = CreateHeaderLine(sharedRowRoot, "CategorySwitchTopLine", true);
+        Transform bottomLine = CreateHeaderLine(sharedRowRoot, "CategorySwitchBottomLine", false);
 
-        CreateControlButton(header.transform, "<", () =>
+        GameObject labelRoot = CreateHeaderLabelRoot(topLine, "PhaseLabelRoot", 0f, 140f);
+        CreateChildLabel(labelRoot.transform, GetPhaseLabel(), 16, TextAlignmentOptions.Center);
+
+        CreateControlButton(topLine, "<", () =>
         {
             currentObjectListCategory = PreviousCategory(currentObjectListCategory);
             DisplayObjectList();
         }, "StateViewPageDown_leaf_00x1");
 
-        GameObject labelRoot = new GameObject("CategoryLabelRoot", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
-        labelRoot.transform.SetParent(header.transform, false);
-        labelRoot.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.08f);
-        LayoutElement labelLayout = labelRoot.GetComponent<LayoutElement>();
-        labelLayout.preferredWidth = 180f;
-        labelLayout.preferredHeight = 22f;
-        CreateChildLabel(labelRoot.transform, currentObjectListCategory.ToString(), 16, TextAlignmentOptions.Center);
-
-        CreateControlButton(header.transform, ">", () =>
+        CreateControlButton(topLine, ">", () =>
         {
             currentObjectListCategory = NextCategory(currentObjectListCategory);
             DisplayObjectList();
         }, "StateViewPageUp_leaf_00x2");
+
+        CreateControlButton(topLine, "Rnd", () =>
+        {
+            FocusRandomObjectInCurrentCategory();
+            DisplayObjectList();
+        }, "ObjectListRandomFocus_leaf_00x3");
+
+        CreateControlButton(bottomLine, "Eval", () =>
+        {
+            FocusEvaluatedObjectInCurrentCategory();
+            DisplayObjectList();
+        }, "ObjectListEvaluatedFocus_leaf_00x4");
+
+        GameObject targetLabelRoot = CreateHeaderLabelRoot(bottomLine, "TargetLabelRoot", 1f, 160f);
+        CreateChildLabel(targetLabelRoot.transform, GetTargetLabel(), 16, TextAlignmentOptions.Center);
+    }
+
+    Transform CreateHeaderSharedRowRoot(Transform parent)
+    {
+        GameObject rowRoot = new GameObject("CategorySwitchTopRow", typeof(RectTransform));
+        rowRoot.transform.SetParent(parent, false);
+
+        RectTransform rect = rowRoot.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(4f, 2f);
+        rect.offsetMax = new Vector2(-4f, -2f);
+        return rowRoot.transform;
+    }
+
+    Transform CreateHeaderLine(Transform parent, string name, bool topAnchor)
+    {
+        GameObject row = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        row.transform.SetParent(parent, false);
+
+        RectTransform rect = row.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, topAnchor ? 1f : 0f);
+        rect.anchorMax = new Vector2(1f, topAnchor ? 1f : 0f);
+        rect.pivot = new Vector2(0.5f, topAnchor ? 1f : 0f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(0f, 22f);
+
+        LayoutElement layout = row.GetComponent<LayoutElement>();
+        layout.preferredHeight = 22f;
+
+        HorizontalLayoutGroup group = row.GetComponent<HorizontalLayoutGroup>();
+        group.childControlWidth = false;
+        group.childControlHeight = true;
+        group.childForceExpandWidth = false;
+        group.childForceExpandHeight = false;
+        group.spacing = 6f;
+        return row.transform;
+    }
+
+    GameObject CreateHeaderLabelRoot(Transform parent, string name, float flexibleWidth, float preferredWidth)
+    {
+        GameObject labelRoot = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        labelRoot.transform.SetParent(parent, false);
+        labelRoot.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.08f);
+
+        LayoutElement labelLayout = labelRoot.GetComponent<LayoutElement>();
+        labelLayout.preferredWidth = preferredWidth;
+        labelLayout.preferredHeight = 22f;
+        labelLayout.flexibleWidth = flexibleWidth;
+        return labelRoot;
+    }
+
+    string GetPhaseLabel()
+    {
+        return $"phase:{currentObjectListCategory}";
+    }
+
+    string GetTargetLabel()
+    {
+        string targetName = currentTarget != null ? currentTarget.name : "None";
+        return targetName;
     }
 
     category NextCategory(category value)
@@ -199,7 +272,7 @@ public partial class WorldUIManager
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = new Vector2(6f, 6f);
-        rect.offsetMax = new Vector2(-6f, -42f);
+        rect.offsetMax = new Vector2(-6f, -60f);
 
         scrollObj.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.04f);
         ScrollRect scrollRect = scrollObj.GetComponent<ScrollRect>();
@@ -320,10 +393,11 @@ public partial class WorldUIManager
         if (list == null)
             return;
 
-        foreach (GameObject obj in list)
+        for (int i = 0; i < list.Count; i++)
         {
+            GameObject obj = list[i];
             if (obj == null) continue;
-            CreateObjectEntry(categoryRoot.transform, obj);
+            CreateObjectEntry(categoryRoot.transform, obj, i);
         }
     }
 
@@ -344,7 +418,7 @@ public partial class WorldUIManager
         rect.offsetMax = new Vector2(-8f, 0f);
     }
 
-    void CreateObjectEntry(Transform parent, GameObject obj)
+    void CreateObjectEntry(Transform parent, GameObject obj, int index)
     {
         GameObject entry = new GameObject(obj.name + "_Entry", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         entry.transform.SetParent(parent, false);
@@ -370,7 +444,7 @@ public partial class WorldUIManager
         runtimeObjectSelectId++;
         TextMeshProUGUI label = mainButton.GetComponentInChildren<TextMeshProUGUI>(true);
         if (label != null)
-            label.text = obj.name;
+            label.text = GetObjectEntryLabel(obj, index);
 
         Button button = mainButton.GetComponent<Button>();
         button.onClick.RemoveAllListeners();
@@ -387,6 +461,141 @@ public partial class WorldUIManager
         });
     }
 
+    string GetObjectEntryLabel(GameObject obj, int index)
+    {
+        if (obj == null)
+            return $"#{index:00} missing";
+
+        string prefix = currentTarget == obj ? "> " : string.Empty;
+        return $"{prefix}#{index:00} {obj.name}";
+    }
+
+    bool FocusRandomObjectInCurrentCategory()
+    {
+        List<GameObject> list = GetCurrentObjectList();
+        GameObject target = GetRandomFocusableObject(list);
+        if (target == null)
+            return false;
+
+        SetTarget(target);
+        return true;
+    }
+
+    bool FocusEvaluatedObjectInCurrentCategory()
+    {
+        List<GameObject> list = GetCurrentObjectList();
+        GameObject target = GetEvaluatedFocusTarget(list);
+        if (target == null)
+            return false;
+
+        SetTarget(target);
+        return true;
+    }
+
+    List<GameObject> GetCurrentObjectList()
+    {
+        RefreshObjectSources();
+
+        switch (currentObjectListCategory)
+        {
+            case category.herbivore:
+                return herbivoreManager != null && herbivoreManager.TryGetComponent<herbivoreManager>(out var hm) ? hm.herbivores : null;
+            case category.predator:
+                return predatorManager != null && predatorManager.TryGetComponent<predatorManager>(out var pm) ? pm.predators : null;
+            default:
+                return grassManager != null && grassManager.TryGetComponent<ResourceDispenser>(out var dispenser) ? dispenser.grasses : null;
+        }
+    }
+
+    GameObject GetRandomFocusableObject(List<GameObject> list)
+    {
+        if (list == null || list.Count == 0)
+            return null;
+
+        List<GameObject> candidates = new List<GameObject>();
+        for (int i = 0; i < list.Count; i++)
+        {
+            GameObject obj = list[i];
+            if (IsFocusableObject(obj))
+                candidates.Add(obj);
+        }
+
+        if (candidates.Count == 0)
+            return null;
+
+        return candidates[Random.Range(0, candidates.Count)];
+    }
+
+    GameObject GetEvaluatedFocusTarget(List<GameObject> list)
+    {
+        if (list == null || list.Count == 0)
+            return null;
+
+        List<GameObject> candidates = new List<GameObject>();
+        List<float> weights = new List<float>();
+        float totalWeight = 0f;
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            GameObject obj = list[i];
+            if (!IsFocusableObject(obj))
+                continue;
+
+            float weight = Mathf.Max(0f, EvaluateFocusWeight(obj));
+            if (weight <= 0f)
+                weight = 0.001f;
+
+            candidates.Add(obj);
+            weights.Add(weight);
+            totalWeight += weight;
+        }
+
+        if (candidates.Count == 0)
+            return null;
+
+        float roll = Random.value * totalWeight;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            roll -= weights[i];
+            if (roll <= 0f)
+                return candidates[i];
+        }
+
+        return candidates[candidates.Count - 1];
+    }
+
+    bool IsFocusableObject(GameObject obj)
+    {
+        if (obj == null || !obj.activeInHierarchy)
+            return false;
+
+        if (obj.TryGetComponent<herbivoreBehaviour>(out var herbivore))
+            return !herbivore.IsDead;
+
+        if (obj.TryGetComponent<predatorBehaviour>(out var predator))
+            return !predator.IsDead;
+
+        return true;
+    }
+
+    float EvaluateFocusWeight(GameObject obj)
+    {
+        EvaluationAxis axis = generationController != null ? generationController.evaluationAxis : EvaluationAxis.Random;
+        switch (axis)
+        {
+            case EvaluationAxis.Carbon:
+                return obj.TryGetComponent<Resource>(out var resource) ? resource.carbon : 0f;
+            case EvaluationAxis.Health:
+                if (obj.TryGetComponent<herbivoreBehaviour>(out var herbivore))
+                    return herbivore.health;
+                if (obj.TryGetComponent<predatorBehaviour>(out var predator))
+                    return predator.health;
+                return 0f;
+            default:
+                return Random.value;
+        }
+    }
+
     void CreateControlButton(Transform parent, string text, UnityEngine.Events.UnityAction action, string objectName)
     {
         GameObject buttonObj = Instantiate(buttonPrefab, parent);
@@ -397,7 +606,7 @@ public partial class WorldUIManager
             layout = buttonObj.AddComponent<LayoutElement>();
 
         layout.preferredHeight = 20f;
-        layout.preferredWidth = text == "detail" ? 80f : 36f;
+        layout.preferredWidth = text == "detail" ? 80f : (text.Length >= 3 ? 48f : 36f);
         layout.flexibleWidth = text == "detail" ? 1f : 0f;
 
         TextMeshProUGUI label = buttonObj.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -443,5 +652,39 @@ public partial class WorldUIManager
         text.color = Color.white;
         text.alignment = alignment;
         return text;
+    }
+}
+
+public sealed class ObjectListHoverAlpha : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+{
+    CanvasGroup canvasGroup;
+    float idleAlpha = 0.3f;
+    float hoverAlpha = 0.8f;
+
+    public void Initialize(CanvasGroup targetCanvasGroup, float idle, float hover)
+    {
+        canvasGroup = targetCanvasGroup;
+        idleAlpha = Mathf.Clamp01(idle);
+        hoverAlpha = Mathf.Clamp01(hover);
+        ApplyAlpha(idleAlpha);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ApplyAlpha(hoverAlpha);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ApplyAlpha(idleAlpha);
+    }
+
+    void ApplyAlpha(float alpha)
+    {
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = Mathf.Clamp01(alpha);
     }
 }
