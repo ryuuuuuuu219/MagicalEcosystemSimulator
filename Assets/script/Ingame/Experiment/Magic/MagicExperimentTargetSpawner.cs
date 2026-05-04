@@ -13,7 +13,7 @@ public class MagicExperimentTargetSpawner : MonoBehaviour
     public Vector3 maxTargetSize = new Vector3(5f, 5f, 1.4f);
     public bool avoidWater = true;
     public bool alignToTerrainNormal = true;
-    public float groundClearance = 0.05f;
+    public float groundClearance = 20f;
     public int maxPlacementAttempts = 16;
 
     IEnumerator Start()

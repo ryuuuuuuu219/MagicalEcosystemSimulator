@@ -22,6 +22,7 @@ public class MagicExperimentTarget : MonoBehaviour
     public float projectileScale = 0.36f;
     public float projectileLifetime = 8f;
     public float effectLifetime = 6f;
+    public MagicCircleLaunchSettings spellCircleSettings = MagicCircleLaunchSettings.Default;
 
     float currentYRotationSpeed;
     float nextFireTime;
@@ -87,34 +88,20 @@ public class MagicExperimentTarget : MonoBehaviour
     void FireRandomMagic()
     {
         MagicElement element = FireElements[Random.Range(0, FireElements.Length)];
-        ProjectileSettings settings = GetProjectileSettings(element);
+        MagicProjectileLaunchSettings settings = GetProjectileSettings(element);
         Vector3 direction = transform.forward.sqrMagnitude > 0.001f ? transform.forward.normalized : Vector3.down;
-        Vector3 spawnPosition = transform.position + direction * GetProjectileSpawnDistance(direction);
 
-        GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        projectile.name = $"{element} Target Projectile {targetIndex:00}";
-        projectile.transform.position = spawnPosition;
-        projectile.transform.localScale = Vector3.one * projectileScale;
-
-        var renderer = projectile.GetComponent<Renderer>();
-        renderer.material = CreateMaterial(settings.projectileColor, 0.9f);
-
-        var magicProjectile = projectile.AddComponent<MagicProjectile>();
-        magicProjectile.element = element;
-        magicProjectile.lifeTime = settings.projectileLifetime;
-        magicProjectile.effectRadius = settings.effectRadius;
-        magicProjectile.iceSpikeHeight = settings.iceSpikeHeight;
-        magicProjectile.iceSpikeRadius = settings.iceSpikeRadius;
-        magicProjectile.wrapNonTerrainTargets = settings.wrapNonTerrainTargets;
-        magicProjectile.effectLifetime = settings.effectLifetime;
-        magicProjectile.envelopeLifetime = settings.effectLifetime;
-        magicProjectile.envelopePadding = settings.envelopePadding;
-        magicProjectile.impactMaterialColor = settings.projectileColor;
-        magicProjectile.launchPoint = spawnPosition;
-        magicProjectile.projectileSpeed = settings.projectileSpeed;
-
-        var body = projectile.GetComponent<Rigidbody>();
-        body.linearVelocity = direction * settings.projectileSpeed;
+        MagicLaunchApi.LaunchWithCharge(this, new MagicLaunchRequest
+        {
+            element = element,
+            origin = transform.position,
+            direction = direction,
+            spawnOffset = GetProjectileSpawnDistance(direction),
+            projectileScale = projectileScale,
+            projectileSettings = settings,
+            spellCircleSettings = spellCircleSettings,
+            projectileName = $"{element} Target Projectile {targetIndex:00}"
+        });
     }
 
     float GetProjectileSpawnDistance(Vector3 direction)
@@ -132,79 +119,8 @@ public class MagicExperimentTarget : MonoBehaviour
         return projectedExtent + projectileSpawnOffset;
     }
 
-    ProjectileSettings GetProjectileSettings(MagicElement element)
+    MagicProjectileLaunchSettings GetProjectileSettings(MagicElement element)
     {
-        switch (element)
-        {
-            case MagicElement.Fire:
-                return new ProjectileSettings(new Color(1f, 0.35f, 0.08f, 0.85f), 55f, projectileLifetime, 3f, 0f, 0f, false, effectLifetime, 0.2f);
-            case MagicElement.Ice:
-                return new ProjectileSettings(new Color(0.55f, 0.9f, 1f, 0.8f), 60f, projectileLifetime, 2f, 3f, 0.6f, true, effectLifetime, 0.25f);
-            case MagicElement.Lightning:
-                return new ProjectileSettings(new Color(1f, 0.95f, 0.25f, 0.9f), 120f, 4f, 1.5f, 0f, 0f, false, 3f, 0.15f);
-            case MagicElement.Wind:
-                return new ProjectileSettings(new Color(0.65f, 1f, 0.75f, 0.45f), 75f, 6f, 4f, 0f, 0f, false, 4f, 0.3f);
-            case MagicElement.Space:
-                return new ProjectileSettings(new Color(0.75f, 0.45f, 1f, 0.7f), 50f, 7f, 2.5f, 0f, 0f, false, 5f, 0.25f);
-            default:
-                return new ProjectileSettings(new Color(0.55f, 0.9f, 1f, 0.8f), 60f, projectileLifetime, 2f, 3f, 0.6f, true, effectLifetime, 0.25f);
-        }
-    }
-
-    static Material CreateMaterial(Color color, float smoothness)
-    {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null)
-            shader = Shader.Find("Standard");
-
-        Material material = new Material(shader);
-        if (material.HasProperty("_BaseColor"))
-            material.SetColor("_BaseColor", color);
-        else if (material.HasProperty("_Color"))
-            material.SetColor("_Color", color);
-
-        if (material.HasProperty("_Smoothness"))
-            material.SetFloat("_Smoothness", smoothness);
-        if (material.HasProperty("_Metallic"))
-            material.SetFloat("_Metallic", 0f);
-
-        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-        return material;
-    }
-
-    struct ProjectileSettings
-    {
-        public readonly Color projectileColor;
-        public readonly float projectileSpeed;
-        public readonly float projectileLifetime;
-        public readonly float effectRadius;
-        public readonly float iceSpikeHeight;
-        public readonly float iceSpikeRadius;
-        public readonly bool wrapNonTerrainTargets;
-        public readonly float effectLifetime;
-        public readonly float envelopePadding;
-
-        public ProjectileSettings(
-            Color projectileColor,
-            float projectileSpeed,
-            float projectileLifetime,
-            float effectRadius,
-            float iceSpikeHeight,
-            float iceSpikeRadius,
-            bool wrapNonTerrainTargets,
-            float effectLifetime,
-            float envelopePadding)
-        {
-            this.projectileColor = projectileColor;
-            this.projectileSpeed = projectileSpeed;
-            this.projectileLifetime = projectileLifetime;
-            this.effectRadius = effectRadius;
-            this.iceSpikeHeight = iceSpikeHeight;
-            this.iceSpikeRadius = iceSpikeRadius;
-            this.wrapNonTerrainTargets = wrapNonTerrainTargets;
-            this.effectLifetime = effectLifetime;
-            this.envelopePadding = envelopePadding;
-        }
+        return MagicProjectileLaunchSettings.ForElement(element, projectileLifetime, effectLifetime);
     }
 }
