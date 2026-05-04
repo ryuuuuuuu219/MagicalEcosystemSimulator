@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 public class MagicMaterialExperimentLauncher : MonoBehaviour
 {
     public Camera sourceCamera;
+    public bool launchEnabled = false;
     public MagicElement launchElement = MagicElement.Ice;
     public float lifetime = 8f;
     public float effectLifetime = 6f;
@@ -114,22 +115,34 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
             launchElement = MagicElement.Wind;
         else if (Input.GetKeyDown(KeyCode.Alpha5))
             launchElement = MagicElement.Space;
+        else if (Input.GetKeyDown(KeyCode.Alpha0))
+            launchEnabled = false;
+
+        if (Input.GetKeyDown(KeyCode.Alpha1) ||
+            Input.GetKeyDown(KeyCode.Alpha2) ||
+            Input.GetKeyDown(KeyCode.Alpha3) ||
+            Input.GetKeyDown(KeyCode.Alpha4) ||
+            Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            launchEnabled = true;
+        }
     }
 
     void LaunchProjectile()
     {
-        if (isCharging)
+        if (isCharging || !launchEnabled)
             return;
 
         isCharging = true;
         Ray ray = sourceCamera.ScreenPointToRay(Input.mousePosition);
+        Vector3 direction = ResolveLaunchDirection(ray);
         MagicElement element = launchElement;
         MagicProjectileLaunchSettings launchSettings = currentLaunchSettings.WithFallbackEffectLifetime(effectLifetime);
         MagicLaunchApi.LaunchWithCharge(this, new MagicLaunchRequest
         {
             element = element,
             origin = ray.origin,
-            direction = ray.direction,
+            direction = direction,
             spawnOffset = projectileSpawnOffset,
             projectileScale = projectileScale,
             projectileSettings = launchSettings,
@@ -139,6 +152,79 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
         Invoke(nameof(ClearCharging), Mathf.Max(0.01f, spellCircleSettings.chargeDuration));
     }
 
+    Vector3 ResolveLaunchDirection(Ray ray)
+    {
+        Vector3 direction = ray.direction.sqrMagnitude > 0.001f ? ray.direction.normalized : sourceCamera.transform.forward;
+        if (TryFindTerrainPointBelowWaterRay(ray, out Vector3 terrainPoint))
+            return (terrainPoint - ray.origin).normalized;
+
+        return direction;
+    }
+
+    static bool TryFindTerrainPointBelowWaterRay(Ray ray, out Vector3 terrainPoint)
+    {
+        terrainPoint = Vector3.zero;
+        RaycastHit[] hits = Physics.RaycastAll(ray, 5000f);
+        if (hits == null || hits.Length == 0)
+            return false;
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        bool sawWater = false;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider collider = hits[i].collider;
+            if (collider == null)
+                continue;
+
+            if (collider.GetComponent<WorldWaterCollider>() != null ||
+                collider.name == "Water" ||
+                collider.gameObject.layer == LayerMask.NameToLayer("Water"))
+            {
+                sawWater = true;
+                continue;
+            }
+
+            if (collider.GetComponent<TerrainCollider>() != null)
+            {
+                terrainPoint = hits[i].point;
+                return sawWater;
+            }
+        }
+
+        if (!sawWater)
+            return false;
+
+        Terrain terrain = Terrain.activeTerrain != null ? Terrain.activeTerrain : FindFirstObjectByType<Terrain>();
+        if (terrain == null || terrain.terrainData == null)
+            return false;
+
+        Vector3 waterPoint = Vector3.zero;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider collider = hits[i].collider;
+            if (collider != null &&
+                (collider.GetComponent<WorldWaterCollider>() != null ||
+                 collider.name == "Water" ||
+                 collider.gameObject.layer == LayerMask.NameToLayer("Water")))
+            {
+                waterPoint = hits[i].point;
+                break;
+            }
+        }
+
+        Vector3 terrainPos = terrain.transform.position;
+        Vector3 size = terrain.terrainData.size;
+        if (waterPoint.x < terrainPos.x || waterPoint.x > terrainPos.x + size.x ||
+            waterPoint.z < terrainPos.z || waterPoint.z > terrainPos.z + size.z)
+        {
+            return false;
+        }
+
+        float y = terrain.SampleHeight(waterPoint) + terrainPos.y;
+        terrainPoint = new Vector3(waterPoint.x, y, waterPoint.z);
+        return true;
+    }
+
     void ClearCharging()
     {
         isCharging = false;
@@ -146,6 +232,9 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
 
     void AssignLaunchSettingsByElement()
     {
+        if (!launchEnabled)
+            return;
+
         switch (launchElement)
         {
             case MagicElement.Fire:

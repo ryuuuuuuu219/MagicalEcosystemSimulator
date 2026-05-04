@@ -33,10 +33,10 @@ public partial class WorldUIManager
         pendingSettingsPanelRoot.SetActive(false);
 
         RectTransform rootRect = pendingSettingsPanelRoot.GetComponent<RectTransform>();
-        rootRect.anchorMin = Vector2.zero;
-        rootRect.anchorMax = Vector2.one;
-        rootRect.offsetMin = new Vector2(12f, 12f);
-        rootRect.offsetMax = new Vector2(-12f, -12f);
+        rootRect.anchorMin = new Vector2(0.22f, 0.05f);
+        rootRect.anchorMax = new Vector2(0.98f, 0.96f);
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
 
         Image bg = pendingSettingsPanelRoot.GetComponent<Image>();
         bg.color = new Color(0f, 0f, 0f, 0.72f);

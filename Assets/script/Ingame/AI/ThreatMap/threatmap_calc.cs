@@ -36,14 +36,6 @@ public class threatmap_calc : MonoBehaviour
         public string genomeTypeName;
     }
 
-    [Header("Threat Score Grid")]
-    public float scoreCellSize = 2f;
-    public float scoreDecayPerSecond = 0.75f;
-    public float scoreMinClamp = 0f;
-    public float scoreMaxClamp = 1000f;
-    public float lowThreatProbeDistance = 3f;
-    [Range(4, 32)] public int lowThreatDirectionSamples = 12;
-
     [Header("AI Mode")]
     public AiAgentMode currentMode = AiAgentMode.herbibore;
     public AgentTypeBinding[] modeBindings =
@@ -76,8 +68,8 @@ public class threatmap_calc : MonoBehaviour
 
     protected float[] predatorFieldBuffer;
     protected Vector3[] cellPositionBuffer;
-    readonly Dictionary<Vector2Int, float> threatScoreMap = new();
-    readonly List<Vector2Int> decayRemoveKeys = new();
+    protected int evaluatedCellCount;
+    protected Settings lastEvaluationSettings;
 
     public Type CurrentBehaviourType => GetBehaviourType(currentMode);
     public Type CurrentGenomeType => GetGenomeType(currentMode);
@@ -99,103 +91,31 @@ public class threatmap_calc : MonoBehaviour
         return ResolveType(typeName);
     }
 
-    public void AddThreatScore(Vector2 worldPosition, float score)
+    public float SampleEvaluatedThreat(Vector3 worldPosition)
     {
-        if (score == 0f) return;
-        Vector2Int key = ToCell(worldPosition);
-        threatScoreMap.TryGetValue(key, out float current);
-        threatScoreMap[key] = Mathf.Clamp(current + score, scoreMinClamp, scoreMaxClamp);
-    }
+        if (predatorFieldBuffer == null || cellPositionBuffer == null || evaluatedCellCount <= 0)
+            return 0f;
 
-    public void RemoveThreatScore(Vector2 worldPosition, float score)
-    {
-        if (score == 0f) return;
-        AddThreatScore(worldPosition, -Mathf.Abs(score));
-    }
+        float bestDistanceSqr = float.PositiveInfinity;
+        float bestValue = 0f;
+        Vector3 flatPosition = new Vector3(worldPosition.x, 0f, worldPosition.z);
+        int count = Mathf.Min(evaluatedCellCount, predatorFieldBuffer.Length);
 
-    public void AddThreatPulse(Vector2 worldPosition, float radius, float peakScore, int radialSamples = 12)
-    {
-        if (peakScore == 0f || radius <= 0f)
-            return;
-
-        AddThreatScore(worldPosition, peakScore);
-
-        int samples = Mathf.Max(4, radialSamples);
-        float safeRadius = Mathf.Max(scoreCellSize, radius);
-        for (int i = 0; i < samples; i++)
+        for (int i = 0; i < count; i++)
         {
-            float angle = (Mathf.PI * 2f * i) / samples;
-            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            for (float dist = scoreCellSize; dist <= safeRadius; dist += scoreCellSize)
-            {
-                float falloff = 1f - Mathf.Clamp01(dist / safeRadius);
-                if (falloff <= 0f)
-                    continue;
+            Vector3 cell = cellPositionBuffer[i];
+            cell.y = 0f;
+            float distanceSqr = (cell - flatPosition).sqrMagnitude;
+            if (distanceSqr >= bestDistanceSqr)
+                continue;
 
-                AddThreatScore(worldPosition + dir * dist, peakScore * falloff);
-            }
-        }
-    }
-
-    public Vector2 GetLowThreatDirection(Vector2 worldPosition)
-    {
-        int samples = Mathf.Max(4, lowThreatDirectionSamples);
-        float probeDistance = Mathf.Max(0.2f, lowThreatProbeDistance);
-        Vector2 bestDir = Vector2.zero;
-        float bestScore = float.PositiveInfinity;
-
-        for (int i = 0; i < samples; i++)
-        {
-            float ang = (Mathf.PI * 2f * i) / samples;
-            Vector2 dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
-            Vector2 probe = worldPosition + dir * probeDistance;
-            float score = GetThreatScore(probe);
-            if (score < bestScore)
-            {
-                bestScore = score;
-                bestDir = dir;
-            }
+            bestDistanceSqr = distanceSqr;
+            bestValue = predatorFieldBuffer[i];
         }
 
-        return bestDir.sqrMagnitude > 0.0001f ? bestDir.normalized : Vector2.zero;
-    }
-
-    public float GetThreatScore(Vector2 worldPosition)
-    {
-        Vector2Int key = ToCell(worldPosition);
-        return threatScoreMap.TryGetValue(key, out float value) ? value : 0f;
-    }
-
-    protected virtual void Update()
-    {
-        TickThreatScoreDecay(Time.deltaTime);
-    }
-
-    protected void TickThreatScoreDecay(float deltaTime)
-    {
-        if (threatScoreMap.Count == 0) return;
-
-        float decay = Mathf.Max(0f, scoreDecayPerSecond) * deltaTime;
-        if (decay <= 0f) return;
-
-        decayRemoveKeys.Clear();
-        var keys = ListPool<Vector2Int>.Get();
-        keys.AddRange(threatScoreMap.Keys);
-
-        for (int i = 0; i < keys.Count; i++)
-        {
-            Vector2Int key = keys[i];
-            float v = Mathf.Max(0f, threatScoreMap[key] - decay);
-            if (v <= 0.0001f)
-                decayRemoveKeys.Add(key);
-            else
-                threatScoreMap[key] = v;
-        }
-
-        ListPool<Vector2Int>.Release(keys);
-
-        for (int i = 0; i < decayRemoveKeys.Count; i++)
-            threatScoreMap.Remove(decayRemoveKeys[i]);
+        float cellSize = Mathf.Max(0.5f, lastEvaluationSettings.cellSize);
+        float maxDistance = cellSize * 1.2f;
+        return bestDistanceSqr <= maxDistance * maxDistance ? bestValue : 0f;
     }
 
     public float ComputePredatorField(
@@ -276,16 +196,14 @@ public class threatmap_calc : MonoBehaviour
                     corpseField = 0f;
 
                 float bowlField = ComputeCenterDistanceSquaredField(cellPos, terrain);
-                float dynamicThreat = GetThreatScore(new Vector2(cellPos.x, cellPos.z));
                 float score = escapeMode
-                    ? -(predatorField + dynamicThreat)
+                    ? -predatorField
                     : (profile.foodWeight * foodField) +
                       (profile.corpseWeight * corpseField) -
                       (profile.predatorWeight * predatorField) -
-                      dynamicThreat -
                       (settings.bowlMapWeight * bowlField);
 
-                predatorFieldBuffer[index] = predatorField + dynamicThreat;
+                predatorFieldBuffer[index] = predatorField;
                 cellPositionBuffer[index] = cellPos;
 
                 if ((x != 0 || z != 0) && score > bestScore)
@@ -297,6 +215,8 @@ public class threatmap_calc : MonoBehaviour
             }
         }
 
+        evaluatedCellCount = index;
+        lastEvaluationSettings = settings;
         OnMapEvaluated(index, settings, debugOwner);
 
         if (bestIndex < 0)
@@ -334,14 +254,6 @@ public class threatmap_calc : MonoBehaviour
 
         var asm = typeof(threatmap_calc).Assembly;
         return asm.GetType(typeName);
-    }
-
-    Vector2Int ToCell(Vector2 worldPos)
-    {
-        float safe = Mathf.Max(0.1f, scoreCellSize);
-        return new Vector2Int(
-            Mathf.FloorToInt(worldPos.x / safe),
-            Mathf.FloorToInt(worldPos.y / safe));
     }
 
     protected float AccumulateExponentialField(
@@ -397,21 +309,5 @@ public class threatmap_calc : MonoBehaviour
             predatorFieldBuffer = new float[requiredSize];
             cellPositionBuffer = new Vector3[requiredSize];
         }
-    }
-}
-
-static class ListPool<T>
-{
-    static readonly Stack<List<T>> Pool = new();
-
-    public static List<T> Get()
-    {
-        return Pool.Count > 0 ? Pool.Pop() : new List<T>(64);
-    }
-
-    public static void Release(List<T> list)
-    {
-        list.Clear();
-        Pool.Push(list);
     }
 }

@@ -29,8 +29,6 @@ public static class PredatorCombatLibrary
         public Vector3 targetVelocity;
         public Vector3 targetForward;
         public float currentTime;
-        public threatmap_calc threatMap;
-        public Vector2 threatPulsePosition;
     }
 
     public static CombatResult TryCombatActions(
@@ -89,7 +87,6 @@ public static class PredatorCombatLibrary
             return false;
         }
 
-        EmitThreatPulse(context, genome, 0.65f);
         Vector3 contactPoint = ComputeContactPoint(context.attackerCollider, targetCollider, context.targetPosition);
         AttackTraceLibrary.DrawChargeBurst(
             contactPoint,
@@ -130,7 +127,6 @@ public static class PredatorCombatLibrary
             return false;
         }
 
-        EmitThreatPulse(context, genome, 1f);
         float damage = Mathf.Max(0f, genome.biteDamage) * ComputeAttackPowerCoefficient(clock);
         AttackTraceLibrary.DrawBiteProjection(
             context.targetPosition,
@@ -174,7 +170,6 @@ public static class PredatorCombatLibrary
             return false;
         }
 
-        EmitThreatPulse(context, genome, 1.25f);
         float damage = Mathf.Max(0f, genome.meleeDamage) * ComputeAttackPowerCoefficient(clock);
         AttackTraceLibrary.DrawMeleeArc(
             context.targetPosition,
@@ -283,13 +278,4 @@ public static class PredatorCombatLibrary
         return vector;
     }
 
-    static void EmitThreatPulse(in CombatContext context, in PredatorGenome genome, float multiplier)
-    {
-        if (context.threatMap == null)
-            return;
-
-        float score = Mathf.Max(0f, genome.attackThreatPulseScore) * Mathf.Max(0.1f, multiplier);
-        float radius = Mathf.Max(0.5f, genome.attackThreatPulseRadius);
-        context.threatMap.AddThreatPulse(context.threatPulsePosition, radius, score);
-    }
 }

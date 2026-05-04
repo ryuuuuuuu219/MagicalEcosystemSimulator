@@ -14,7 +14,7 @@ public class MagicLaunchMenuController : MonoBehaviour
     {
         EnsureLauncher();
         BuildUI();
-        ApplySelection(elementDropdown != null ? elementDropdown.value : 1);
+        ApplySelection(elementDropdown != null ? elementDropdown.value : 0);
     }
 
     void OnEnable()
@@ -74,7 +74,7 @@ public class MagicLaunchMenuController : MonoBehaviour
         Image background = root.GetComponent<Image>();
         background.color = new Color(0.04f, 0.06f, 0.08f, 0.9f);
 
-        TextMeshProUGUI label = CreateText("Label", root.transform, "ice", 18f, TextAlignmentOptions.MidlineLeft);
+        TextMeshProUGUI label = CreateText("Label", root.transform, "none", 18f, TextAlignmentOptions.MidlineLeft);
         label.rectTransform.anchorMin = Vector2.zero;
         label.rectTransform.anchorMax = Vector2.one;
         label.rectTransform.offsetMin = new Vector2(14f, 0f);
@@ -95,13 +95,14 @@ public class MagicLaunchMenuController : MonoBehaviour
         dropdown.template = template.GetComponent<RectTransform>();
         dropdown.options = new List<TMP_Dropdown.OptionData>
         {
+            new("none"),
             new("fire"),
             new("ice"),
             new("lightning"),
             new("wind"),
             new("space")
         };
-        dropdown.value = 1;
+        dropdown.value = 0;
         template.SetActive(false);
         return dropdown;
     }
@@ -115,7 +116,7 @@ public class MagicLaunchMenuController : MonoBehaviour
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -4f);
-        rect.sizeDelta = new Vector2(0f, 204f);
+        rect.sizeDelta = new Vector2(0f, 244f);
         template.GetComponent<Image>().color = new Color(0.03f, 0.04f, 0.05f, 0.95f);
 
         GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
@@ -135,7 +136,7 @@ public class MagicLaunchMenuController : MonoBehaviour
         contentRect.anchorMax = new Vector2(1f, 1f);
         contentRect.pivot = new Vector2(0.5f, 1f);
         contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0f, 202f);
+        contentRect.sizeDelta = new Vector2(0f, 242f);
 
         VerticalLayoutGroup layout = content.GetComponent<VerticalLayoutGroup>();
         layout.childControlHeight = true;
@@ -168,12 +169,16 @@ public class MagicLaunchMenuController : MonoBehaviour
     void ApplySelection(int value)
     {
         EnsureLauncher();
+        launcher.launchEnabled = value > 0;
+        if (!launcher.launchEnabled)
+            return;
+
         launcher.launchElement = value switch
         {
-            0 => MagicElement.Fire,
-            2 => MagicElement.Lightning,
-            3 => MagicElement.Wind,
-            4 => MagicElement.Space,
+            1 => MagicElement.Fire,
+            3 => MagicElement.Lightning,
+            4 => MagicElement.Wind,
+            5 => MagicElement.Space,
             _ => MagicElement.Ice
         };
     }

@@ -211,6 +211,6 @@ public class field2AI : MonoBehaviour
 
     float SampleThreat(Vector3 worldPosition)
     {
-        return threatMap != null ? threatMap.GetThreatScore(new Vector2(worldPosition.x, worldPosition.z)) : 0f;
+        return threatMap != null ? threatMap.SampleEvaluatedThreat(worldPosition) : 0f;
     }
 }

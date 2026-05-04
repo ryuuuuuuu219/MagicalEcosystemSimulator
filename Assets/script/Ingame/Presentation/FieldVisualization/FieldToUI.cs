@@ -8,6 +8,7 @@ public class FieldToUI : MonoBehaviour
 {
     enum FieldView
     {
+        None,
         ThreatMap,
         HeatField,
         ManaField,
@@ -35,8 +36,9 @@ public class FieldToUI : MonoBehaviour
     public bool drawWindLines = true;
     public float windLineScale = 0.08f;
     public float windMinMagnitude = 0.02f;
+    public float windLineWidth = 0.05f;
 
-    FieldView currentView = FieldView.HeatField;
+    FieldView currentView = FieldView.None;
     TMP_Dropdown dropdown;
     GameObject screenUiRoot;
     TextMeshProUGUI minText;
@@ -47,6 +49,9 @@ public class FieldToUI : MonoBehaviour
     Vector3[] gridSamplePositions;
     float[] gridValues;
     float nextUpdateTime;
+    RuntimeUpdater runtimeUpdater;
+    readonly List<LineRenderer> windLines = new();
+    Material windLineMaterial;
 
     static readonly Color LowColor = new Color(0.1f, 0.35f, 1f, 0.4f);
     static readonly Color MidColor = new Color(0.1f, 0.85f, 0.25f, 0.4f);
@@ -55,13 +60,12 @@ public class FieldToUI : MonoBehaviour
     void OnEnable()
     {
         if (gridObject != null)
-            gridObject.SetActive(true);
+            gridObject.SetActive(currentView != FieldView.None);
     }
 
     void OnDisable()
     {
-        if (gridObject != null)
-            gridObject.SetActive(false);
+        HideWindFieldLines();
     }
 
     void Start()
@@ -69,10 +73,19 @@ public class FieldToUI : MonoBehaviour
         ResolveReferences();
         BuildScreenUI();
         BuildWorldGrid();
+        EnsureRuntimeUpdater();
         UpdateFieldView(true);
     }
 
     void Update()
+    {
+        if (runtimeUpdater != null)
+            return;
+
+        RuntimeUpdate();
+    }
+
+    void RuntimeUpdate()
     {
         ResolveReferences();
 
@@ -177,12 +190,13 @@ public class FieldToUI : MonoBehaviour
         result.template = template.GetComponent<RectTransform>();
         result.options = new List<TMP_Dropdown.OptionData>
         {
+            new("none"),
             new("threat map"),
             new("heat field"),
             new("mana field"),
             new("wind field")
         };
-        result.value = 1;
+        result.value = 0;
         result.onValueChanged.AddListener(OnDropdownChanged);
         template.SetActive(false);
         return result;
@@ -376,10 +390,11 @@ public class FieldToUI : MonoBehaviour
     {
         currentView = value switch
         {
-            0 => FieldView.ThreatMap,
-            2 => FieldView.ManaField,
-            3 => FieldView.WindField,
-            _ => FieldView.HeatField
+            1 => FieldView.ThreatMap,
+            2 => FieldView.HeatField,
+            3 => FieldView.ManaField,
+            4 => FieldView.WindField,
+            _ => FieldView.None
         };
         UpdateFieldView(true);
     }
@@ -388,6 +403,21 @@ public class FieldToUI : MonoBehaviour
     {
         if (gridMesh == null || gridSamplePositions == null)
             return;
+
+        if (currentView == FieldView.None)
+        {
+            if (gridObject != null)
+                gridObject.SetActive(false);
+            HideWindFieldLines();
+            if (minText != null)
+                minText.text = "min -";
+            if (maxText != null)
+                maxText.text = "max -";
+            return;
+        }
+
+        if (gridObject != null && !gridObject.activeSelf)
+            gridObject.SetActive(true);
 
         float min = float.PositiveInfinity;
         float max = float.NegativeInfinity;
@@ -422,8 +452,10 @@ public class FieldToUI : MonoBehaviour
         }
 
         gridMesh.colors32 = gridColors;
-        minText.text = $"min {min:0.00}";
-        maxText.text = $"max {max:0.00}";
+        if (minText != null)
+            minText.text = $"min {min:0.00}";
+        if (maxText != null)
+            maxText.text = $"max {max:0.00}";
 
         DrawWindFieldLines();
     }
@@ -444,7 +476,7 @@ public class FieldToUI : MonoBehaviour
     {
         return currentView switch
         {
-            FieldView.ThreatMap => threatMap != null ? threatMap.GetThreatScore(new Vector2(position.x, position.z)) : 0f,
+            FieldView.ThreatMap => threatMap != null ? threatMap.SampleEvaluatedThreat(position) : 0f,
             FieldView.ManaField => manaFieldManager != null ? manaFieldManager.SampleMana(position) : 0f,
             FieldView.WindField => windFieldManager != null ? windFieldManager.SampleWind(position).magnitude : 0f,
             _ => heatFieldManager != null ? heatFieldManager.SampleHeat(position) : 0f
@@ -454,9 +486,13 @@ public class FieldToUI : MonoBehaviour
     void DrawWindFieldLines()
     {
         if (!drawWindLines || currentView != FieldView.WindField || windFieldManager == null || gridSamplePositions == null)
+        {
+            HideWindFieldLines();
             return;
+        }
 
         float scale = Mathf.Max(0.001f, windLineScale);
+        int visibleCount = 0;
         for (int i = 0; i < gridSamplePositions.Length; i++)
         {
             Vector3 start = gridSamplePositions[i];
@@ -465,8 +501,80 @@ public class FieldToUI : MonoBehaviour
                 continue;
 
             Vector3 end = start + new Vector3(wind.x, 0f, wind.y) * scale;
-            Debug.DrawLine(start, end, Color.green, updateInterval, false);
+            LineRenderer line = EnsureWindLine(visibleCount++);
+            line.SetPosition(0, start);
+            line.SetPosition(1, end);
+            line.startWidth = windLineWidth;
+            line.endWidth = Mathf.Max(0.01f, windLineWidth * 0.35f);
+            line.enabled = true;
         }
+
+        for (int i = visibleCount; i < windLines.Count; i++)
+        {
+            if (windLines[i] != null)
+                windLines[i].enabled = false;
+        }
+    }
+
+    LineRenderer EnsureWindLine(int index)
+    {
+        while (windLines.Count <= index)
+        {
+            GameObject lineObj = new GameObject("FieldToUI Wind Vector Line", typeof(LineRenderer));
+            Transform parent = gridObject != null ? gridObject.transform : transform;
+            lineObj.transform.SetParent(parent, false);
+
+            LineRenderer line = lineObj.GetComponent<LineRenderer>();
+            line.positionCount = 2;
+            line.useWorldSpace = true;
+            line.numCapVertices = 2;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            line.material = GetWindLineMaterial();
+            line.startColor = new Color(0.35f, 1f, 0.55f, 0.85f);
+            line.endColor = new Color(0.85f, 1f, 0.35f, 0.15f);
+            windLines.Add(line);
+        }
+
+        return windLines[index];
+    }
+
+    Material GetWindLineMaterial()
+    {
+        if (windLineMaterial != null)
+            return windLineMaterial;
+
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null)
+            shader = Shader.Find("Sprites/Default");
+
+        windLineMaterial = new Material(shader);
+        if (windLineMaterial.HasProperty("_BaseColor"))
+            windLineMaterial.SetColor("_BaseColor", Color.green);
+        else if (windLineMaterial.HasProperty("_Color"))
+            windLineMaterial.SetColor("_Color", Color.green);
+        windLineMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        return windLineMaterial;
+    }
+
+    void HideWindFieldLines()
+    {
+        for (int i = 0; i < windLines.Count; i++)
+        {
+            if (windLines[i] != null)
+                windLines[i].enabled = false;
+        }
+    }
+
+    void EnsureRuntimeUpdater()
+    {
+        if (runtimeUpdater != null)
+            return;
+
+        GameObject updaterObject = new GameObject("FieldToUI Runtime Updater");
+        updaterObject.transform.SetParent(worldGridParent, false);
+        runtimeUpdater = updaterObject.AddComponent<RuntimeUpdater>();
+        runtimeUpdater.Initialize(this);
     }
 
     static Color EvaluateGradient(float t, float alpha)
@@ -476,5 +584,27 @@ public class FieldToUI : MonoBehaviour
             : Color.Lerp(MidColor, HighColor, (t - 0.5f) * 2f);
         color.a = alpha;
         return color;
+    }
+
+    sealed class RuntimeUpdater : MonoBehaviour
+    {
+        FieldToUI owner;
+
+        public void Initialize(FieldToUI target)
+        {
+            owner = target;
+        }
+
+        void Update()
+        {
+            if (owner != null)
+                owner.RuntimeUpdate();
+        }
+
+        void OnDestroy()
+        {
+            if (owner != null && owner.runtimeUpdater == this)
+                owner.runtimeUpdater = null;
+        }
     }
 }

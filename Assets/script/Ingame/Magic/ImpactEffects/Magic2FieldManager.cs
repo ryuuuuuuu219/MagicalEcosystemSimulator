@@ -13,9 +13,6 @@ public static class Magic2FieldManager
     {
         float safeRadius = Mathf.Max(0.2f, radius);
         float safeLifetime = Mathf.Max(0.1f, lifetime);
-        threatmap_calc threatMap = Object.FindFirstObjectByType<threatmap_calc>();
-        if (threatMap != null)
-            threatMap.AddThreatPulse(new Vector2(point.x, point.z), safeRadius * 3f, 80f);
 
         switch (element)
         {

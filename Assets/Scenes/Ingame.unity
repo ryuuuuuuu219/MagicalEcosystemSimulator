@@ -1035,7 +1035,7 @@ MonoBehaviour:
   RotationThenlooking: 0
   selectableLayer:
     serializedVersion: 2
-    m_Bits: 192
+    m_Bits: 128
   viewDisplayFoundation: {fileID: 1424883385}
   waveImage: {fileID: 1398678402}
   UI_freq: {fileID: 1280072392}
@@ -3766,12 +3766,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 708ceb8e7539a3b419ecb62024dfa70f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThreatMapsGenerator
-  scoreCellSize: 2
-  scoreDecayPerSecond: 0.75
-  scoreMinClamp: 0
-  scoreMaxClamp: 1000
-  lowThreatProbeDistance: 3
-  lowThreatDirectionSamples: 12
   currentMode: 1
   modeBindings:
   - mode: 0

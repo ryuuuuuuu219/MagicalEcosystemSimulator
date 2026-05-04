@@ -70,8 +70,6 @@ public class predatorBehaviour : MonoBehaviour
 
     Vector3 pendingMoveVector;
 
-    threatmap_calc threatMap;
-
     PredatorCombatLibrary.CombatState combatState = new PredatorCombatLibrary.CombatState
 
     {
@@ -105,8 +103,6 @@ public class predatorBehaviour : MonoBehaviour
         bodyResource = GetComponent<Resource>();
 
         resourceDispenser = ResourceDispenser.Instance != null ? ResourceDispenser.Instance : FindFirstObjectByType<ResourceDispenser>();
-
-        threatMap = FindFirstObjectByType<threatmap_calc>();
 
         var gauge = GetComponent<CreatureVirtualGauge>();
 
@@ -1157,13 +1153,6 @@ public class predatorBehaviour : MonoBehaviour
             return false;
 
 
-
-        if (threatMap == null)
-
-            threatMap = FindFirstObjectByType<threatmap_calc>();
-
-
-
         var context = new PredatorCombatLibrary.CombatContext
 
         {
@@ -1180,11 +1169,7 @@ public class predatorBehaviour : MonoBehaviour
 
             targetForward = prey.transform.forward,
 
-            currentTime = Time.time,
-
-            threatMap = threatMap,
-
-            threatPulsePosition = new Vector2(transform.position.x, transform.position.z)
+            currentTime = Time.time
 
         };
 
