@@ -28,12 +28,14 @@ public partial class WorldUIManager : MonoBehaviour
         InitializeVirtualGaugeCanvas();
         UpdateVirtualGaugeVisibility();
         InitializeMenuBranchVisibility();
+        InitializePhasePopulationText();
         HideInitialUiObjects();
     }
 
     void Update()
     {
         UpdateVirtualGauges();
+        UpdatePhasePopulationText();
         UpdateCameraFollow();
         HandleWorldClick();
     }

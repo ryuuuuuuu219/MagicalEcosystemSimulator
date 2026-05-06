@@ -40,6 +40,7 @@ public partial class WorldUIManager
     [SerializeField] UITreeBranch disturbanceElementBranch;
     [SerializeField] GameObject viewDisplayFoundationRoot;
     [SerializeField] GameObject uiFreqRoot;
+    [SerializeField] TextMeshProUGUI phasePopulationText;
 
     [Header("References")]
     public Canvas mainCanvas;
@@ -83,5 +84,6 @@ public partial class WorldUIManager
     int lastPageUpInvokeFrame = -1;
     int lastFieldViewingInvokeFrame = -1;
     int lastDisturbanceInvokeFrame = -1;
+    float nextPhasePopulationUpdateTime;
     bool IsStateViewVisible => isStatusVisible && isObjectListVisible;
 }

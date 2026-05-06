@@ -52,6 +52,14 @@ public class predatorBehaviour : MonoBehaviour
 
     float nextFieldAbsorbTime;
 
+    [Header("Threat Pulse")]
+
+    public float presenceThreatPulseInterval = 0.5f;
+
+    float nextPresenceThreatPulseTime;
+
+    threatmap_calc cachedThreatMap;
+
     [Header("Phase")]
 
     public float phaseCheckInterval = 10f;
@@ -203,6 +211,8 @@ public class predatorBehaviour : MonoBehaviour
             return;
 
         }
+
+        EmitPresenceThreatPulse();
 
 
 
@@ -1225,11 +1235,36 @@ public class predatorBehaviour : MonoBehaviour
         if (genome.attackThreatPulseScore <= 0f || genome.attackThreatPulseRadius <= 0f)
             return;
 
-        threatmap_calc threatMap = FindFirstObjectByType<threatmap_calc>();
+        threatmap_calc threatMap = GetThreatMap();
         if (threatMap == null)
             return;
 
         threatMap.AddThreatPulse(point, genome.attackThreatPulseScore, genome.attackThreatPulseRadius);
+    }
+
+    void EmitPresenceThreatPulse()
+    {
+        if (Time.time < nextPresenceThreatPulseTime)
+            return;
+
+        nextPresenceThreatPulseTime = Time.time + Mathf.Max(0.02f, presenceThreatPulseInterval);
+
+        if (genome.attackThreatPulseScore <= 0f || genome.attackThreatPulseRadius <= 0f)
+            return;
+
+        threatmap_calc threatMap = GetThreatMap();
+        if (threatMap == null)
+            return;
+
+        threatMap.AddThreatPulse(transform.position, genome.attackThreatPulseScore, genome.attackThreatPulseRadius);
+    }
+
+    threatmap_calc GetThreatMap()
+    {
+        if (cachedThreatMap == null)
+            cachedThreatMap = FindFirstObjectByType<threatmap_calc>();
+
+        return cachedThreatMap;
     }
 
 
