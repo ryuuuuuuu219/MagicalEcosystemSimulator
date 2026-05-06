@@ -13,7 +13,7 @@ public class AdvanceGenerationController : MonoBehaviour
     public predatorManager predatorManager;
 
     [Header("Selection")]
-    public EvaluationAxis evaluationAxis = EvaluationAxis.Carbon;
+    public EvaluationAxis evaluationAxis = EvaluationAxis.Mana;
     public GenomeInputMode herbivoreInputMode = GenomeInputMode.Population;
     public GenomeInputMode predatorInputMode = GenomeInputMode.Population;
     public GenerationPhase generationPhase = GenerationPhase.Both;
@@ -420,7 +420,7 @@ public class AdvanceGenerationController : MonoBehaviour
         SpawnHerbivores(resourceDispenser.herbivoreCountPerGeneration);
         SpawnPredators(resourceDispenser.predatorCountPerGeneration);
 
-        resourceDispenser.FinalizeGenerationCarbonBudget();
+        resourceDispenser.FinalizeGenerationManaBudget();
         generationIndex++;
     }
 
@@ -581,8 +581,8 @@ public class AdvanceGenerationController : MonoBehaviour
                 return;
             }
 
-            resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.carbonPerHerbivore, category.herbivore);
-            resourceDispenser.AddExternalCarbon(resourceDispenser.carbonPerHerbivore);
+            resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.manaPerHerbivore, category.herbivore);
+            resourceDispenser.AddExternalMana(resourceDispenser.manaPerHerbivore);
             SetHerbivoreGenomeUiStatus("Spawned herbivore from DNA.");
 
             if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
@@ -622,8 +622,8 @@ public class AdvanceGenerationController : MonoBehaviour
             return;
         }
 
-        resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.carbonPerPredator, category.predator);
-        resourceDispenser.AddExternalCarbon(resourceDispenser.carbonPerPredator);
+        resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.manaPerPredator, category.predator);
+        resourceDispenser.AddExternalMana(resourceDispenser.manaPerPredator);
         SetHerbivoreGenomeUiStatus("Spawned predator from DNA.");
 
         if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
@@ -753,7 +753,7 @@ public class AdvanceGenerationController : MonoBehaviour
             if (!obj.TryGetComponent<Resource>(out var resource)) continue;
 
             population++;
-            float fitness = EvaluateScore(resource.carbon, behaviour.health, rng);
+            float fitness = EvaluateScore(resource.mana, behaviour.health, rng);
             if (!foundBest || fitness > bestFitness)
             {
                 foundBest = true;
@@ -862,7 +862,7 @@ public class AdvanceGenerationController : MonoBehaviour
             attempts++;
             if (herbivoreManager.spownherbivore(worldgen, GetGenerationSpawnIndex(localIndex++), out GameObject herbivore))
             {
-                resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.carbonPerHerbivore, category.herbivore);
+                resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.manaPerHerbivore, category.herbivore);
                 spawned++;
             }
         }
@@ -881,7 +881,7 @@ public class AdvanceGenerationController : MonoBehaviour
             attempts++;
             if (predatorManager.spownpredator(worldgen, GetGenerationSpawnIndex(localIndex++), out GameObject predator))
             {
-                resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.carbonPerPredator, category.predator);
+                resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.manaPerPredator, category.predator);
                 spawned++;
             }
         }
@@ -1098,7 +1098,7 @@ public class AdvanceGenerationController : MonoBehaviour
             candidates.Add(new HerbivoreCandidate
             {
                 Genome = behaviour.genome,
-                Score = EvaluateScore(resource.carbon, behaviour.health, rng)
+                Score = EvaluateScore(resource.mana, behaviour.health, rng)
             });
         }
         return candidates;
@@ -1117,18 +1117,18 @@ public class AdvanceGenerationController : MonoBehaviour
             candidates.Add(new PredatorCandidate
             {
                 Genome = behaviour.genome,
-                Score = EvaluateScore(resource.carbon, behaviour.health, rng)
+                Score = EvaluateScore(resource.mana, behaviour.health, rng)
             });
         }
         return candidates;
     }
 
-    float EvaluateScore(float carbon, float health, System.Random rng)
+    float EvaluateScore(float mana, float health, System.Random rng)
     {
         switch (evaluationAxis)
         {
-            case EvaluationAxis.Carbon:
-                return carbon;
+            case EvaluationAxis.Mana:
+                return mana;
             case EvaluationAxis.Health:
                 return health;
             default:
@@ -1202,16 +1202,16 @@ public class AdvanceGenerationController : MonoBehaviour
             resumeMoveThreshold = BlendFloat(a.resumeMoveThreshold, b.resumeMoveThreshold, rng),
             chargeArc = BlendAttackArc(a.chargeArc, b.chargeArc, rng),
             chargeDamageScale = BlendFloat(a.chargeDamageScale, b.chargeDamageScale, rng),
-            chargeEnergyCost = BlendFloat(a.chargeEnergyCost, b.chargeEnergyCost, rng),
+            chargeManaCost = BlendFloat(a.chargeManaCost, b.chargeManaCost, rng),
             chargeContactPadding = BlendFloat(a.chargeContactPadding, b.chargeContactPadding, rng),
             chargeAttackClock = BlendFloat(a.chargeAttackClock, b.chargeAttackClock, rng),
             biteArc = BlendAttackArc(a.biteArc, b.biteArc, rng),
             biteDamage = BlendFloat(a.biteDamage, b.biteDamage, rng),
-            biteEnergyCost = BlendFloat(a.biteEnergyCost, b.biteEnergyCost, rng),
+            biteManaCost = BlendFloat(a.biteManaCost, b.biteManaCost, rng),
             biteAttackClock = BlendFloat(a.biteAttackClock, b.biteAttackClock, rng),
             meleeArc = BlendAttackArc(a.meleeArc, b.meleeArc, rng),
             meleeDamage = BlendFloat(a.meleeDamage, b.meleeDamage, rng),
-            meleeEnergyCost = BlendFloat(a.meleeEnergyCost, b.meleeEnergyCost, rng),
+            meleeManaCost = BlendFloat(a.meleeManaCost, b.meleeManaCost, rng),
             meleeAttackClock = BlendFloat(a.meleeAttackClock, b.meleeAttackClock, rng),
             attackThreatPulseScore = BlendFloat(a.attackThreatPulseScore, b.attackThreatPulseScore, rng),
             attackThreatPulseRadius = BlendFloat(a.attackThreatPulseRadius, b.attackThreatPulseRadius, rng),
@@ -1282,16 +1282,16 @@ public class AdvanceGenerationController : MonoBehaviour
         child.resumeMoveThreshold = MutateFloat(child.resumeMoveThreshold, a.resumeMoveThreshold, b.resumeMoveThreshold, rng);
         child.chargeArc = MutateAttackArc(child.chargeArc, a.chargeArc, b.chargeArc, rng);
         child.chargeDamageScale = MutateFloat(child.chargeDamageScale, a.chargeDamageScale, b.chargeDamageScale, rng);
-        child.chargeEnergyCost = MutateFloat(child.chargeEnergyCost, a.chargeEnergyCost, b.chargeEnergyCost, rng);
+        child.chargeManaCost = MutateFloat(child.chargeManaCost, a.chargeManaCost, b.chargeManaCost, rng);
         child.chargeContactPadding = MutateFloat(child.chargeContactPadding, a.chargeContactPadding, b.chargeContactPadding, rng);
         child.chargeAttackClock = MutateFloat(child.chargeAttackClock, a.chargeAttackClock, b.chargeAttackClock, rng);
         child.biteArc = MutateAttackArc(child.biteArc, a.biteArc, b.biteArc, rng);
         child.biteDamage = MutateFloat(child.biteDamage, a.biteDamage, b.biteDamage, rng);
-        child.biteEnergyCost = MutateFloat(child.biteEnergyCost, a.biteEnergyCost, b.biteEnergyCost, rng);
+        child.biteManaCost = MutateFloat(child.biteManaCost, a.biteManaCost, b.biteManaCost, rng);
         child.biteAttackClock = MutateFloat(child.biteAttackClock, a.biteAttackClock, b.biteAttackClock, rng);
         child.meleeArc = MutateAttackArc(child.meleeArc, a.meleeArc, b.meleeArc, rng);
         child.meleeDamage = MutateFloat(child.meleeDamage, a.meleeDamage, b.meleeDamage, rng);
-        child.meleeEnergyCost = MutateFloat(child.meleeEnergyCost, a.meleeEnergyCost, b.meleeEnergyCost, rng);
+        child.meleeManaCost = MutateFloat(child.meleeManaCost, a.meleeManaCost, b.meleeManaCost, rng);
         child.meleeAttackClock = MutateFloat(child.meleeAttackClock, a.meleeAttackClock, b.meleeAttackClock, rng);
         child.attackThreatPulseScore = MutateFloat(child.attackThreatPulseScore, a.attackThreatPulseScore, b.attackThreatPulseScore, rng);
         child.attackThreatPulseRadius = MutateFloat(child.attackThreatPulseRadius, a.attackThreatPulseRadius, b.attackThreatPulseRadius, rng);

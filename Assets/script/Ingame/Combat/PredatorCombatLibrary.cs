@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public static class PredatorCombatLibrary
 {
@@ -13,7 +13,7 @@ public static class PredatorCombatLibrary
     {
         public bool performed;
         public float damage;
-        public float energyCost;
+        public float manaCost;
         public bool copyTargetVelocity;
         public Vector3 inheritedVelocity;
         public Vector3 inheritedMoveDirection;
@@ -98,7 +98,7 @@ public static class PredatorCombatLibrary
         {
             performed = true,
             damage = damage,
-            energyCost = Mathf.Max(0f, genome.chargeEnergyCost),
+            manaCost = Mathf.Max(0f, genome.chargeManaCost),
             nextState = state
         };
         return true;
@@ -137,7 +137,7 @@ public static class PredatorCombatLibrary
         {
             performed = true,
             damage = damage,
-            energyCost = Mathf.Max(0f, genome.biteEnergyCost),
+            manaCost = Mathf.Max(0f, genome.biteManaCost),
             copyTargetVelocity = true,
             inheritedVelocity = Flatten(context.targetVelocity),
             inheritedMoveDirection = ComputeInheritedMoveDirection(context.targetVelocity, context.targetForward),
@@ -183,7 +183,7 @@ public static class PredatorCombatLibrary
         {
             performed = true,
             damage = damage,
-            energyCost = Mathf.Max(0f, genome.meleeEnergyCost),
+            manaCost = Mathf.Max(0f, genome.meleeManaCost),
             nextState = state
         };
         return true;

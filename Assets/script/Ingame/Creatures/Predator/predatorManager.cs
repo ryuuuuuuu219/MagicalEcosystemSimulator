@@ -150,7 +150,7 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.2f),
             localDirection = Vector3.forward
         };
-        g.chargeEnergyCost = 0.4f + (float)rand.NextDouble() * 0.8f;
+        g.chargeManaCost = 0.4f + (float)rand.NextDouble() * 0.8f;
         g.chargeContactPadding = 0.15f + (float)rand.NextDouble() * 0.25f;
         g.biteArc = new AttackArcSettings
         {
@@ -160,7 +160,7 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.35f),
             localDirection = Vector3.forward
         };
-        g.biteEnergyCost = 1.2f + (float)rand.NextDouble() * 1.8f;
+        g.biteManaCost = 1.2f + (float)rand.NextDouble() * 1.8f;
         g.meleeArc = new AttackArcSettings
         {
             radius = 0.3f,
@@ -169,7 +169,7 @@ public class predatorManager : MonoBehaviour
             startOffset = new Vector3(0f, 0f, 0.25f),
             localDirection = Vector3.forward
         };
-        g.meleeEnergyCost = 2.2f + (float)rand.NextDouble() * 2.5f;
+        g.meleeManaCost = 2.2f + (float)rand.NextDouble() * 2.5f;
         g.attackThreatPulseScore = 2.5f + (float)rand.NextDouble() * 3.5f;
         g.attackThreatPulseRadius = 3f + (float)rand.NextDouble() * 3f;
         g.attackTraceScale = 18f + (float)rand.NextDouble() * 18f;

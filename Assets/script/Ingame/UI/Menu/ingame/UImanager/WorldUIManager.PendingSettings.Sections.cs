@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -71,10 +71,10 @@ public partial class WorldUIManager
         VirtualGaugeManager gaugeSource = VirtualGaugePropertiesSource;
         if (gaugeSource != null)
         {
-            AddActionRow(section, $"Gauge Status H:{ToOnOff(gaugeSource.ShowHealthGauge)} C:{ToOnOff(gaugeSource.ShowCarbonText)} E:{ToOnOff(gaugeSource.ShowEnergyGauge)}",
-                ("Toggle HP", () => { SetVirtualGaugeStatusSelection(!gaugeSource.ShowHealthGauge, gaugeSource.ShowCarbonText, gaugeSource.ShowEnergyGauge); RebuildPendingSettingsContent(); }),
-                ("Toggle C", () => { SetVirtualGaugeStatusSelection(gaugeSource.ShowHealthGauge, !gaugeSource.ShowCarbonText, gaugeSource.ShowEnergyGauge); RebuildPendingSettingsContent(); }),
-                ("Toggle E", () => { SetVirtualGaugeStatusSelection(gaugeSource.ShowHealthGauge, gaugeSource.ShowCarbonText, !gaugeSource.ShowEnergyGauge); RebuildPendingSettingsContent(); }));
+            AddActionRow(section, $"Gauge Status H:{ToOnOff(gaugeSource.ShowHealthGauge)} Mana:{ToOnOff(gaugeSource.ShowManaGauge)} Text:{ToOnOff(gaugeSource.ShowManaText)}",
+                ("Toggle HP", () => { SetVirtualGaugeStatusSelection(!gaugeSource.ShowHealthGauge, gaugeSource.ShowManaText, gaugeSource.ShowManaGauge); RebuildPendingSettingsContent(); }),
+                ("Toggle Text", () => { SetVirtualGaugeStatusSelection(gaugeSource.ShowHealthGauge, !gaugeSource.ShowManaText, gaugeSource.ShowManaGauge); RebuildPendingSettingsContent(); }),
+                ("Toggle Mana", () => { SetVirtualGaugeStatusSelection(gaugeSource.ShowHealthGauge, gaugeSource.ShowManaText, !gaugeSource.ShowManaGauge); RebuildPendingSettingsContent(); }));
 
             AddActionRow(section, $"Gauge Species H:{ToOnOff(gaugeSource.ShowHerbivoreGauges)} P:{ToOnOff(gaugeSource.ShowPredatorGauges)}",
                 ("Herb", () => { SetVirtualGaugeSpeciesSelection(!gaugeSource.ShowHerbivoreGauges, gaugeSource.ShowPredatorGauges); RebuildPendingSettingsContent(); }),

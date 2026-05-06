@@ -46,7 +46,7 @@ public struct PredatorGenome
 
     public float chargeDamageScale;
 
-    public float chargeEnergyCost;
+    public float chargeManaCost;
 
     public float chargeContactPadding;
 
@@ -56,7 +56,7 @@ public struct PredatorGenome
 
     public float biteDamage;
 
-    public float biteEnergyCost;
+    public float biteManaCost;
 
     public float biteAttackClock;
 
@@ -64,7 +64,7 @@ public struct PredatorGenome
 
     public float meleeDamage;
 
-    public float meleeEnergyCost;
+    public float meleeManaCost;
 
     public float meleeAttackClock;
 

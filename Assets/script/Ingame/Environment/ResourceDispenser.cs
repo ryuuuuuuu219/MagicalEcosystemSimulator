@@ -9,26 +9,17 @@ public class ResourceDispenser : MonoBehaviour
     public GameObject predatorManager;
 
     int grassIndex = 0;
-    public float totalCarbon = 0f;
-    [SerializeField] float carbonPool = 0f;
+    public float totalMana = 0f;
+    [SerializeField] float manaPool = 0f;
 
-    public float carbonPerGrass = 30f;
-    public float carbonRegenRate = 0.5f;
+    public float manaPerGrass = 30f;
+    public float grassManaRegenRate = 0.5f;
 
-    public float carbonPerHerbivore = 100f;
-    public float carbonPerPredator = 200f;
+    public float manaPerHerbivore = 100f;
+    public float manaPerPredator = 200f;
 
-    [Header("Creature Energy/Life")]
+    [Header("Creature Mana/Life")]
     public float decomposeRate = 2f;
-    public float carbonToEnergyRate = 0.5f;
-    public float metabolicEnergyPerCarbon = 1f;
-    public float metabolicHeatPerCarbon = 0.5f;
-    public float idleEnergyCostPerSec = 0.05f;
-    public float moveEnergyCostPerSec = 0.2f;
-    public float accelerationEnergyCostPerUnit = 0.03f;
-    public float brakingEnergyCostPerUnit = 0.02f;
-    public float turnEnergyCostPerDegree = 0.0005f;
-    public float decompositionHeatPerCarbon = 1f;
 
     [Header("Initial Spawn")]
     public int initialGrassCount = 100;
@@ -44,7 +35,7 @@ public class ResourceDispenser : MonoBehaviour
     public int maxSpawnAttemptsPerEntity = 64;
 
     public List<GameObject> grasses;
-    float nextCarbonAuditTime = 60f;
+    float nextManaAuditTime = 60f;
 
     void Awake()
     {
@@ -55,12 +46,12 @@ public class ResourceDispenser : MonoBehaviour
     {
         grasses = new List<GameObject>();
         grassIndex = 0;
-        ResetGenerationCarbonState();
+        ResetGenerationManaState();
     }
 
     void Initialspown()
     {
-        ConfigureCarbonBudget(initialGrassCount, initialHerbivoreCount, initialPredatorCount);
+        ConfigureManaBudget(initialGrassCount, initialHerbivoreCount, initialPredatorCount);
         SpawnGrassCount(initialGrassCount);
 
         var hm = herbivoreManager.GetComponent<herbivoreManager>();
@@ -81,7 +72,7 @@ public class ResourceDispenser : MonoBehaviour
         if (comp == null)
             comp = obj.AddComponent<Resource>();
 
-        comp.InitCarbon(amount, amount);
+        comp.InitMana(amount, amount);
         comp.resourceCategory = category;
     }
 
@@ -93,24 +84,24 @@ public class ResourceDispenser : MonoBehaviour
         if (comp == null)
             comp = obj.AddComponent<Resource>();
 
-        comp.InitCarbon(amount, amount);
+        comp.InitMana(amount, amount);
         comp.resourceCategory = category;
     }
 
-    public void AddExternalCarbon(float amount)
+    public void AddExternalMana(float amount)
     {
         if (amount <= 0f)
             return;
 
-        totalCarbon += amount;
+        totalMana += amount;
     }
 
-    public void ReturnCarbon(float amount)
+    public void ReturnMana(float amount)
     {
         if (amount <= 0f) return;
-        carbonPool += amount;
-        if (totalCarbon > 0f)
-            carbonPool = Mathf.Min(carbonPool, totalCarbon);
+        manaPool += amount;
+        if (totalMana > 0f)
+            manaPool = Mathf.Min(manaPool, totalMana);
     }
 
     public bool Addgrass()
@@ -119,7 +110,7 @@ public class ResourceDispenser : MonoBehaviour
         if (spowngrass(grassIndex, out GameObject grass))
         {
             grasses.Add(grass);
-            ResouseInit(grass, carbonPerGrass, category.grass);
+            ResouseInit(grass, manaPerGrass, category.grass);
             return true;
         }
 
@@ -162,79 +153,83 @@ public class ResourceDispenser : MonoBehaviour
             var resource = grass.GetComponent<Resource>();
             if (resource == null) continue;
 
-            float regenRequest = Mathf.Max(0f, carbonRegenRate) * Time.deltaTime;
-            if (regenRequest <= 0f || carbonPool <= 0f) continue;
+            float regenRequest = Mathf.Max(0f, grassManaRegenRate) * Time.deltaTime;
+            if (regenRequest <= 0f || manaPool <= 0f) continue;
 
-            float regenAmount = Mathf.Min(regenRequest, carbonPool);
-            resource.AddCarbon(regenAmount, out float excess);
+            float regenAmount = Mathf.Min(regenRequest, manaPool);
+            resource.AddMana(regenAmount, out float excess);
             float added = regenAmount - excess;
             if (added > 0f)
-                carbonPool -= added;
+                manaPool -= added;
         }
 
-        if (Time.time >= nextCarbonAuditTime)
+        if (Time.time >= nextManaAuditTime)
         {
-            LogCarbonAudit();
-            nextCarbonAuditTime += 60f;
+            LogManaAudit();
+            nextManaAuditTime += 60f;
         }
     }
 
-    void LogCarbonAudit()
+    void LogManaAudit()
     {
         Resource[] resources = FindObjectsByType<Resource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         float sum = 0f;
-        float grassCarbon = 0f;
-        float herbivoreCarbon = 0f;
-        float predatorCarbon = 0f;
+        float grassMana = 0f;
+        float herbivoreMana = 0f;
+        float predatorMana = 0f;
 
         for (int i = 0; i < resources.Length; i++)
         {
             if (resources[i] == null) continue;
-            float c = resources[i].carbon;
-            sum += c;
+            float m = resources[i].mana;
+            sum += m;
             switch (resources[i].resourceCategory)
             {
                 case category.grass:
-                    grassCarbon += c;
+                    grassMana += m;
                     break;
                 case category.herbivore:
-                    herbivoreCarbon += c;
+                    herbivoreMana += m;
                     break;
                 case category.predator:
-                    predatorCarbon += c;
+                    predatorMana += m;
+                    break;
+                case category.highpredator:
+                case category.dominant:
+                    predatorMana += m;
                     break;
             }
         }
 
-        float systemTotal = sum + carbonPool;
-        float observedMinusConfigured = systemTotal - totalCarbon;
-        string msg = $"[CarbonAudit] t={Time.time:F1}s totalResourceCarbon={sum:F3} poolCarbon={carbonPool:F3} systemTotal={systemTotal:F3} observedMinusConfigured={observedMinusConfigured:F3} resourceCount={resources.Length} grass={grassCarbon:F3} herbivore={herbivoreCarbon:F3} predator={predatorCarbon:F3} configuredTotalCarbon={totalCarbon:F3}";
+        float systemTotal = sum + manaPool;
+        float observedMinusConfigured = systemTotal - totalMana;
+        string msg = $"[ManaAudit] t={Time.time:F1}s totalResourceMana={sum:F3} poolMana={manaPool:F3} systemTotal={systemTotal:F3} observedMinusConfigured={observedMinusConfigured:F3} resourceCount={resources.Length} grass={grassMana:F3} herbivore={herbivoreMana:F3} predator={predatorMana:F3} configuredTotalMana={totalMana:F3}";
         Debug.Log(msg);
     }
 
-    void ResetCarbonBudget()
+    void ResetManaBudget()
     {
-        carbonPool = Mathf.Max(0f, totalCarbon);
+        manaPool = Mathf.Max(0f, totalMana);
     }
 
-    public void ResetGenerationCarbonState()
+    public void ResetGenerationManaState()
     {
-        carbonPool = 0f;
-        totalCarbon = 0f;
+        manaPool = 0f;
+        totalMana = 0f;
     }
 
-    public void FinalizeGenerationCarbonBudget()
+    public void FinalizeGenerationManaBudget()
     {
-        totalCarbon = Mathf.Max(0f, totalCarbon);
+        totalMana = Mathf.Max(0f, totalMana);
     }
 
-    public void ConfigureCarbonBudget(int grassCount, int herbivoreCount, int predatorCount)
+    public void ConfigureManaBudget(int grassCount, int herbivoreCount, int predatorCount)
     {
-        totalCarbon =
-            Mathf.Max(0, grassCount) * Mathf.Max(0f, carbonPerGrass) +
-            Mathf.Max(0, herbivoreCount) * Mathf.Max(0f, carbonPerHerbivore) +
-            Mathf.Max(0, predatorCount) * Mathf.Max(0f, carbonPerPredator);
-        carbonPool = 0f;
+        totalMana =
+            Mathf.Max(0, grassCount) * Mathf.Max(0f, manaPerGrass) +
+            Mathf.Max(0, herbivoreCount) * Mathf.Max(0f, manaPerHerbivore) +
+            Mathf.Max(0, predatorCount) * Mathf.Max(0f, manaPerPredator);
+        manaPool = 0f;
     }
 
     int TrySpawnHerbivoreBatch(herbivoreManager manager, int count, int startIndex)
@@ -251,7 +246,7 @@ public class ResourceDispenser : MonoBehaviour
             attempts++;
             if (manager.spownherbivore(Worldgen, nextIndex++, out GameObject herbivore))
             {
-                ResouseInit(herbivore, carbonPerHerbivore, category.herbivore);
+                ResouseInit(herbivore, manaPerHerbivore, category.herbivore);
                 spawned++;
             }
         }
@@ -273,7 +268,7 @@ public class ResourceDispenser : MonoBehaviour
             attempts++;
             if (manager.spownpredator(Worldgen, nextIndex++, out GameObject predator))
             {
-                ResouseInit(predator, carbonPerPredator, category.predator);
+                ResouseInit(predator, manaPerPredator, category.predator);
                 spawned++;
             }
         }
@@ -299,10 +294,10 @@ public class ResourceDispenser : MonoBehaviour
     public void ResetGenerationEnvironment()
     {
         ClearGrasslands();
-        ResetGenerationCarbonState();
+        ResetGenerationManaState();
         HeatFieldManager.GetOrCreate().ClearAllHeat();
         ManaFieldManager.GetOrCreate().ClearAllMana();
-        ConfigureCarbonBudget(grassCountPerGeneration, herbivoreCountPerGeneration, predatorCountPerGeneration);
+        ConfigureManaBudget(grassCountPerGeneration, herbivoreCountPerGeneration, predatorCountPerGeneration);
         SpawnGrassCount(grassCountPerGeneration);
     }
 

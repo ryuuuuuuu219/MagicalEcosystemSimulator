@@ -28,11 +28,11 @@ public class herbivoreBehaviour : MonoBehaviour
 
 
 
-    [Header("Energy")]
+    [Header("Mana")]
 
-    public float maxEnergy = 100f;
+    public float maxMana = 100f;
 
-    public float energy = 100f;
+    public float mana = 100f;
 
 
 
@@ -106,9 +106,9 @@ public class herbivoreBehaviour : MonoBehaviour
 
         health = maxHealth;
 
-        energy = maxEnergy;
+        SyncManaFromResource();
 
-        ClampEnergy();
+        ClampMana();
 
     }
 
@@ -164,6 +164,8 @@ public class herbivoreBehaviour : MonoBehaviour
 
         if (bodyResource == null) return;
 
+        SyncManaFromResource();
+
 
 
         if (IsDead)
@@ -179,8 +181,6 @@ public class herbivoreBehaviour : MonoBehaviour
         }
 
 
-
-        ConvertBodyCarbonToEnergy();
 
         UpdateVision();
 
@@ -234,76 +234,6 @@ public class herbivoreBehaviour : MonoBehaviour
 
 
 
-    void ConvertBodyCarbonToEnergy()
-
-    {
-
-        if (bodyResource == null) return;
-
-
-
-        float carbonUsed = Mathf.Min(bodyResource.carbon, GetCarbonToEnergyRate() * Time.deltaTime);
-
-        if (carbonUsed <= 0f) return;
-
-
-
-        float energyGain = carbonUsed * GetMetabolicEnergyPerCarbon();
-
-        if (WouldExceedEnergyCap(energyGain))
-
-            return;
-
-
-
-        float released = bodyResource.ReleaseCarbonToEnvironment(carbonUsed, resourceDispenser);
-
-        if (released <= 0f) return;
-
-
-
-        energy += released * GetMetabolicEnergyPerCarbon();
-
-        ClampEnergy();
-
-
-
-        HeatFieldManager heatField = HeatFieldManager.GetOrCreate();
-
-        float heatAmount = released * GetMetabolicHeatPerCarbon();
-
-        heatField.AddHeat(transform.position, heatAmount, 2f);
-
-    }
-
-
-
-    void ConsumeEnergy(AnimalAICommon.MovementTelemetry telemetry)
-
-    {
-
-        float moveCost =
-
-            GetIdleEnergyCostPerSec() +
-
-            GetMoveEnergyCostPerSec() * telemetry.moveDemand;
-
-        float accelCost = GetAccelerationEnergyCostPerUnit() * telemetry.accelerationDemand;
-
-        float brakeCost = GetBrakingEnergyCostPerUnit() * telemetry.brakingDemand;
-
-        float turnCost = GetTurnEnergyCostPerDegree() * telemetry.turnDemand;
-
-        float cost = moveCost * Time.fixedDeltaTime + accelCost + brakeCost + turnCost;
-
-        energy -= cost;
-
-        ClampEnergy();
-
-    }
-
-
-
     float GetDecomposeRate()
 
     {
@@ -314,120 +244,20 @@ public class herbivoreBehaviour : MonoBehaviour
 
 
 
-    float GetCarbonToEnergyRate()
+    void ClampMana()
 
     {
 
-        return resourceDispenser != null ? resourceDispenser.carbonToEnergyRate : 0.5f;
+        mana = Mathf.Max(0f, mana);
 
     }
 
-
-
-    float GetIdleEnergyCostPerSec()
-
+    void SyncManaFromResource()
     {
-
-        return resourceDispenser != null ? resourceDispenser.idleEnergyCostPerSec : 0.05f;
-
-    }
-
-
-
-    float GetMoveEnergyCostPerSec()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.moveEnergyCostPerSec : 0.2f;
-
-    }
-
-
-
-    float GetMetabolicEnergyPerCarbon()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.metabolicEnergyPerCarbon : 1f;
-
-    }
-
-
-
-    float GetMetabolicHeatPerCarbon()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.metabolicHeatPerCarbon : 0.5f;
-
-    }
-
-
-
-    float GetAccelerationEnergyCostPerUnit()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.accelerationEnergyCostPerUnit : 0.03f;
-
-    }
-
-
-
-    float GetBrakingEnergyCostPerUnit()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.brakingEnergyCostPerUnit : 0.02f;
-
-    }
-
-
-
-    float GetTurnEnergyCostPerDegree()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.turnEnergyCostPerDegree : 0.0005f;
-
-    }
-
-
-
-    void ClampEnergy()
-
-    {
-
-        if (maxEnergy > 0f)
-
-        {
-
-            energy = Mathf.Clamp(energy, 0f, maxEnergy);
-
-            return;
-
-        }
-
-
-
-        energy = Mathf.Max(0f, energy);
-
-    }
-
-
-
-    bool WouldExceedEnergyCap(float gain)
-
-    {
-
-        if (gain <= 0f || maxEnergy <= 0f)
-
-            return false;
-
-
-
-        return energy + gain > maxEnergy;
-
+        if (bodyResource == null) return;
+        if (bodyResource.maxMana > 0f)
+            maxMana = bodyResource.maxMana;
+        mana = bodyResource.mana;
     }
 
 
@@ -1428,8 +1258,6 @@ public class herbivoreBehaviour : MonoBehaviour
 
             lastMovementTelemetry = ApplyMovement(pendingMoveVector);
 
-            ConsumeEnergy(lastMovementTelemetry);
-
         }
 
 
@@ -1470,6 +1298,8 @@ public class herbivoreBehaviour : MonoBehaviour
 
             bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
 
+            SyncManaFromResource();
+
         }
 
     }
@@ -1480,13 +1310,13 @@ public class herbivoreBehaviour : MonoBehaviour
 
     {
 
-        if (maxEnergy <= 0f)
+        if (maxMana <= 0f)
 
             return 1f;
 
 
 
-        float ratio = Mathf.Clamp01(energy / maxEnergy);
+        float ratio = Mathf.Clamp01(mana / maxMana);
 
         if (ratio <= 0.05f)
 

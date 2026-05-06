@@ -2,25 +2,25 @@ using UnityEngine;
 
 public class Resource : MonoBehaviour
 {
-    public float carbon;
-    public float maxCarbon;
-    public float totalReleasedCarbon;
+    public float mana;
+    public float maxMana;
+    public float totalReleasedMana;
 
     public category resourceCategory;
 
-    public void Eating(float amount, Resource tgtresource)
+    public void Eating(float amount, Resource targetResource)
     {
-        if (tgtresource == null) return;
+        if (targetResource == null) return;
 
-        float requestedAmount = Mathf.Max(0f, amount) * GetAbsorptionScale();
-        float eatable = Mathf.Min(requestedAmount, tgtresource.carbon);
+        float requestedAmount = Mathf.Max(0f, amount);
+        float eatable = Mathf.Min(requestedAmount, targetResource.mana);
         if (eatable <= 0f) return;
 
-        carbon += eatable;
-        tgtresource.carbon -= eatable;
+        mana += eatable;
+        targetResource.mana -= eatable;
     }
 
-    public void AddCarbon(float amount, out float excess)
+    public void AddMana(float amount, out float excess)
     {
         float addAmount = Mathf.Max(0f, amount);
         if (addAmount <= 0f)
@@ -29,29 +29,20 @@ public class Resource : MonoBehaviour
             return;
         }
 
-        if (maxCarbon <= 0f)
-        {
-            carbon += addAmount;
-            excess = 0f;
-            return;
-        }
-
-        float remainingCapacity = Mathf.Max(0f, maxCarbon - carbon);
-        float accepted = Mathf.Min(addAmount, remainingCapacity);
-        carbon += accepted;
-        excess = addAmount - accepted;
+        mana += addAmount;
+        excess = 0f;
     }
 
-    public float RemoveCarbon(float amount)
+    public float RemoveMana(float amount)
     {
-        float removed = Mathf.Min(amount, carbon);
-        carbon -= removed;
+        float removed = Mathf.Min(Mathf.Max(0f, amount), mana);
+        mana -= removed;
         return removed;
     }
 
     public bool IsEmpty()
     {
-        return carbon <= 0.0001f;
+        return mana <= 0.0001f;
     }
 
     public void Decompose(float ratePerSec, ResourceDispenser dispenser)
@@ -59,70 +50,47 @@ public class Resource : MonoBehaviour
         if (TryGetComponent<Rigidbody>(out var rb))
             rb.linearVelocity = Vector3.zero;
 
-        float released = ReleaseCarbonToEnvironment(Mathf.Max(0f, ratePerSec) * Time.deltaTime, dispenser);
+        float released = ReleaseManaToEnvironment(Mathf.Max(0f, ratePerSec) * Time.deltaTime, dispenser);
         if (released > 0f)
         {
-            HeatFieldManager heatField = HeatFieldManager.GetOrCreate();
-            float heatAmount = released * (dispenser != null ? dispenser.decompositionHeatPerCarbon : 1f);
-            heatField.AddHeat(transform.position, heatAmount, 3f);
+            ManaFieldManager.GetOrCreate().AddMana(transform.position, released, 3f);
         }
 
         if (IsEmpty())
             Destroy(gameObject);
     }
 
-    public float ReleaseCarbonToEnvironment(float amount, ResourceDispenser dispenser)
+    public float ReleaseManaToEnvironment(float amount, ResourceDispenser dispenser)
     {
-        float released = RemoveCarbon(amount);
+        float released = RemoveMana(amount);
         if (released <= 0f)
             return 0f;
 
-        totalReleasedCarbon += released;
+        totalReleasedMana += released;
         if (dispenser != null)
-            dispenser.ReturnCarbon(released);
+            dispenser.ReturnMana(released);
         return released;
     }
 
-    public float ReleaseAllCarbonToEnvironment(ResourceDispenser dispenser)
+    public float ReleaseAllManaToEnvironment(ResourceDispenser dispenser)
     {
-        return ReleaseCarbonToEnvironment(carbon, dispenser);
-    }
-
-    public float GetCurrentEnergyAmount()
-    {
-        if (TryGetComponent<herbivoreBehaviour>(out var herbivore))
-            return Mathf.Max(0f, herbivore.energy);
-        if (TryGetComponent<predatorBehaviour>(out var predator))
-            return Mathf.Max(0f, predator.energy);
-        return 0f;
+        return ReleaseManaToEnvironment(mana, dispenser);
     }
 
     public float CalculateDynamicMass()
     {
-        return Mathf.Max(0.001f, carbon + GetCurrentEnergyAmount());
+        return Mathf.Max(0.001f, mana);
     }
 
-    public void InitCarbon(float amount)
+    public void InitMana(float amount)
     {
-        InitCarbon(amount, amount);
+        InitMana(amount, amount);
     }
 
-    public void InitCarbon(float currentAmount, float maxAmount)
+    public void InitMana(float currentAmount, float maxAmount)
     {
-        maxCarbon = Mathf.Max(0f, maxAmount);
-        carbon = Mathf.Max(0f, currentAmount);
-        totalReleasedCarbon = 0f;
-    }
-
-    float GetAbsorptionScale()
-    {
-        if (maxCarbon <= 0f)
-            return 1f;
-
-        float ratio = carbon / maxCarbon;
-        if (ratio <= 1f)
-            return 1f;
-
-        return 1f / ratio;
+        maxMana = Mathf.Max(0f, maxAmount);
+        mana = Mathf.Max(0f, currentAmount);
+        totalReleasedMana = 0f;
     }
 }

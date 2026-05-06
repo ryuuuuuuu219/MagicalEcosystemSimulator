@@ -9,8 +9,8 @@ public class VirtualGaugeManager : MonoBehaviour
     [SerializeField] bool showHerbivoreGauges = true;
     [SerializeField] bool showPredatorGauges = true;
     [SerializeField] bool showHealthGauge = true;
-    [SerializeField] bool showEnergyGauge = true;
-    [SerializeField] bool showCarbonText = true;
+    [SerializeField] bool showManaGauge = true;
+    [SerializeField] bool showManaText = true;
 
     [Header("Appearance")]
     [SerializeField, Range(0f, 1f)] float gaugeAlpha = 1f;
@@ -19,8 +19,8 @@ public class VirtualGaugeManager : MonoBehaviour
     public bool ShowHerbivoreGauges => showHerbivoreGauges;
     public bool ShowPredatorGauges => showPredatorGauges;
     public bool ShowHealthGauge => showHealthGauge;
-    public bool ShowEnergyGauge => showEnergyGauge;
-    public bool ShowCarbonText => showCarbonText;
+    public bool ShowManaGauge => showManaGauge;
+    public bool ShowManaText => showManaText;
     public float GaugeAlpha => gaugeAlpha;
 
     void Awake()
@@ -35,11 +35,11 @@ public class VirtualGaugeManager : MonoBehaviour
         showPredatorGauges = showPredators;
     }
 
-    public void SetGaugeDisplayOptions(bool showHealth, bool showEnergy, bool showCarbon, float alpha)
+    public void SetGaugeDisplayOptions(bool showHealth, bool showManaGaugeValue, bool showManaTextValue, float alpha)
     {
         showHealthGauge = showHealth;
-        showEnergyGauge = showEnergy;
-        showCarbonText = showCarbon;
+        showManaGauge = showManaGaugeValue;
+        showManaText = showManaTextValue;
         gaugeAlpha = Mathf.Clamp01(alpha);
     }
 }

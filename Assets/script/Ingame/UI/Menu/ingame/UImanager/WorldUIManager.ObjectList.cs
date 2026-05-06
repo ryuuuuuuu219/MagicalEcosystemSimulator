@@ -91,7 +91,13 @@ public partial class WorldUIManager
                 SettingDisplay("Herbivore", herbivoreManager.GetComponent<herbivoreManager>().herbivores, content);
                 break;
             case category.predator:
-                SettingDisplay("Predator", predatorManager.GetComponent<predatorManager>().predators, content);
+                SettingDisplay("Predator", GetPredatorsByCategory(category.predator), content);
+                break;
+            case category.highpredator:
+                SettingDisplay("High Predator", GetPredatorsByCategory(category.highpredator), content);
+                break;
+            case category.dominant:
+                SettingDisplay("Dominant", GetPredatorsByCategory(category.dominant), content);
                 break;
             default:
                 SettingDisplay("Grass", grassManager.GetComponent<ResourceDispenser>().grasses, content);
@@ -245,6 +251,10 @@ public partial class WorldUIManager
                 return category.herbivore;
             case category.herbivore:
                 return category.predator;
+            case category.predator:
+                return category.highpredator;
+            case category.highpredator:
+                return category.dominant;
             default:
                 return category.grass;
         }
@@ -254,12 +264,16 @@ public partial class WorldUIManager
     {
         switch (value)
         {
+            case category.dominant:
+                return category.highpredator;
+            case category.highpredator:
+                return category.predator;
             case category.predator:
                 return category.herbivore;
             case category.herbivore:
                 return category.grass;
             default:
-                return category.predator;
+                return category.dominant;
         }
     }
 
@@ -501,10 +515,32 @@ public partial class WorldUIManager
             case category.herbivore:
                 return herbivoreManager != null && herbivoreManager.TryGetComponent<herbivoreManager>(out var hm) ? hm.herbivores : null;
             case category.predator:
-                return predatorManager != null && predatorManager.TryGetComponent<predatorManager>(out var pm) ? pm.predators : null;
+                return GetPredatorsByCategory(category.predator);
+            case category.highpredator:
+                return GetPredatorsByCategory(category.highpredator);
+            case category.dominant:
+                return GetPredatorsByCategory(category.dominant);
             default:
                 return grassManager != null && grassManager.TryGetComponent<ResourceDispenser>(out var dispenser) ? dispenser.grasses : null;
         }
+    }
+
+    List<GameObject> GetPredatorsByCategory(category targetCategory)
+    {
+        List<GameObject> filtered = new();
+        if (predatorManager == null || !predatorManager.TryGetComponent<predatorManager>(out var pm))
+            return filtered;
+
+        for (int i = 0; i < pm.predators.Count; i++)
+        {
+            GameObject obj = pm.predators[i];
+            if (obj == null) continue;
+            if (!obj.TryGetComponent<Resource>(out var resource)) continue;
+            if (resource.resourceCategory == targetCategory)
+                filtered.Add(obj);
+        }
+
+        return filtered;
     }
 
     GameObject GetRandomFocusableObject(List<GameObject> list)
@@ -583,8 +619,8 @@ public partial class WorldUIManager
         EvaluationAxis axis = generationController != null ? generationController.evaluationAxis : EvaluationAxis.Random;
         switch (axis)
         {
-            case EvaluationAxis.Carbon:
-                return obj.TryGetComponent<Resource>(out var resource) ? resource.carbon : 0f;
+            case EvaluationAxis.Mana:
+                return obj.TryGetComponent<Resource>(out var resource) ? resource.mana : 0f;
             case EvaluationAxis.Health:
                 if (obj.TryGetComponent<herbivoreBehaviour>(out var herbivore))
                     return herbivore.health;

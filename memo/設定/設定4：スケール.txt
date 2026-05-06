@@ -15,7 +15,7 @@ field / 環境場を優先した時間・空間スケールの正本。
 ### physics tick
 
 - Unity `FixedUpdate()`
-- 実移動、速度、エネルギー消費。
+- 実移動、速度。移動・待機では mana を消費しない。
 
 ### environment tick
 
@@ -24,7 +24,7 @@ field / 環境場を優先した時間・空間スケールの正本。
 - 草再生: `ResourceDispenser.Update()`
 - heat 拡散: `HeatFieldManager.Update()`
 - threat 減衰: `threatmap_calc.Update()`
-- mana 拡散: 未実装
+- mana 拡散: `ManaFieldManager.Update()`
 
 将来は field 更新周期を統一する候補がある。
 

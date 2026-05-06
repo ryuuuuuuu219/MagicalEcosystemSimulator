@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -92,21 +92,21 @@ public partial class WorldUIManager
 
         if (currentTarget.TryGetComponent<Resource>(out var resource))
         {
-            statusText += "\ncarbon:" + resource.carbon.ToString("F1");
-            statusText += "\nmaxCarbon:" + resource.maxCarbon.ToString("F1");
+            statusText += "\nmana:" + resource.mana.ToString("F1");
+            statusText += "\nmaxMana:" + resource.maxMana.ToString("F1");
             statusText += "\ncategory:" + resource.resourceCategory;
         }
 
         if (currentTarget.TryGetComponent<herbivoreBehaviour>(out var herbivore))
         {
             statusText += "\nhealth:" + herbivore.health.ToString("F1");
-            statusText += "\nenergy:" + herbivore.energy.ToString("F1");
+            statusText += "\nmana:" + herbivore.mana.ToString("F1");
             statusText += "\ndead:" + herbivore.IsDead;
         }
         else if (currentTarget.TryGetComponent<predatorBehaviour>(out var predator))
         {
             statusText += "\nhealth:" + predator.health.ToString("F1");
-            statusText += "\nenergy:" + predator.energy.ToString("F1");
+            statusText += "\nmana:" + predator.mana.ToString("F1");
             statusText += "\ndead:" + predator.IsDead;
         }
 

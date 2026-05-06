@@ -18,7 +18,7 @@
 - 時間、距離、grid 解像度、更新周期の正本。
 
 4. `../設定4：経済.txt`
-- carbon / energy / heat / mana の資源正本。
+- carbon / energy 廃止後の mana 経済正本。
 
 5. `../設定共通：状態機械まとめ（IFF前段階）.txt`
 - field を行動状態へ接続するための正本。

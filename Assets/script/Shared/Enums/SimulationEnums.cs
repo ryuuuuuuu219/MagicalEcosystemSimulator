@@ -2,7 +2,9 @@ public enum category
 {
     grass,
     herbivore,
-    predator
+    predator,
+    highpredator,
+    dominant
 }
 
 public enum AiAgentMode
@@ -10,13 +12,14 @@ public enum AiAgentMode
     grassland,
     herbibore,
     predator,
-    highpredator
+    highpredator,
+    dominant
 }
 
 public enum EvaluationAxis
 {
     Random,
-    Carbon,
+    Mana,
     Health,
     Selection
 }

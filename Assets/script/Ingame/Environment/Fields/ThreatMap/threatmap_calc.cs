@@ -78,6 +78,12 @@ public class threatmap_calc : MonoBehaviour
             mode = AiAgentMode.highpredator,
             behaviourTypeName = "predatorBehaviour",
             genomeTypeName = "PredatorGenome"
+        },
+        new AgentTypeBinding
+        {
+            mode = AiAgentMode.dominant,
+            behaviourTypeName = "predatorBehaviour",
+            genomeTypeName = "PredatorGenome"
         }
     };
 

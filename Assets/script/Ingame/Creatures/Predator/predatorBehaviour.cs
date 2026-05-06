@@ -28,17 +28,27 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-    [Header("Energy")]
+    [Header("Mana")]
 
-    public float maxEnergy = 120f;
+    public float maxMana = 120f;
 
-    public float energy = 120f;
+    public float mana = 120f;
 
 
 
     [Header("Sensing")]
 
     public float eatDistance = 1.2f;
+
+    [Header("Phase")]
+
+    public float phaseCheckInterval = 10f;
+
+    public float phaseUpManaCoefficient = 0.00001f;
+
+    public float phaseUpProbabilityCap = 0.005f;
+
+    float nextPhaseCheckTime;
 
 
 
@@ -116,9 +126,13 @@ public class predatorBehaviour : MonoBehaviour
 
         health = maxHealth;
 
-        energy = maxEnergy;
+        SyncManaFromResource();
 
-        ClampEnergy();
+        ClampMana();
+
+        EnsurePredatorPhase();
+
+        nextPhaseCheckTime = Time.time + phaseCheckInterval;
 
     }
 
@@ -158,6 +172,10 @@ public class predatorBehaviour : MonoBehaviour
 
         if (bodyResource == null) return;
 
+        SyncManaFromResource();
+
+        TryPhaseEvolution();
+
 
 
         if (IsDead)
@@ -173,8 +191,6 @@ public class predatorBehaviour : MonoBehaviour
         }
 
 
-
-        ConvertBodyCarbonToEnergy();
 
         UpdateVision();
 
@@ -195,8 +211,6 @@ public class predatorBehaviour : MonoBehaviour
         {
 
             lastMovementTelemetry = ApplyMovement(pendingMoveVector);
-
-            ConsumeEnergy(lastMovementTelemetry);
 
         }
 
@@ -248,76 +262,6 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-    void ConvertBodyCarbonToEnergy()
-
-    {
-
-        if (bodyResource == null) return;
-
-
-
-        float carbonUsed = Mathf.Min(bodyResource.carbon, GetCarbonToEnergyRate() * Time.deltaTime);
-
-        if (carbonUsed <= 0f) return;
-
-
-
-        float energyGain = carbonUsed * GetMetabolicEnergyPerCarbon();
-
-        if (WouldExceedEnergyCap(energyGain))
-
-            return;
-
-
-
-        float released = bodyResource.ReleaseCarbonToEnvironment(carbonUsed, resourceDispenser);
-
-        if (released <= 0f) return;
-
-
-
-        energy += released * GetMetabolicEnergyPerCarbon();
-
-        ClampEnergy();
-
-
-
-        HeatFieldManager heatField = HeatFieldManager.GetOrCreate();
-
-        float heatAmount = released * GetMetabolicHeatPerCarbon();
-
-        heatField.AddHeat(transform.position, heatAmount, 2f);
-
-    }
-
-
-
-    void ConsumeEnergy(AnimalAICommon.MovementTelemetry telemetry)
-
-    {
-
-        float moveCost =
-
-            GetIdleEnergyCostPerSec() +
-
-            GetMoveEnergyCostPerSec() * telemetry.moveDemand;
-
-        float accelCost = GetAccelerationEnergyCostPerUnit() * telemetry.accelerationDemand;
-
-        float brakeCost = GetBrakingEnergyCostPerUnit() * telemetry.brakingDemand;
-
-        float turnCost = GetTurnEnergyCostPerDegree() * telemetry.turnDemand;
-
-        float cost = moveCost * Time.fixedDeltaTime + accelCost + brakeCost + turnCost;
-
-        energy -= cost;
-
-        ClampEnergy();
-
-    }
-
-
-
     float GetDecomposeRate()
 
     {
@@ -328,120 +272,91 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-    float GetCarbonToEnergyRate()
+    void ClampMana()
 
     {
 
-        return resourceDispenser != null ? resourceDispenser.carbonToEnergyRate : 0.5f;
+        mana = Mathf.Max(0f, mana);
 
     }
 
-
-
-    float GetIdleEnergyCostPerSec()
-
+    void SyncManaFromResource()
     {
-
-        return resourceDispenser != null ? resourceDispenser.idleEnergyCostPerSec : 0.05f;
-
+        if (bodyResource == null) return;
+        if (bodyResource.maxMana > 0f)
+            maxMana = bodyResource.maxMana;
+        mana = bodyResource.mana;
     }
 
-
-
-    float GetMoveEnergyCostPerSec()
-
+    void EnsurePredatorPhase()
     {
-
-        return resourceDispenser != null ? resourceDispenser.moveEnergyCostPerSec : 0.2f;
-
-    }
-
-
-
-    float GetMetabolicEnergyPerCarbon()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.metabolicEnergyPerCarbon : 1f;
-
-    }
-
-
-
-    float GetMetabolicHeatPerCarbon()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.metabolicHeatPerCarbon : 0.5f;
-
-    }
-
-
-
-    float GetAccelerationEnergyCostPerUnit()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.accelerationEnergyCostPerUnit : 0.03f;
-
-    }
-
-
-
-    float GetBrakingEnergyCostPerUnit()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.brakingEnergyCostPerUnit : 0.02f;
-
-    }
-
-
-
-    float GetTurnEnergyCostPerDegree()
-
-    {
-
-        return resourceDispenser != null ? resourceDispenser.turnEnergyCostPerDegree : 0.0005f;
-
-    }
-
-
-
-    void ClampEnergy()
-
-    {
-
-        if (maxEnergy > 0f)
-
-        {
-
-            energy = Mathf.Clamp(energy, 0f, maxEnergy);
-
+        if (bodyResource == null)
             return;
 
-        }
-
-
-
-        energy = Mathf.Max(0f, energy);
-
+        if (GetPhaseRank(bodyResource.resourceCategory) < 3)
+            bodyResource.resourceCategory = category.predator;
     }
 
-
-
-    bool WouldExceedEnergyCap(float gain)
-
+    void TryPhaseEvolution()
     {
+        if (bodyResource == null || IsDead)
+            return;
 
-        if (gain <= 0f || maxEnergy <= 0f)
+        EnsurePredatorPhase();
 
-            return false;
+        if (Time.time < nextPhaseCheckTime)
+            return;
 
+        nextPhaseCheckTime = Time.time + Mathf.Max(0.1f, phaseCheckInterval);
 
+        int currentRank = GetPhaseRank(bodyResource.resourceCategory);
+        if (currentRank < 3 || currentRank >= 5)
+            return;
 
-        return energy + gain > maxEnergy;
+        float fieldMana = ManaFieldManager.GetOrCreate().SampleMana(transform.position);
+        float probability = Mathf.Min(Mathf.Max(0f, phaseUpProbabilityCap), Mathf.Max(0f, fieldMana) * Mathf.Max(0f, phaseUpManaCoefficient));
+        if (Random.value > probability)
+            return;
 
+        bodyResource.resourceCategory = GetCategoryFromPhaseRank(currentRank + 1);
+    }
+
+    static int GetPhaseRank(category value)
+    {
+        switch (value)
+        {
+            case category.grass:
+                return 1;
+            case category.herbivore:
+                return 2;
+            case category.predator:
+                return 3;
+            case category.highpredator:
+                return 4;
+            case category.dominant:
+                return 5;
+            default:
+                return 0;
+        }
+    }
+
+    static category GetCategoryFromPhaseRank(int rank)
+    {
+        switch (rank)
+        {
+            case 1:
+                return category.grass;
+            case 2:
+                return category.herbivore;
+            case 3:
+                return category.predator;
+            case 4:
+                return category.highpredator;
+            case 5:
+                return category.dominant;
+            default:
+                return category.predator;
+        }
     }
 
 
@@ -482,7 +397,7 @@ public class predatorBehaviour : MonoBehaviour
 
             if (!prey.TryGetComponent<Resource>(out var res)) continue;
 
-            if (res.resourceCategory != category.herbivore) continue;
+            if (!CanTargetAsPrey(res)) continue;
 
 
 
@@ -564,36 +479,21 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-        if (!predatorManager.returnHerbivores(out List<GameObject> herbivores))
-
+        if (predatorManager == null)
             return;
-
-
 
         Vector3 pos = transform.position;
 
-
-
-        foreach (var prey in herbivores)
-
+        if (predatorManager.returnHerbivores(out List<GameObject> herbivores))
         {
+            foreach (var prey in herbivores)
+                TryRememberPrey(prey, pos);
+        }
 
-            if (prey == null) continue;
-
-            if (!prey.TryGetComponent<Resource>(out var res)) continue;
-
-            if (res.resourceCategory != category.herbivore) continue;
-
-
-
-            float dist = Vector3.Distance(prey.transform.position, pos);
-
-            if (dist <= 0.001f || dist > genome.preyDetectDistance) continue;
-
-
-
-            Remember(memoryPrey, prey);
-
+        if (predatorManager != null)
+        {
+            for (int i = 0; i < predatorManager.predators.Count; i++)
+                TryRememberPrey(predatorManager.predators[i], pos);
         }
 
     }
@@ -656,6 +556,66 @@ public class predatorBehaviour : MonoBehaviour
 
         AnimalAICommon.Remember(memory, obj, genome.memorytime);
 
+    }
+
+    void TryRememberPrey(GameObject prey, Vector3 selfPosition)
+    {
+        if (prey == null || prey == gameObject) return;
+        if (!prey.TryGetComponent<Resource>(out var res)) return;
+        if (!CanTargetAsPrey(res)) return;
+
+        float dist = Vector3.Distance(prey.transform.position, selfPosition);
+        if (dist <= 0.001f || dist > genome.preyDetectDistance) return;
+
+        Remember(memoryPrey, prey);
+    }
+
+    bool CanTargetAsPrey(Resource target)
+    {
+        if (target == null || bodyResource == null || target == bodyResource)
+            return false;
+
+        int selfRank = GetPhaseRank(bodyResource.resourceCategory);
+        int targetRank = GetPhaseRank(target.resourceCategory);
+        if (selfRank < 3)
+            return false;
+
+        return targetRank >= 2;
+    }
+
+    bool IsPreyDead(GameObject prey)
+    {
+        if (prey == null)
+            return true;
+        if (prey.TryGetComponent<herbivoreBehaviour>(out var herbivore))
+            return herbivore.IsDead;
+        if (prey.TryGetComponent<predatorBehaviour>(out var predator))
+            return predator.IsDead;
+        return false;
+    }
+
+    Vector3 GetPreyVelocity(GameObject prey)
+    {
+        if (prey == null)
+            return Vector3.zero;
+        if (prey.TryGetComponent<herbivoreBehaviour>(out var herbivore))
+            return herbivore.CurrentVelocity;
+        if (prey.TryGetComponent<predatorBehaviour>(out var predator))
+            return predator.CurrentVelocity;
+        return Vector3.zero;
+    }
+
+    void ApplyDamageToPrey(GameObject prey, float damage)
+    {
+        if (prey == null)
+            return;
+        if (prey.TryGetComponent<herbivoreBehaviour>(out var herbivore))
+        {
+            herbivore.TakeDamage(damage);
+            return;
+        }
+        if (prey.TryGetComponent<predatorBehaviour>(out var predator))
+            predator.TakeDamage(damage);
     }
 
 
@@ -844,19 +804,11 @@ public class predatorBehaviour : MonoBehaviour
 
         float dist = Vector3.Distance(pos, target);
 
-        bool preyDead = false;
-
-        if (bestPrey.TryGetComponent<herbivoreBehaviour>(out var herbivore))
-
-        {
-
-            preyDead = herbivore.IsDead;
-
-        }
+        bool preyDead = IsPreyDead(bestPrey);
 
 
 
-        if (!preyDead && TryCombatActions(bestPrey, herbivore))
+        if (!preyDead && TryCombatActions(bestPrey))
 
         {
 
@@ -1136,11 +1088,11 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-    bool TryCombatActions(GameObject prey, herbivoreBehaviour herbivore)
+    bool TryCombatActions(GameObject prey)
 
     {
 
-        if (prey == null || herbivore == null || herbivore.IsDead || !CanAttackLivePrey())
+        if (prey == null || IsPreyDead(prey) || !CanAttackLivePrey())
 
             return false;
 
@@ -1165,7 +1117,7 @@ public class predatorBehaviour : MonoBehaviour
 
             targetPosition = prey.transform.position,
 
-            targetVelocity = herbivore.CurrentVelocity,
+            targetVelocity = GetPreyVelocity(prey),
 
             targetForward = prey.transform.forward,
 
@@ -1187,13 +1139,13 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-        herbivore.TakeDamage(result.damage);
+        ApplyDamageToPrey(prey, result.damage);
 
         EmitAttackThreatPulse(prey.transform.position);
 
-        energy -= result.energyCost;
-
-        ClampEnergy();
+        bodyResource.AddMana(result.damage, out _);
+        bodyResource.RemoveMana(result.manaCost);
+        SyncManaFromResource();
 
 
 
@@ -1235,13 +1187,15 @@ public class predatorBehaviour : MonoBehaviour
 
         if (!prey.TryGetComponent<Resource>(out var resource)) return;
 
-        if (resource.resourceCategory != category.herbivore) return;
+        if (!CanTargetAsPrey(resource)) return;
 
-        if (!prey.TryGetComponent<herbivoreBehaviour>(out var herbivore) || !herbivore.IsDead) return;
+        if (!IsPreyDead(prey)) return;
 
 
 
         bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
+
+        SyncManaFromResource();
 
     }
 
@@ -1251,13 +1205,13 @@ public class predatorBehaviour : MonoBehaviour
 
     {
 
-        if (maxEnergy <= 0f)
+        if (maxMana <= 0f)
 
             return 1f;
 
 
 
-        float ratio = Mathf.Clamp01(energy / maxEnergy);
+        float ratio = Mathf.Clamp01(mana / maxMana);
 
         if (ratio <= 0.05f)
 
@@ -1275,13 +1229,13 @@ public class predatorBehaviour : MonoBehaviour
 
     {
 
-        if (maxEnergy <= 0f)
+        if (maxMana <= 0f)
 
             return true;
 
 
 
-        return energy / maxEnergy > 0.1f;
+        return mana / maxMana > 0.1f;
 
     }
 

@@ -133,7 +133,7 @@ World
 ### 個体 AI
 
 - `2.生態系コア強化` で扱う。
-- AI は field を単独の状態遷移条件にせず、距離、視認、記憶、境界、エネルギーと合成して判断する。
+- AI は field を単独の状態遷移条件にせず、距離、視認、記憶、境界、mana 状態と合成して判断する。
 - 初期接続は threat と heat を回避・離脱寄りに使う。
 
 ### 戦闘可視化
@@ -145,7 +145,7 @@ World
 ### 魔素基盤
 
 - `5.魔素基盤構築` で扱う。
-- mana field は新規実装対象。
+- mana field は実装済み基盤として扱い、個体吸収、魔法消費、相進化判定へ接続する。
 - heat field や threat map の実装を再利用する場合も、責務を混ぜない。
 
 ### 属性魔法
@@ -158,7 +158,7 @@ World
 
 - field 更新、field 参照、field 可視化を分ける。
 - 既存の `ThreatMapsGenerator` と `HeatFieldManager` を再実装しない。
-- mana field は未実装なので最初にデータ型、更新周期、世代 reset を決める。
+- mana field は `ManaFieldManager` を基盤にし、吸収・消費・進化判定の接続を優先する。
 - scalar / vector / tensor の共通表示 API を検討する。
 - debug 表示は戦闘観測カメラからも利用できるようにする。
 

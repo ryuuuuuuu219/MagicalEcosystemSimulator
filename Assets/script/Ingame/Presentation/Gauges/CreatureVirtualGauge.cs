@@ -10,13 +10,9 @@ public class CreatureVirtualGauge : MonoBehaviour
     public float maxHealth = 25f;
     public float health = 25f;
 
-    [Header("Energy")]
-    public float maxEnergy = 100f;
-    public float energy = 100f;
-
-    [Header("Carbon")]
-    public float maxCarbon = 100f;
-    public float carbon = 100f;
+    [Header("Mana")]
+    public float maxMana = 100f;
+    public float mana = 100f;
 
     public void Initialize(herbivoreBehaviour owner)
     {
@@ -63,30 +59,30 @@ public class CreatureVirtualGauge : MonoBehaviour
     public bool IsHerbivore => herbivore != null;
     public bool IsPredator => predator != null;
 
-    public bool TryGetRatios(out float healthRatio, out float energyRatio, out float carbonRatio, out int energyLap)
+    public bool TryGetRatios(out float healthRatio, out float manaRatio, out float resourceManaRatio, out int manaLap)
     {
         SyncStats();
 
         bool hasOwner = herbivore != null || predator != null;
         healthRatio = maxHealth > 0f ? Mathf.Clamp01(health / maxHealth) : 0f;
-        if (maxEnergy > 0f)
+        if (maxMana > 0f)
         {
-            float normalized = Mathf.Max(0f, energy) / maxEnergy;
-            energyLap = Mathf.FloorToInt(normalized);
-            energyRatio = normalized - energyLap;
-            if (energyRatio <= 0f && normalized > 0f)
+            float normalized = Mathf.Max(0f, mana) / maxMana;
+            manaLap = Mathf.FloorToInt(normalized);
+            manaRatio = normalized - manaLap;
+            if (manaRatio <= 0f && normalized > 0f)
             {
-                energyLap = Mathf.Max(0, energyLap - 1);
-                energyRatio = 1f;
+                manaLap = Mathf.Max(0, manaLap - 1);
+                manaRatio = 1f;
             }
         }
         else
         {
-            energyLap = 0;
-            energyRatio = 0f;
+            manaLap = 0;
+            manaRatio = 0f;
         }
 
-        carbonRatio = maxCarbon > 0f ? Mathf.Clamp01(Mathf.Max(0f, carbon) / maxCarbon) : 0f;
+        resourceManaRatio = maxMana > 0f ? Mathf.Clamp01(Mathf.Max(0f, mana) / maxMana) : 0f;
 
         return hasOwner;
     }
@@ -100,12 +96,12 @@ public class CreatureVirtualGauge : MonoBehaviour
         {
             maxHealth = herbivore.maxHealth;
             health = herbivore.health;
-            maxEnergy = herbivore.maxEnergy;
-            energy = herbivore.energy;
+            maxMana = herbivore.maxMana;
+            mana = herbivore.mana;
             if (bodyResource != null)
             {
-                maxCarbon = bodyResource.maxCarbon;
-                carbon = bodyResource.carbon;
+                maxMana = bodyResource.maxMana;
+                mana = bodyResource.mana;
             }
             return;
         }
@@ -114,12 +110,12 @@ public class CreatureVirtualGauge : MonoBehaviour
         {
             maxHealth = predator.maxHealth;
             health = predator.health;
-            maxEnergy = predator.maxEnergy;
-            energy = predator.energy;
+            maxMana = predator.maxMana;
+            mana = predator.mana;
             if (bodyResource != null)
             {
-                maxCarbon = bodyResource.maxCarbon;
-                carbon = bodyResource.carbon;
+                maxMana = bodyResource.maxMana;
+                mana = bodyResource.mana;
             }
         }
     }

@@ -19,22 +19,22 @@ public partial class WorldUIManager
     {
         public RectTransform Root;
         public Slider HealthSlider;
-        public Slider EnergySlider;
-        public Slider CarbonSlider;
-        public TextMeshProUGUI EnergyLapText;
+        public Slider ManaSlider;
+        public Slider ResourceManaSlider;
+        public TextMeshProUGUI ManaLapText;
         public Image HealthBackground;
-        public Image EnergyBackground;
-        public Image CarbonBackground;
+        public Image ManaBackground;
+        public Image ResourceManaBackground;
         public Image HealthFill;
-        public Image EnergyFill;
-        public Image CarbonFill;
+        public Image ManaFill;
+        public Image ResourceManaFill;
         public Color HealthBackgroundColor;
-        public Color EnergyBackgroundColor;
-        public Color CarbonBackgroundColor;
+        public Color ManaBackgroundColor;
+        public Color ResourceManaBackgroundColor;
         public Color HealthFillColor;
-        public Color EnergyFillColor;
-        public Color CarbonFillColor;
-        public Color EnergyLapTextColor;
+        public Color ManaFillColor;
+        public Color ResourceManaFillColor;
+        public Color ManaLapTextColor;
     }
 
     void InitializeVirtualGaugeCanvas()
@@ -116,7 +116,7 @@ public partial class WorldUIManager
                 continue;
             }
 
-            if (!gauge.TryGetRatios(out float healthRatio, out float energyRatio, out float carbonRatio, out int energyLap))
+            if (!gauge.TryGetRatios(out float healthRatio, out float manaRatio, out float resourceManaRatio, out int manaLap))
             {
                 view.Root.gameObject.SetActive(false);
                 continue;
@@ -146,19 +146,33 @@ public partial class WorldUIManager
             float scale = currentTarget == gauge.gameObject ? selectedGaugeScale : 1f;
             view.Root.localScale = Vector3.one * scale;
             ApplyGaugeAlpha(view, virtualGaugeManager == null ? 1f : virtualGaugeManager.GaugeAlpha);
+            ApplyManaOverflowColor(view, manaLap > 0);
             view.HealthSlider.value = healthRatio;
-            view.EnergySlider.value = energyRatio;
-            view.CarbonSlider.value = carbonRatio;
+            view.ManaSlider.value = manaRatio;
+            view.ResourceManaSlider.value = resourceManaRatio;
             view.HealthSlider.gameObject.SetActive(virtualGaugeManager == null || virtualGaugeManager.ShowHealthGauge);
-            view.EnergySlider.gameObject.SetActive(virtualGaugeManager == null || virtualGaugeManager.ShowEnergyGauge);
-            view.CarbonSlider.gameObject.SetActive(virtualGaugeManager == null || virtualGaugeManager.ShowCarbonText);
-            if (view.EnergyLapText != null)
+            view.ManaSlider.gameObject.SetActive(virtualGaugeManager == null || virtualGaugeManager.ShowManaGauge);
+            view.ResourceManaSlider.gameObject.SetActive(virtualGaugeManager == null || virtualGaugeManager.ShowManaText);
+            if (view.ManaLapText != null)
             {
-                bool showEnergyLap = (virtualGaugeManager == null || virtualGaugeManager.ShowEnergyGauge) && energyLap > 0;
-                view.EnergyLapText.gameObject.SetActive(showEnergyLap);
-                view.EnergyLapText.text = $"{energyLap + 1}x";
+                bool showManaLap = (virtualGaugeManager == null || virtualGaugeManager.ShowManaGauge) && manaLap > 0;
+                view.ManaLapText.gameObject.SetActive(showManaLap);
+                view.ManaLapText.text = $"{manaLap + 1}x";
             }
         }
+    }
+
+    void ApplyManaOverflowColor(GaugeView view, bool overflow)
+    {
+        if (!overflow)
+            return;
+
+        float manaAlpha = view.ManaFill != null ? view.ManaFill.color.a : 1f;
+        float resourceAlpha = view.ResourceManaFill != null ? view.ResourceManaFill.color.a : 1f;
+        if (view.ManaFill != null)
+            view.ManaFill.color = new Color(1f, 0.22f, 0.08f, manaAlpha);
+        if (view.ResourceManaFill != null)
+            view.ResourceManaFill.color = new Color(1f, 0.48f, 0.1f, resourceAlpha);
     }
 
     bool ShouldShowGaugeFor(CreatureVirtualGauge gauge)
@@ -171,7 +185,7 @@ public partial class WorldUIManager
         if (gauge.IsPredator && !virtualGaugeManager.ShowPredatorGauges)
             return false;
 
-        return virtualGaugeManager.ShowHealthGauge || virtualGaugeManager.ShowEnergyGauge || virtualGaugeManager.ShowCarbonText;
+        return virtualGaugeManager.ShowHealthGauge || virtualGaugeManager.ShowManaGauge || virtualGaugeManager.ShowManaText;
     }
 
     void HideAllGaugeViews()
@@ -244,9 +258,9 @@ public partial class WorldUIManager
         root.pivot = new Vector2(0.5f, 0.5f);
 
         Slider healthSlider = CreateGaugeSlider("HealthSlider", root, new Vector2(0f, 14f), new Color(1f, 0.52f, 0.12f, 0.95f), out var healthBackground, out var healthFill);
-        Slider energySlider = CreateGaugeSlider("EnergySlider", root, new Vector2(0f, 1f), new Color(1f, 0.87f, 0.16f, 0.95f), out var energyBackground, out var energyFill);
-        Slider carbonSlider = CreateGaugeSlider("CarbonSlider", root, new Vector2(0f, -12f), new Color(0.35f, 0.82f, 1f, 0.95f), out var carbonBackground, out var carbonFill);
-        TextMeshProUGUI energyLapText = CreateGaugeLabel("EnergyLapText", root, new Vector2(-86f, 1f));
+        Slider manaSlider = CreateGaugeSlider("ManaSlider", root, new Vector2(0f, 1f), new Color(1f, 0.87f, 0.16f, 0.95f), out var manaBackground, out var manaFill);
+        Slider resourceManaSlider = CreateGaugeSlider("ResourceManaSlider", root, new Vector2(0f, -12f), new Color(0.35f, 0.82f, 1f, 0.95f), out var resourceManaBackground, out var resourceManaFill);
+        TextMeshProUGUI manaLapText = CreateGaugeLabel("ManaLapText", root, new Vector2(-86f, 1f));
 
         rootObj.SetActive(false);
 
@@ -254,22 +268,22 @@ public partial class WorldUIManager
         {
             Root = root,
             HealthSlider = healthSlider,
-            EnergySlider = energySlider,
-            CarbonSlider = carbonSlider,
-            EnergyLapText = energyLapText,
+            ManaSlider = manaSlider,
+            ResourceManaSlider = resourceManaSlider,
+            ManaLapText = manaLapText,
             HealthBackground = healthBackground,
-            EnergyBackground = energyBackground,
-            CarbonBackground = carbonBackground,
+            ManaBackground = manaBackground,
+            ResourceManaBackground = resourceManaBackground,
             HealthFill = healthFill,
-            EnergyFill = energyFill,
-            CarbonFill = carbonFill,
+            ManaFill = manaFill,
+            ResourceManaFill = resourceManaFill,
             HealthBackgroundColor = healthBackground.color,
-            EnergyBackgroundColor = energyBackground.color,
-            CarbonBackgroundColor = carbonBackground.color,
+            ManaBackgroundColor = manaBackground.color,
+            ResourceManaBackgroundColor = resourceManaBackground.color,
             HealthFillColor = healthFill.color,
-            EnergyFillColor = energyFill.color,
-            CarbonFillColor = carbonFill.color,
-            EnergyLapTextColor = energyLapText.color
+            ManaFillColor = manaFill.color,
+            ResourceManaFillColor = resourceManaFill.color,
+            ManaLapTextColor = manaLapText.color
         };
     }
 
@@ -349,17 +363,17 @@ public partial class WorldUIManager
     {
         float clampedAlpha = Mathf.Clamp01(alpha);
         SetGraphicAlpha(view.HealthBackground, view.HealthBackgroundColor, clampedAlpha);
-        SetGraphicAlpha(view.EnergyBackground, view.EnergyBackgroundColor, clampedAlpha);
-        SetGraphicAlpha(view.CarbonBackground, view.CarbonBackgroundColor, clampedAlpha);
+        SetGraphicAlpha(view.ManaBackground, view.ManaBackgroundColor, clampedAlpha);
+        SetGraphicAlpha(view.ResourceManaBackground, view.ResourceManaBackgroundColor, clampedAlpha);
         SetGraphicAlpha(view.HealthFill, view.HealthFillColor, clampedAlpha);
-        SetGraphicAlpha(view.EnergyFill, view.EnergyFillColor, clampedAlpha);
-        SetGraphicAlpha(view.CarbonFill, view.CarbonFillColor, clampedAlpha);
+        SetGraphicAlpha(view.ManaFill, view.ManaFillColor, clampedAlpha);
+        SetGraphicAlpha(view.ResourceManaFill, view.ResourceManaFillColor, clampedAlpha);
 
-        if (view.EnergyLapText != null)
+        if (view.ManaLapText != null)
         {
-            Color color = view.EnergyLapTextColor;
+            Color color = view.ManaLapTextColor;
             color.a *= clampedAlpha;
-            view.EnergyLapText.color = color;
+            view.ManaLapText.color = color;
         }
     }
 

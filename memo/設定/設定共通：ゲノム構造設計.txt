@@ -12,7 +12,7 @@
 
 前提:
 - 現在ゲノムとして定義されているのは `HerbivoreGenome` と `PredatorGenome` の 2 系統。
-- `maxHealth` / `health` / `maxEnergy` / `energy` は Behaviour 側の状態値であり、ゲノム項目ではない。
+- `maxHealth` / `health` / `mana` は Behaviour / Resource 側の状態値であり、ゲノム項目ではない。
 - 突然変異設定 (`mutationChance` など) はゲノムではなく `AdvanceGenerationController` 側の遺伝処理設定。
 - 旧メモにあった `hpBase` `speedBase` `staminaBase` などの名前は、現行コード上のゲノム項目名とは一致しない。
 
@@ -80,14 +80,14 @@
   - attackCooldown
   - chargeArc
   - chargeDamageScale
-  - chargeEnergyCost
+  - chargeManaCost
   - chargeContactPadding
   - biteArc
   - biteDamage
-  - biteEnergyCost
+  - biteManaCost
   - meleeArc
   - meleeDamage
-  - meleeEnergyCost
+  - meleeManaCost
   - attackThreatPulseScore
   - attackThreatPulseRadius
   - attackTraceScale

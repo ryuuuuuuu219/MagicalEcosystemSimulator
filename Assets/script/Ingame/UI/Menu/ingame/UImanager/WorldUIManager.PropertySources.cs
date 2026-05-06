@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public partial class WorldUIManager
 {
@@ -61,7 +61,7 @@ public partial class WorldUIManager
         }
     }
 
-    public ResourceDispenser EnergyPropertiesSource
+    public ResourceDispenser ManaPropertiesSource
     {
         get
         {

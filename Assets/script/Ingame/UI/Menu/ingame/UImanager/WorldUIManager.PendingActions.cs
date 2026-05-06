@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public partial class WorldUIManager
 {
@@ -12,10 +12,10 @@ public partial class WorldUIManager
         Time.timeScale = Mathf.Max(0f, scale);
     }
 
-    public void SetEnergyConsumptionParameters(
+    public void SetManaConsumptionParameters(
         float decompose,
-        float carbonToEnergy,
-        float metabolicEnergy,
+        float manaToMana,
+        float metabolicMana,
         float metabolicHeat,
         float idleCost,
         float moveCost,
@@ -24,20 +24,11 @@ public partial class WorldUIManager
         float turnCost,
         float decompositionHeat)
     {
-        ResourceDispenser source = EnergyPropertiesSource;
+        ResourceDispenser source = ManaPropertiesSource;
         if (source == null)
             return;
 
         source.decomposeRate = Mathf.Max(0f, decompose);
-        source.carbonToEnergyRate = Mathf.Max(0f, carbonToEnergy);
-        source.metabolicEnergyPerCarbon = Mathf.Max(0f, metabolicEnergy);
-        source.metabolicHeatPerCarbon = Mathf.Max(0f, metabolicHeat);
-        source.idleEnergyCostPerSec = Mathf.Max(0f, idleCost);
-        source.moveEnergyCostPerSec = Mathf.Max(0f, moveCost);
-        source.accelerationEnergyCostPerUnit = Mathf.Max(0f, accelerationCost);
-        source.brakingEnergyCostPerUnit = Mathf.Max(0f, brakingCost);
-        source.turnEnergyCostPerDegree = Mathf.Max(0f, turnCost);
-        source.decompositionHeatPerCarbon = Mathf.Max(0f, decompositionHeat);
     }
 
     public void SetTerrainParameters(
@@ -112,18 +103,18 @@ public partial class WorldUIManager
         source.SetGaugeVisibility(visible, showHerbivores, showPredators);
     }
 
-    public void SetVirtualGaugeDisplaySettings(bool showHealth, bool showEnergy, bool showCarbon, float alpha)
+    public void SetVirtualGaugeDisplaySettings(bool showHealth, bool showManaGauge, bool showManaText, float alpha)
     {
         VirtualGaugeManager source = VirtualGaugePropertiesSource;
         if (source == null)
             return;
 
-        source.SetGaugeDisplayOptions(showHealth, showEnergy, showCarbon, alpha);
+        source.SetGaugeDisplayOptions(showHealth, showManaGauge, showManaText, alpha);
     }
 
-    public void SetVirtualGaugeStatusSelection(bool showHealth, bool showCarbon, bool showEnergy)
+    public void SetVirtualGaugeStatusSelection(bool showHealth, bool showManaText, bool showManaGauge)
     {
-        SetVirtualGaugeDisplaySettings(showHealth, showEnergy, showCarbon, GetVirtualGaugeAlpha());
+        SetVirtualGaugeDisplaySettings(showHealth, showManaGauge, showManaText, GetVirtualGaugeAlpha());
     }
 
     public void SetVirtualGaugeSpeciesSelection(bool showHerbivores, bool showPredators)
@@ -139,7 +130,7 @@ public partial class WorldUIManager
         if (source == null)
             return;
 
-        SetVirtualGaugeDisplaySettings(source.ShowHealthGauge, source.ShowEnergyGauge, source.ShowCarbonText, alpha);
+        SetVirtualGaugeDisplaySettings(source.ShowHealthGauge, source.ShowManaGauge, source.ShowManaText, alpha);
     }
 
     public float GetVirtualGaugeAlpha()

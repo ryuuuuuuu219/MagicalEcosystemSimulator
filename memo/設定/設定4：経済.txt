@@ -3,69 +3,183 @@
 ## 位置づけ
 
 field / 環境場を優先した資源定義の正本。
-carbon、energy、heat、mana を分けて扱う。
 
-## carbon
+2026-05-06 時点の方針として、旧 `carbon` 経済と旧 `energy` 行動資源は廃止する。
+個体、草、死骸、環境場の中心資源は `mana` とする。
 
-保存対象。
+## 廃止したもの
 
-- 草、草食、捕食者は `Resource.carbon` を持つ。
-- 摂食で carbon が移動する。
-- 死亡後は分解で `ResourceDispenser.carbonPool` へ戻る。
-- grass 再生で再び個体資源へ戻る。
+### carbon
 
-炭素保存則:
+- `Resource.carbon` / `maxCarbon` / `totalReleasedCarbon` は廃止。
+- 炭素保存則は維持しない。
+- `ResourceDispenser.carbonPool` / `totalCarbon` は `manaPool` / `totalMana` へ置換。
 
-```text
-sum(Resource.carbon) + carbonPool = totalCarbon
-```
+### energy
 
-世代開始時に総量を再確定する。
-
-## energy
-
-個体内部の行動資源。
-
-- carbon から変換される。
-- 移動、加速、減速、旋回、攻撃で消費する。
-- 死後に保存対象として回収しない。
-
-energy は field ではない。
-
-## heat
-
-環境に存在する scalar field。
-
-- carbon を energy に変換した副産物として発生する。
-- 死骸分解でも発生する。
-- `HeatFieldManager` に加算される。
-- 拡散し、減衰する。
-
-heat は炭素保存則に含めない。
-
-魔法接続:
-- 火属性: heat 加算、熱ダメージ。
-- 氷属性: heat 低下、鈍足。
-
-未実装:
-- 恒星由来の入熱。
-- 熱ダメージ。
-- 属性耐性。
-- AI の安全温度移動。
+- 個体内部の移動・待機・通常行動コストとしての `energy` は廃止。
+- 移動、待機、通常行動では `mana` を消費しない。
+- 攻撃と魔法だけが明示的な `mana` 消費を持つ。
 
 ## mana
 
-魔法用の環境 scalar field。
-
-現状:
-- 未実装。
+`mana` はゲーム内評価、魔法使用、進化係数、摂食、死骸、環境場をつなぐスコア兼リソース。
 
 性質:
-- 魔法使用で消費する。
-- 自然増加しない。
-- 拡散する。
-- 減衰しない。
-- 世代更新で reset する初期案。
+
+- 総量保存しない。
+- 自然回復しない。
+- 生存中の自然減衰はしない。
+- 被ダメージでは減らない。
+- 移動・待機・通常行動では消費しない。
+- 攻撃時は攻撃者が与ダメージに応じて `mana` を吸収する。
+- 魔法使用時は `mana` を消費する。
+- 魔法後の与ダメージは、魔法用の回収係数で `mana` へ反映できる。
+- 死亡後は死骸 `mana` が減衰し、mana field へ放散される。
+- 個体は mana field から一定速度で吸収できる設計にする。
+
+## 上限方針
+
+設計上、個体 `mana` に固定上限は置かない。
+
+暴走抑制が必要な場合は、上限ではなく特定の増加・放散処理に変換関数をかける。
+
+基本候補:
+
+```text
+converted = log(1 + raw) * scale
+```
+
+フラグ例:
+
+- `isConvertAttackAbsorb`: 攻撃時吸収 mana を log 変換する。
+- `isConvertMagicAbsorb`: 魔法時吸収 mana を log 変換する。
+- `isConvertDeathRelease`: 死亡時 field 放散 mana を log 変換する。
+- `isConvertFieldAbsorb`: field 吸収 mana を log 変換する。
+
+注意:
+
+- 現コードでは `Resource.InitMana(amount, amount)` により `maxMana = 初期 mana` が入っている。
+- `Resource.AddMana()` は `maxMana > 0` の場合に上限で止める。
+- このため、設計方針へ合わせるには `maxMana` の扱いをなくす、または上限処理を log 変換処理へ置き換える必要がある。
+
+## 草
+
+新設計では、草は継続再生するタンクではなく、接触時に `mana` を与えて消滅する供給オブジェクト。
+
+- 草 1 個の初期 mana: `manaPerGrass = 30`
+- 草食が接触したとき、一定量の `mana` を草食へ与える。
+- 供給後、草オブジェクトは消滅する。
+- 再供給は `ResourceDispenser` が `grassSpawnCooldown` 後に再生成する。
+- 旧 `grassManaRegenPerSec` / `grassEatCooldown` / `grassDepletedRegenDelay` 型の再生モデルは使わない。
+
+現コード注意:
+
+- `ResourceDispenser.grassManaRegenRate = 0.5` による旧再生処理が残っている。
+- 今後、新設計へ合わせて「接触供給 -> Destroy -> 再生成」に置換する。
+
+## 草食動物
+
+- 初期 HP: `35`
+- 初期 mana: `100`
+- 草から `mana` を得る。
+- 移動・待機では `mana` を消費しない。
+- 世代更新はこの経済設計ではいったん考慮しない。
+
+シミュレーション上の固定値:
+
+- 草探索イベント間隔: `50秒`
+
+## 肉食動物
+
+- 初期 HP: `55`
+- 初期 mana: `200`
+- 草食動物への攻撃成功時、与ダメージに応じて `mana` を吸収する。
+- 攻撃ごとに `mana` コストを払う。
+- 死骸を摂食したとき、死骸側の `mana` を肉食へ移す。
+
+代表値:
+
+- 近接攻撃ダメージ代表値: `6`
+- 攻撃間隔代表値: `1.35秒`
+- 攻撃時 mana コスト代表値: `2.1`
+- 与ダメージ mana 変換: `1HP = +1mana`
+
+現コードの幅:
+
+- biteDamage: `4-8`
+- meleeDamage: `6-12`
+- chargeDamage: 相対速度依存
+- chargeManaCost: `0.4-1.2`
+- biteManaCost: `1.2-3.0`
+- meleeManaCost: `2.2-4.7`
+- attackClock: `0.9-1.8`
+
+## 魔法
+
+魔法は `mana` を消費し、与ダメージや field 変化を通じて `mana` 経済へ接続する。
+
+設計変数:
+
+- `magicCooldown`: 魔法の発動間隔。
+- `magicHitRate`: 命中率。
+- `magicDamage`: 魔法威力。
+- `magicManaCost`: 消費 mana。
+- `magicDamageToManaRate`: 魔法後の与ダメージ回収係数。
+- `magicRecoveryWindow`: 魔法使用後、回収係数が有効な時間。
+- `magicTargetCount`: 範囲魔法などで巻き込む数。
+- `magicMaxNetGainPerCast`: 1 発あたり黒字上限。負値なら無効。
+- `phaseMagicCostMultiplier`: phase ごとの消費補正。
+
+方針:
+
+- 魔法の黒字化は許容する。
+- 黒字化を制限したい場合は固定上限ではなく、log 変換または `magicMaxNetGainPerCast` を使う。
+
+現コード注意:
+
+- projectile の速度、寿命、半径、field への影響はある。
+- 個体 `mana` 消費、魔法ダメージ、魔法後の与ダメージ回収はまだ未接続。
+
+## 死亡と死骸
+
+死亡時、個体の `mana` は死骸側に残る。
+死亡後、死骸は時間経過で `mana` を mana field へ放散する。
+
+死骸最大寿命:
+
+```text
+corpseMaxLifetime = sqrt(10 * deathMana)
+```
+
+死亡後放散速度:
+
+```text
+manaDecayAfterDeathPerSec = deathMana / corpseMaxLifetime
+```
+
+現コード注意:
+
+- 現コードは `ResourceDispenser.decomposeRate = 2` の固定速度で `Resource.Decompose()` を進める。
+- 新設計へ合わせるには、死亡時 mana から寿命と放散速度を導出する処理へ置換する。
+
+## mana field
+
+mana field は環境側の scalar field。
+
+用途:
+
+- 死亡後 `mana` 放散の受け皿。
+- 生存個体の `mana` 供給源。
+- 魔法コストや魔法補正。
+- 相進化・突然変異の確率補正。
+
+現コード既定値:
+
+- `gridResolution = 96`
+- `diffusionRate = 1.5`
+- `fieldInitialMana = 0`
+- `fieldDissipationRate = 0`
 
 基本式:
 
@@ -74,41 +188,52 @@ heat は炭素保存則に含めない。
 mana_next = mana + Δmana
 ```
 
-発生イベント:
+個体吸収:
 
-### 死骸分解 / Destroy
+- field 吸収間隔は `1秒` 固定。
+- 吸収速度は `manaAbsorbFromFieldPerSec` で調整する。
+- 必要なら `isConvertFieldAbsorb` で log 変換する。
 
-- 死骸座標が属する grid へ mana を加算する。
-- 放出量は分解量や分解速度に比例させる候補。
-- 世界設定上は空間魔法由来として説明できるが、実装上は死骸消去イベントとして扱ってよい。
+## 突然変異・相進化
 
-### 転移
+世代更新はいったん考慮しない。
 
-- 発動地点と転移先を結ぶ線分上の grid へ mana を分散加算する。
-- 転移コストは経路上 grid の mana 総和を抵抗として扱う候補。
+ただし、突然変異・相の進化は mana field の自身座標グリッド値 `Δmana` に応じて 10 秒間隔で判定する。
 
-## attribute residue
+```text
+phaseUpProbability = min(0.005, 0.00001 * Δmana)
+```
 
-属性効果の残留。
+意味:
 
-- 火 / 氷は heat field と接続しやすい。
-- 空間は mana field と接続しやすい。
-- 風は三次元 vector field として扱う。
-- 雷の scalar field は設計しない。雷は着弾イベント、連鎖イベント、短時間 pulse として扱う。
+- `0.001% * Δmana`
+- 判定間隔: `10秒`
+- 上限: `0.5%`
 
-## field と保存則
+草食動物は進化ループの起点にしない。
+肉食動物を起点として phase 昇格を扱う。
 
-- carbon は保存対象。
-- energy は個体内部値。
-- heat は保存対象外の環境 scalar field。
-- mana は保存対象外の魔法 scalar field。
-- wind vector は保存対象外の三次元 vector field。
-- 雷 event は保存対象外。
+## 観測
+
+`mana` 加算内訳を観測できるようにする。
+
+最小案:
+
+```text
+string manaLog
+manaLog += "attack drain " + damage + " cost " + manaCost + "\n"
+manaLog += "eat grass " + gain + "\n"
+manaLog += "field absorb " + gain + "\n"
+manaLog += "corpse eat " + gain + "\n"
+```
+
+将来は文字列ログではなく、原因別累計値の構造体へ置き換える余地を残す。
 
 ## 実装へ渡す優先順位
 
-1. carbon 保存則は維持する。
-2. heat は既存 `HeatFieldManager` を使う。
-3. mana は新規 `ManaFieldManager` として最小実装する。
-4. 属性残留は mana / heat の接続ができてから設計する。
-5. UI は資源値と field 値を読むだけにする。
+1. `Resource.maxMana` 上限処理を廃止または log 変換方針へ置換する。
+2. 草を「接触供給 -> 消滅 -> 再生成」モデルへ変更する。
+3. 死亡時 mana から死骸寿命と放散速度を導出する。
+4. 生存個体の mana field 吸収を 1 秒間隔で実装する。
+5. 魔法の mana 消費・ダメージ・回収係数を接続する。
+6. `manaLog` または原因別累計値で加算内訳を表示する。
