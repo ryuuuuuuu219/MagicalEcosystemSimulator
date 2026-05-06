@@ -46,6 +46,7 @@ public static class MagicLaunchApi
 
         Rigidbody body = projectile.GetComponent<Rigidbody>();
         body.linearVelocity = direction * settings.projectileSpeed;
+        magicProjectile.SetIntendedVelocity(body.linearVelocity);
         return projectile;
     }
 

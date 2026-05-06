@@ -211,7 +211,7 @@ public class FieldToUI : MonoBehaviour
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -4f);
-        rect.sizeDelta = new Vector2(0f, 168f);
+        rect.sizeDelta = new Vector2(0f, 204f);
         template.GetComponent<Image>().color = new Color(0.03f, 0.04f, 0.05f, 0.95f);
 
         GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
@@ -231,7 +231,7 @@ public class FieldToUI : MonoBehaviour
         contentRect.anchorMax = new Vector2(1f, 1f);
         contentRect.pivot = new Vector2(0.5f, 1f);
         contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0f, 166f);
+        contentRect.sizeDelta = new Vector2(0f, 202f);
 
         VerticalLayoutGroup layout = content.GetComponent<VerticalLayoutGroup>();
         layout.childControlHeight = true;

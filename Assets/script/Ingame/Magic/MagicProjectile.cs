@@ -19,6 +19,8 @@ public class MagicProjectile : MonoBehaviour
 
     bool hasImpacted;
     bool isFinishing;
+    Rigidbody body;
+    Vector3 intendedVelocity;
 
     void Awake()
     {
@@ -26,14 +28,22 @@ public class MagicProjectile : MonoBehaviour
         col.radius = 0.18f;
         col.isTrigger = false;
 
-        var body = GetComponent<Rigidbody>();
+        body = GetComponent<Rigidbody>();
         body.useGravity = false;
         body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
 
     void Start()
     {
+        if (intendedVelocity.sqrMagnitude <= 0.0001f && body != null)
+            intendedVelocity = body.linearVelocity;
+
         Invoke(nameof(ExpireWithoutImpact), Mathf.Max(0.01f, lifeTime));
+    }
+
+    public void SetIntendedVelocity(Vector3 velocity)
+    {
+        intendedVelocity = velocity;
     }
 
     void OnCollisionEnter(Collision collision)
@@ -45,6 +55,7 @@ public class MagicProjectile : MonoBehaviour
         if (IsPassThroughCollider(target))
         {
             IgnoreCollisionWith(target);
+            RestoreIntendedVelocity();
             return;
         }
 
@@ -166,6 +177,14 @@ public class MagicProjectile : MonoBehaviour
         Collider projectileCollider = GetComponent<Collider>();
         if (projectileCollider != null)
             Physics.IgnoreCollision(projectileCollider, target, true);
+    }
+
+    void RestoreIntendedVelocity()
+    {
+        if (body == null || intendedVelocity.sqrMagnitude <= 0.0001f)
+            return;
+
+        body.linearVelocity = intendedVelocity;
     }
 
     static bool ShouldExplodeOnImpact(Collider target)

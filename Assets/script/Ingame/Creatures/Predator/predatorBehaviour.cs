@@ -1189,6 +1189,8 @@ public class predatorBehaviour : MonoBehaviour
 
         herbivore.TakeDamage(result.damage);
 
+        EmitAttackThreatPulse(prey.transform.position);
+
         energy -= result.energyCost;
 
         ClampEnergy();
@@ -1209,6 +1211,18 @@ public class predatorBehaviour : MonoBehaviour
 
         return true;
 
+    }
+
+    void EmitAttackThreatPulse(Vector3 point)
+    {
+        if (genome.attackThreatPulseScore <= 0f || genome.attackThreatPulseRadius <= 0f)
+            return;
+
+        threatmap_calc threatMap = FindFirstObjectByType<threatmap_calc>();
+        if (threatMap == null)
+            return;
+
+        threatMap.AddThreatPulse(point, genome.attackThreatPulseScore, genome.attackThreatPulseRadius);
     }
 
 

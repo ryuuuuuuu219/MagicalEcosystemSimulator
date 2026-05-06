@@ -28,6 +28,21 @@ public class threatmap_calc : MonoBehaviour
         public float bowlMapWeight;
     }
 
+    struct ThreatPulse
+    {
+        public Vector3 position;
+        public float score;
+        public float radius;
+        public float expiresAt;
+    }
+
+    struct CachedThreatCell
+    {
+        public Vector3 position;
+        public float score;
+        public float updatedAt;
+    }
+
     [Serializable]
     public struct AgentTypeBinding
     {
@@ -70,6 +85,22 @@ public class threatmap_calc : MonoBehaviour
     protected Vector3[] cellPositionBuffer;
     protected int evaluatedCellCount;
     protected Settings lastEvaluationSettings;
+    readonly List<ThreatPulse> threatPulses = new();
+    readonly Dictionary<Vector2Int, CachedThreatCell> evaluatedThreatCells = new();
+    readonly List<Vector2Int> staleThreatCellKeys = new();
+    float evaluatedThreatCellSize = 2f;
+    float nextThreatCellPruneTime;
+    float lastThreatCacheUpdateTime = float.NegativeInfinity;
+
+    [Header("Threat Pulse Field")]
+    public float threatPulseLifetime = 4f;
+    public float threatPulseFalloffPower = 1.5f;
+
+    [Header("Evaluated Threat Field")]
+    public float evaluatedThreatCellLifetime = 6f;
+    public float evaluatedThreatCellDecayTime = 4f;
+    public float evaluatedThreatSampleRadiusMultiplier = 1.6f;
+    public int maxEvaluatedThreatCells = 4096;
 
     public Type CurrentBehaviourType => GetBehaviourType(currentMode);
     public Type CurrentGenomeType => GetGenomeType(currentMode);
@@ -93,8 +124,15 @@ public class threatmap_calc : MonoBehaviour
 
     public float SampleEvaluatedThreat(Vector3 worldPosition)
     {
+        float pulseThreat = SampleThreatPulses(worldPosition);
+        if (TrySampleCachedEvaluatedThreat(worldPosition, out float evaluatedThreat))
+            return evaluatedThreat + pulseThreat;
+
+        if (Time.time - lastThreatCacheUpdateTime > Mathf.Max(0.02f, evaluatedThreatCellLifetime))
+            return pulseThreat;
+
         if (predatorFieldBuffer == null || cellPositionBuffer == null || evaluatedCellCount <= 0)
-            return 0f;
+            return pulseThreat;
 
         float bestDistanceSqr = float.PositiveInfinity;
         float bestValue = 0f;
@@ -115,7 +153,57 @@ public class threatmap_calc : MonoBehaviour
 
         float cellSize = Mathf.Max(0.5f, lastEvaluationSettings.cellSize);
         float maxDistance = cellSize * 1.2f;
-        return bestDistanceSqr <= maxDistance * maxDistance ? bestValue : 0f;
+        evaluatedThreat = bestDistanceSqr <= maxDistance * maxDistance ? bestValue : 0f;
+        return evaluatedThreat + pulseThreat;
+    }
+
+    public void AddThreatPulse(Vector3 worldPosition, float score, float radius)
+    {
+        AddThreatPulse(worldPosition, score, radius, threatPulseLifetime);
+    }
+
+    public void AddThreatPulse(Vector3 worldPosition, float score, float radius, float lifetime)
+    {
+        if (Mathf.Approximately(score, 0f) || radius <= 0f)
+            return;
+
+        threatPulses.Add(new ThreatPulse
+        {
+            position = new Vector3(worldPosition.x, 0f, worldPosition.z),
+            score = score,
+            radius = Mathf.Max(0.1f, radius),
+            expiresAt = Time.time + Mathf.Max(0.02f, lifetime)
+        });
+    }
+
+    float SampleThreatPulses(Vector3 worldPosition)
+    {
+        if (threatPulses.Count == 0)
+            return 0f;
+
+        float now = Time.time;
+        Vector3 flatPosition = new Vector3(worldPosition.x, 0f, worldPosition.z);
+        float total = 0f;
+
+        for (int i = threatPulses.Count - 1; i >= 0; i--)
+        {
+            ThreatPulse pulse = threatPulses[i];
+            if (now >= pulse.expiresAt)
+            {
+                threatPulses.RemoveAt(i);
+                continue;
+            }
+
+            float distance = Vector3.Distance(flatPosition, pulse.position);
+            if (distance > pulse.radius)
+                continue;
+
+            float spatial = 1f - Mathf.Clamp01(distance / pulse.radius);
+            float temporal = Mathf.Clamp01((pulse.expiresAt - now) / Mathf.Max(0.02f, threatPulseLifetime));
+            total += pulse.score * Mathf.Pow(spatial, Mathf.Max(0.1f, threatPulseFalloffPower)) * temporal;
+        }
+
+        return total;
     }
 
     public float ComputePredatorField(
@@ -217,6 +305,7 @@ public class threatmap_calc : MonoBehaviour
 
         evaluatedCellCount = index;
         lastEvaluationSettings = settings;
+        CacheEvaluatedThreatCells(index, settings);
         OnMapEvaluated(index, settings, debugOwner);
 
         if (bestIndex < 0)
@@ -231,6 +320,133 @@ public class threatmap_calc : MonoBehaviour
 
     protected virtual void OnMapEvaluated(int count, in Settings settings, Transform debugOwner)
     {
+    }
+
+    void CacheEvaluatedThreatCells(int count, in Settings settings)
+    {
+        float safeCellSize = Mathf.Max(0.5f, settings.cellSize);
+        if (!Mathf.Approximately(evaluatedThreatCellSize, safeCellSize))
+        {
+            evaluatedThreatCells.Clear();
+            evaluatedThreatCellSize = safeCellSize;
+        }
+
+        int safeCount = Mathf.Min(count, predatorFieldBuffer.Length, cellPositionBuffer.Length);
+        float now = Time.time;
+        lastThreatCacheUpdateTime = now;
+        for (int i = 0; i < safeCount; i++)
+        {
+            Vector3 position = cellPositionBuffer[i];
+            Vector2Int key = ToThreatCellKey(position);
+            evaluatedThreatCells[key] = new CachedThreatCell
+            {
+                position = new Vector3(position.x, 0f, position.z),
+                score = Mathf.Max(0f, predatorFieldBuffer[i]),
+                updatedAt = now
+            };
+        }
+
+        if (now >= nextThreatCellPruneTime || evaluatedThreatCells.Count > Mathf.Max(32, maxEvaluatedThreatCells))
+            PruneEvaluatedThreatCells(now);
+    }
+
+    bool TrySampleCachedEvaluatedThreat(Vector3 worldPosition, out float value)
+    {
+        value = 0f;
+        if (evaluatedThreatCells.Count == 0)
+            return false;
+
+        float now = Time.time;
+        if (now >= nextThreatCellPruneTime)
+            PruneEvaluatedThreatCells(now);
+
+        if (evaluatedThreatCells.Count == 0)
+            return false;
+
+        Vector3 flatPosition = new Vector3(worldPosition.x, 0f, worldPosition.z);
+        Vector2Int center = ToThreatCellKey(flatPosition);
+        float sampleRadius = Mathf.Max(0.5f, evaluatedThreatCellSize * Mathf.Max(0.5f, evaluatedThreatSampleRadiusMultiplier));
+        float maxDistanceSqr = sampleRadius * sampleRadius;
+        float bestDistanceSqr = float.PositiveInfinity;
+        float bestValue = 0f;
+
+        for (int z = -1; z <= 1; z++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                Vector2Int key = new Vector2Int(center.x + x, center.y + z);
+                if (!evaluatedThreatCells.TryGetValue(key, out CachedThreatCell cell))
+                    continue;
+
+                float age = now - cell.updatedAt;
+                if (age > Mathf.Max(0.02f, evaluatedThreatCellLifetime))
+                    continue;
+
+                float distanceSqr = (cell.position - flatPosition).sqrMagnitude;
+                if (distanceSqr > maxDistanceSqr || distanceSqr >= bestDistanceSqr)
+                    continue;
+
+                bestDistanceSqr = distanceSqr;
+                bestValue = ApplyEvaluatedThreatDecay(cell.score, age);
+            }
+        }
+
+        if (!float.IsFinite(bestDistanceSqr))
+            return false;
+
+        value = bestValue;
+        return true;
+    }
+
+    float ApplyEvaluatedThreatDecay(float score, float age)
+    {
+        if (score <= 0f)
+            return 0f;
+
+        float decayTime = Mathf.Max(0f, evaluatedThreatCellDecayTime);
+        if (decayTime <= 0f)
+            return score;
+
+        return score * Mathf.Clamp01(1f - (age / decayTime));
+    }
+
+    void PruneEvaluatedThreatCells(float now)
+    {
+        nextThreatCellPruneTime = now + 0.5f;
+        staleThreatCellKeys.Clear();
+
+        float lifetime = Mathf.Max(0.02f, evaluatedThreatCellLifetime);
+        foreach (KeyValuePair<Vector2Int, CachedThreatCell> entry in evaluatedThreatCells)
+        {
+            if (now - entry.Value.updatedAt > lifetime)
+                staleThreatCellKeys.Add(entry.Key);
+        }
+
+        for (int i = 0; i < staleThreatCellKeys.Count; i++)
+            evaluatedThreatCells.Remove(staleThreatCellKeys[i]);
+
+        int maxCells = Mathf.Max(32, maxEvaluatedThreatCells);
+        if (evaluatedThreatCells.Count <= maxCells)
+            return;
+
+        staleThreatCellKeys.Clear();
+        foreach (KeyValuePair<Vector2Int, CachedThreatCell> entry in evaluatedThreatCells)
+        {
+            staleThreatCellKeys.Add(entry.Key);
+            if (evaluatedThreatCells.Count - staleThreatCellKeys.Count <= maxCells)
+                break;
+        }
+
+        for (int i = 0; i < staleThreatCellKeys.Count; i++)
+            evaluatedThreatCells.Remove(staleThreatCellKeys[i]);
+    }
+
+    Vector2Int ToThreatCellKey(Vector3 worldPosition)
+    {
+        float safeCellSize = Mathf.Max(0.5f, evaluatedThreatCellSize);
+        return new Vector2Int(
+            Mathf.RoundToInt(worldPosition.x / safeCellSize),
+            Mathf.RoundToInt(worldPosition.z / safeCellSize));
     }
 
     string ResolveTypeName(AiAgentMode mode, bool behaviour)
