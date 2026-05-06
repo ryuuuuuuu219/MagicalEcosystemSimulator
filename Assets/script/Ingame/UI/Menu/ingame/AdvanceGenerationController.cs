@@ -834,6 +834,8 @@ public class AdvanceGenerationController : MonoBehaviour
             GameObject obj = herbivoreManager.herbivores[i];
             if (obj == null) continue;
 
+            if (obj.TryGetComponent<Resource>(out var resource))
+                resource.MarkGenerationResetDisposal();
             Destroy(obj);
         }
         herbivoreManager.herbivores.Clear();
@@ -846,6 +848,8 @@ public class AdvanceGenerationController : MonoBehaviour
             GameObject obj = predatorManager.predators[i];
             if (obj == null) continue;
 
+            if (obj.TryGetComponent<Resource>(out var resource))
+                resource.MarkGenerationResetDisposal();
             Destroy(obj);
         }
         predatorManager.predators.Clear();

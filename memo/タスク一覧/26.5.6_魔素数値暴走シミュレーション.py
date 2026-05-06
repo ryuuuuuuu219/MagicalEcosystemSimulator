@@ -31,14 +31,14 @@ class Params:
     herbivore_initial_mana: float = 100.0
     predator_initial_mana: float = 200.0
 
-    mana_absorb_from_field_per_sec: float = 0.0
+    mana_absorb_from_field_per_sec: float = 1.0
     field_absorb_interval: float = 1.0
     corpse_lifetime_scale: float = 10.0
     is_convert_death_release: bool = False
     death_release_log_scale: float = 1.0
 
-    grass_eat_amount_per_touch: float = 10.0
-    grass_spawn_cooldown: float = 20.0
+    grass_eat_amount_per_touch: float = 30.0
+    grass_spawn_cooldown: float = 10.0
     eat_rate_per_sec: float = 0.5
     herbivore_eat_interval: float = 50.0
 
@@ -56,8 +56,8 @@ class Params:
 
     magic_cooldown: float = 0.0
     magic_hit_rate: float = 1.0
-    magic_damage: float = 0.0
-    magic_mana_cost: float = 0.0
+    magic_damage: float = 12.0
+    magic_mana_cost: float = 8.0
     magic_damage_to_mana_rate: float = 1.0
     magic_recovery_window: float = 0.0
     magic_target_count: int = 1

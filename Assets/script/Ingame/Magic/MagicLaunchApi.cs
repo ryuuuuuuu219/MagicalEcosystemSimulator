@@ -19,6 +19,8 @@ public static class MagicLaunchApi
         Vector3 direction = request.Direction;
         Vector3 spawnPosition = request.SpawnPosition;
         MagicProjectileLaunchSettings settings = request.projectileSettings.WithFallbackEffectLifetime(5f);
+        if (!TryPayManaCost(request.casterResource, settings))
+            return null;
 
         GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         projectile.name = string.IsNullOrWhiteSpace(request.projectileName)
@@ -43,6 +45,12 @@ public static class MagicLaunchApi
         magicProjectile.impactMaterialColor = settings.projectileColor;
         magicProjectile.launchPoint = spawnPosition;
         magicProjectile.projectileSpeed = settings.projectileSpeed;
+        magicProjectile.casterResource = request.casterResource;
+        magicProjectile.magicDamage = settings.magicDamage;
+        magicProjectile.magicDamageToManaRate = settings.magicDamageToManaRate;
+        magicProjectile.magicRecoveryWindow = settings.magicRecoveryWindow;
+        magicProjectile.magicTargetCount = settings.magicTargetCount;
+        magicProjectile.magicMaxNetGainPerCast = settings.magicMaxNetGainPerCast;
 
         Rigidbody body = projectile.GetComponent<Rigidbody>();
         body.linearVelocity = direction * settings.projectileSpeed;
@@ -70,6 +78,43 @@ public static class MagicLaunchApi
             yield return new WaitForSeconds(circleSettings.chargeDuration);
 
         LaunchImmediate(request);
+    }
+
+    static bool TryPayManaCost(Resource casterResource, MagicProjectileLaunchSettings settings)
+    {
+        if (casterResource == null)
+            return true;
+
+        float cost = Mathf.Max(0f, settings.magicManaCost) * GetPhaseCostMultiplier(casterResource, settings.phaseMagicCostMultiplier);
+        if (cost <= 0f)
+            return true;
+
+        if (casterResource.mana < cost)
+        {
+            casterResource.RecordManaEvent("magic cost insufficient", 0f);
+            return false;
+        }
+
+        casterResource.RemoveMana(cost, "magic cost");
+        return true;
+    }
+
+    static float GetPhaseCostMultiplier(Resource casterResource, float baseMultiplier)
+    {
+        if (casterResource == null)
+            return 1f;
+
+        int rank = casterResource.resourceCategory switch
+        {
+            category.grass => 1,
+            category.herbivore => 2,
+            category.predator => 3,
+            category.highpredator => 4,
+            category.dominant => 5,
+            _ => 3
+        };
+
+        return Mathf.Pow(Mathf.Max(0.01f, baseMultiplier), Mathf.Max(0, rank - 3));
     }
 
     static Material CreateProjectileMaterial(Color color, float smoothness)

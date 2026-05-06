@@ -147,7 +147,8 @@ public class MagicMaterialExperimentLauncher : MonoBehaviour
             projectileScale = projectileScale,
             projectileSettings = launchSettings,
             spellCircleSettings = spellCircleSettings,
-            projectileName = $"{element} Launched Projectile"
+            projectileName = $"{element} Launched Projectile",
+            casterResource = GetComponentInParent<Resource>()
         });
         Invoke(nameof(ClearCharging), Mathf.Max(0.01f, spellCircleSettings.chargeDuration));
     }

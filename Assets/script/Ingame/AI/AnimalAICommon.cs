@@ -241,7 +241,7 @@ public static class AnimalAICommon
         if (actorTransform == null)
             return;
 
-        AlignToGround(actorTransform, terrain, actorTransform.forward);
+        AlignToGround(actorTransform, terrain, GetCurrentForward(actorTransform));
     }
 
     public static float NormalizeAngle(float angle)
@@ -342,6 +342,18 @@ public static class AnimalAICommon
             forward = ProjectDirectionOntoGround(actorTransform.forward, normal, Vector3.forward);
 
         SetGroundRotation(actorTransform, normal, forward);
+    }
+
+    static Vector3 GetCurrentForward(Transform actorTransform)
+    {
+        if (actorTransform != null &&
+            actorTransform.TryGetComponent<Rigidbody>(out var rb) &&
+            !rb.isKinematic)
+        {
+            return rb.rotation * Vector3.forward;
+        }
+
+        return actorTransform != null ? actorTransform.forward : Vector3.forward;
     }
 
     static void SetGroundRotation(Transform actorTransform, Vector3 groundNormal, Vector3 forward)

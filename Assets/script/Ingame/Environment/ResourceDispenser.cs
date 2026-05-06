@@ -13,7 +13,8 @@ public class ResourceDispenser : MonoBehaviour
     [SerializeField] float manaPool = 0f;
 
     public float manaPerGrass = 30f;
-    public float grassManaRegenRate = 0.5f;
+    public float grassEatAmountPerTouch = 30f;
+    public float grassSpawnCooldown = 10f;
 
     public float manaPerHerbivore = 100f;
     public float manaPerPredator = 200f;
@@ -36,6 +37,8 @@ public class ResourceDispenser : MonoBehaviour
 
     public List<GameObject> grasses;
     float nextManaAuditTime = 60f;
+    int pendingGrassRespawns;
+    float nextGrassRespawnTime;
 
     void Awake()
     {
@@ -141,27 +144,8 @@ public class ResourceDispenser : MonoBehaviour
             issetting = true;
         }
 
-        for (int i = grasses.Count - 1; i >= 0; i--)
-        {
-            GameObject grass = grasses[i];
-            if (grass == null)
-            {
-                grasses.RemoveAt(i);
-                continue;
-            }
-
-            var resource = grass.GetComponent<Resource>();
-            if (resource == null) continue;
-
-            float regenRequest = Mathf.Max(0f, grassManaRegenRate) * Time.deltaTime;
-            if (regenRequest <= 0f || manaPool <= 0f) continue;
-
-            float regenAmount = Mathf.Min(regenRequest, manaPool);
-            resource.AddMana(regenAmount, out float excess);
-            float added = regenAmount - excess;
-            if (added > 0f)
-                manaPool -= added;
-        }
+        PruneGrassList();
+        ProcessGrassRespawns();
 
         if (Time.time >= nextManaAuditTime)
         {
@@ -310,11 +294,72 @@ public class ResourceDispenser : MonoBehaviour
         {
             GameObject grass = grasses[i];
             if (grass != null)
+            {
+                if (grass.TryGetComponent<Resource>(out var resource))
+                    resource.MarkGenerationResetDisposal();
                 Destroy(grass);
+            }
         }
 
         grasses.Clear();
         grassIndex = 0;
+        pendingGrassRespawns = 0;
+        nextGrassRespawnTime = 0f;
+    }
+
+    public float ConsumeGrass(GameObject grass, Resource eater)
+    {
+        if (grass == null || eater == null)
+            return 0f;
+        if (!grass.TryGetComponent<Resource>(out var grassResource))
+            return 0f;
+        if (grassResource.resourceCategory != category.grass)
+            return 0f;
+
+        float gained = eater.Eating(Mathf.Max(0f, grassEatAmountPerTouch), grassResource, "grass touch");
+        grasses.Remove(grass);
+
+        if (grassResource.mana > 0f)
+            grassResource.RemoveMana(grassResource.mana, "grass disappear");
+
+        Destroy(grass);
+        QueueGrassRespawn();
+        return gained;
+    }
+
+    void QueueGrassRespawn()
+    {
+        pendingGrassRespawns++;
+        if (nextGrassRespawnTime <= 0f)
+            nextGrassRespawnTime = Time.time + Mathf.Max(0.1f, grassSpawnCooldown);
+    }
+
+    void ProcessGrassRespawns()
+    {
+        if (pendingGrassRespawns <= 0 || Time.time < nextGrassRespawnTime)
+            return;
+
+        if (Addgrass())
+        {
+            AddExternalMana(manaPerGrass);
+            pendingGrassRespawns--;
+        }
+
+        nextGrassRespawnTime = pendingGrassRespawns > 0
+            ? Time.time + Mathf.Max(0.1f, grassSpawnCooldown)
+            : 0f;
+    }
+
+    void PruneGrassList()
+    {
+        if (grasses == null)
+            grasses = new List<GameObject>();
+
+        for (int i = grasses.Count - 1; i >= 0; i--)
+        {
+            if (grasses[i] == null)
+                grasses.RemoveAt(i);
+        }
     }
 
     [Header("Vegetation")]

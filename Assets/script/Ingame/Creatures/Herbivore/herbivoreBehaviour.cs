@@ -40,6 +40,18 @@ public class herbivoreBehaviour : MonoBehaviour
 
     public float eatDistance = 1.2f;
 
+    [Header("Field Mana")]
+
+    public float manaAbsorbFromFieldPerSec = 1f;
+
+    public float fieldAbsorbRadius = 2f;
+
+    public bool isConvertFieldAbsorb;
+
+    public float fieldAbsorbLogScale = 1f;
+
+    float nextFieldAbsorbTime;
+
 
 
 
@@ -166,6 +178,8 @@ public class herbivoreBehaviour : MonoBehaviour
 
         SyncManaFromResource();
 
+        TryAbsorbManaFromField();
+
 
 
         if (IsDead)
@@ -258,6 +272,16 @@ public class herbivoreBehaviour : MonoBehaviour
         if (bodyResource.maxMana > 0f)
             maxMana = bodyResource.maxMana;
         mana = bodyResource.mana;
+    }
+
+    void TryAbsorbManaFromField()
+    {
+        if (bodyResource == null || IsDead || Time.time < nextFieldAbsorbTime)
+            return;
+
+        nextFieldAbsorbTime = Time.time + 1f;
+        bodyResource.AbsorbManaFromField(manaAbsorbFromFieldPerSec, fieldAbsorbRadius, isConvertFieldAbsorb, fieldAbsorbLogScale);
+        SyncManaFromResource();
     }
 
 
@@ -1296,7 +1320,10 @@ public class herbivoreBehaviour : MonoBehaviour
 
 
 
-            bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
+            if (resourceDispenser != null)
+                resourceDispenser.ConsumeGrass(h.gameObject, bodyResource);
+            else
+                bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource, "grass eat");
 
             SyncManaFromResource();
 

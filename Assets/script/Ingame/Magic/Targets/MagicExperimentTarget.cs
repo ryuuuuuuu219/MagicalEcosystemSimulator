@@ -100,7 +100,8 @@ public class MagicExperimentTarget : MonoBehaviour
             projectileScale = projectileScale,
             projectileSettings = settings,
             spellCircleSettings = spellCircleSettings,
-            projectileName = $"{element} Target Projectile {targetIndex:00}"
+            projectileName = $"{element} Target Projectile {targetIndex:00}",
+            casterResource = GetComponentInParent<Resource>()
         });
     }
 

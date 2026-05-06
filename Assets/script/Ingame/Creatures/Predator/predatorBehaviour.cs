@@ -40,6 +40,18 @@ public class predatorBehaviour : MonoBehaviour
 
     public float eatDistance = 1.2f;
 
+    [Header("Field Mana")]
+
+    public float manaAbsorbFromFieldPerSec = 1f;
+
+    public float fieldAbsorbRadius = 2f;
+
+    public bool isConvertFieldAbsorb;
+
+    public float fieldAbsorbLogScale = 1f;
+
+    float nextFieldAbsorbTime;
+
     [Header("Phase")]
 
     public float phaseCheckInterval = 10f;
@@ -174,6 +186,8 @@ public class predatorBehaviour : MonoBehaviour
 
         SyncManaFromResource();
 
+        TryAbsorbManaFromField();
+
         TryPhaseEvolution();
 
 
@@ -288,6 +302,16 @@ public class predatorBehaviour : MonoBehaviour
         mana = bodyResource.mana;
     }
 
+    void TryAbsorbManaFromField()
+    {
+        if (bodyResource == null || IsDead || Time.time < nextFieldAbsorbTime)
+            return;
+
+        nextFieldAbsorbTime = Time.time + 1f;
+        bodyResource.AbsorbManaFromField(manaAbsorbFromFieldPerSec, fieldAbsorbRadius, isConvertFieldAbsorb, fieldAbsorbLogScale);
+        SyncManaFromResource();
+    }
+
     void EnsurePredatorPhase()
     {
         if (bodyResource == null)
@@ -319,6 +343,8 @@ public class predatorBehaviour : MonoBehaviour
             return;
 
         bodyResource.resourceCategory = GetCategoryFromPhaseRank(currentRank + 1);
+        bodyResource.speciesID = DrawPhaseUpSpeciesID();
+        bodyResource.RecordManaEvent("phase up " + bodyResource.resourceCategory + " speciesID=" + bodyResource.speciesID, 0f);
     }
 
     static int GetPhaseRank(category value)
@@ -580,7 +606,36 @@ public class predatorBehaviour : MonoBehaviour
         if (selfRank < 3)
             return false;
 
+        if (targetRank >= 3 && target.speciesID == bodyResource.speciesID)
+            return false;
+
         return targetRank >= 2;
+    }
+
+    int DrawPhaseUpSpeciesID()
+    {
+        int maxSpeciesID = 0;
+        Resource[] resources = FindObjectsByType<Resource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < resources.Length; i++)
+        {
+            if (resources[i] == null) continue;
+            maxSpeciesID = Mathf.Max(maxSpeciesID, resources[i].speciesID);
+        }
+
+        int candidateMax = maxSpeciesID + 1;
+        float totalWeight = 0f;
+        for (int id = 0; id <= candidateMax; id++)
+            totalWeight += 1f / (id + 1f);
+
+        float roll = Random.value * totalWeight;
+        for (int id = 0; id <= candidateMax; id++)
+        {
+            roll -= 1f / (id + 1f);
+            if (roll <= 0f)
+                return id;
+        }
+
+        return candidateMax;
     }
 
     bool IsPreyDead(GameObject prey)
@@ -1143,8 +1198,8 @@ public class predatorBehaviour : MonoBehaviour
 
         EmitAttackThreatPulse(prey.transform.position);
 
-        bodyResource.AddMana(result.damage, out _);
-        bodyResource.RemoveMana(result.manaCost);
+        bodyResource.AddMana(result.damage, out _, "attack drain");
+        bodyResource.RemoveMana(result.manaCost, "attack cost");
         SyncManaFromResource();
 
 
@@ -1193,7 +1248,7 @@ public class predatorBehaviour : MonoBehaviour
 
 
 
-        bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource);
+        bodyResource.Eating(genome.eatspeed * Time.deltaTime, resource, "corpse eat");
 
         SyncManaFromResource();
 

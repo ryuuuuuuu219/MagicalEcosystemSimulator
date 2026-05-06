@@ -13,6 +13,13 @@ public struct MagicProjectileLaunchSettings
     public float effectLifetime;
     public float envelopeLifetime;
     public float envelopePadding;
+    public float magicDamage;
+    public float magicManaCost;
+    public float magicDamageToManaRate;
+    public float magicRecoveryWindow;
+    public int magicTargetCount;
+    public float magicMaxNetGainPerCast;
+    public float phaseMagicCostMultiplier;
 
     public MagicProjectileLaunchSettings(
         Color projectileColor,
@@ -35,6 +42,13 @@ public struct MagicProjectileLaunchSettings
         this.effectLifetime = effectLifetime;
         this.envelopeLifetime = effectLifetime;
         this.envelopePadding = envelopePadding;
+        this.magicDamage = 12f;
+        this.magicManaCost = 8f;
+        this.magicDamageToManaRate = 1f;
+        this.magicRecoveryWindow = projectileLifetime + effectLifetime;
+        this.magicTargetCount = 1;
+        this.magicMaxNetGainPerCast = 0f;
+        this.phaseMagicCostMultiplier = 1f;
     }
 
     public MagicProjectileLaunchSettings WithFallbackEffectLifetime(float fallbackEffectLifetime)
@@ -46,6 +60,18 @@ public struct MagicProjectileLaunchSettings
         settings.effectLifetime = envelopeLifetime > 0f ? envelopeLifetime : fallbackEffectLifetime;
         if (settings.envelopeLifetime <= 0f)
             settings.envelopeLifetime = settings.effectLifetime;
+        if (settings.magicDamage <= 0f)
+            settings.magicDamage = 12f;
+        if (settings.magicManaCost <= 0f)
+            settings.magicManaCost = 8f;
+        if (settings.magicDamageToManaRate <= 0f)
+            settings.magicDamageToManaRate = 1f;
+        if (settings.magicRecoveryWindow <= 0f)
+            settings.magicRecoveryWindow = settings.projectileLifetime + settings.effectLifetime;
+        if (settings.magicTargetCount <= 0)
+            settings.magicTargetCount = 1;
+        if (settings.phaseMagicCostMultiplier <= 0f)
+            settings.phaseMagicCostMultiplier = 1f;
         return settings;
     }
 

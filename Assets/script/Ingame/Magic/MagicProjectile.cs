@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(SphereCollider))]
@@ -16,11 +17,18 @@ public class MagicProjectile : MonoBehaviour
     public Vector3 launchPoint;
     public float projectileSpeed = 1f;
     public bool logExpiredWithoutImpact;
+    public Resource casterResource;
+    public float magicDamage = 12f;
+    public float magicDamageToManaRate = 1f;
+    public float magicRecoveryWindow = 8f;
+    public int magicTargetCount = 1;
+    public float magicMaxNetGainPerCast;
 
     bool hasImpacted;
     bool isFinishing;
     Rigidbody body;
     Vector3 intendedVelocity;
+    float launchTime;
 
     void Awake()
     {
@@ -35,6 +43,7 @@ public class MagicProjectile : MonoBehaviour
 
     void Start()
     {
+        launchTime = Time.time;
         if (intendedVelocity.sqrMagnitude <= 0.0001f && body != null)
             intendedVelocity = body.linearVelocity;
 
@@ -84,6 +93,7 @@ public class MagicProjectile : MonoBehaviour
         BeginImpactFinish();
         CreateParticleImpact(point, normal);
         Magic2FieldManager.Apply(element, point, normal, effectRadius, effectLifetime);
+        ApplyMagicDamage(point, target);
 
         if (wrapNonTerrainTargets && target.GetComponent<TerrainCollider>() == null)
         {
@@ -120,6 +130,78 @@ public class MagicProjectile : MonoBehaviour
         }
 
         DestroyProjectile();
+    }
+
+    void ApplyMagicDamage(Vector3 point, Collider directTarget)
+    {
+        float damage = Mathf.Max(0f, magicDamage);
+        if (damage <= 0f)
+            return;
+
+        int remainingTargets = Mathf.Max(1, magicTargetCount);
+        float totalDamage = 0f;
+        HashSet<GameObject> damagedObjects = new HashSet<GameObject>();
+
+        totalDamage += TryDamageColliderTarget(directTarget, damage, damagedObjects, ref remainingTargets);
+
+        if (remainingTargets > 0 && effectRadius > 0f)
+        {
+            Collider[] hits = Physics.OverlapSphere(point, effectRadius);
+            for (int i = 0; i < hits.Length && remainingTargets > 0; i++)
+                totalDamage += TryDamageColliderTarget(hits[i], damage, damagedObjects, ref remainingTargets);
+        }
+
+        TryRecoverManaFromMagicDamage(totalDamage);
+    }
+
+    float TryDamageColliderTarget(Collider target, float damage, HashSet<GameObject> damagedObjects, ref int remainingTargets)
+    {
+        if (target == null || remainingTargets <= 0)
+            return 0f;
+
+        herbivoreBehaviour herbivore = target.GetComponentInParent<herbivoreBehaviour>();
+        if (herbivore != null)
+        {
+            GameObject key = herbivore.gameObject;
+            if (!damagedObjects.Add(key) || herbivore.IsDead)
+                return 0f;
+
+            float before = herbivore.health;
+            herbivore.TakeDamage(damage);
+            remainingTargets--;
+            return Mathf.Max(0f, before - herbivore.health);
+        }
+
+        predatorBehaviour predator = target.GetComponentInParent<predatorBehaviour>();
+        if (predator != null)
+        {
+            GameObject key = predator.gameObject;
+            if (!damagedObjects.Add(key) || predator.IsDead)
+                return 0f;
+
+            float before = predator.health;
+            predator.TakeDamage(damage);
+            remainingTargets--;
+            return Mathf.Max(0f, before - predator.health);
+        }
+
+        return 0f;
+    }
+
+    void TryRecoverManaFromMagicDamage(float totalDamage)
+    {
+        if (casterResource == null || totalDamage <= 0f)
+            return;
+        if (magicRecoveryWindow > 0f && Time.time - launchTime > magicRecoveryWindow)
+            return;
+
+        float gain = totalDamage * Mathf.Max(0f, magicDamageToManaRate);
+        if (magicMaxNetGainPerCast > 0f)
+            gain = Mathf.Min(gain, magicMaxNetGainPerCast);
+        if (gain <= 0f)
+            return;
+
+        casterResource.AddMana(gain, out _, "magic damage recover");
     }
 
     void ExpireWithoutImpact()

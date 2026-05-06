@@ -95,6 +95,10 @@ public partial class WorldUIManager
             statusText += "\nmana:" + resource.mana.ToString("F1");
             statusText += "\nmaxMana:" + resource.maxMana.ToString("F1");
             statusText += "\ncategory:" + resource.resourceCategory;
+            statusText += "\nspeciesID:" + resource.speciesID;
+            string manaLog = resource.GetManaLogTail(240);
+            if (!string.IsNullOrEmpty(manaLog))
+                statusText += "\nlog:\n" + manaLog;
         }
 
         if (currentTarget.TryGetComponent<herbivoreBehaviour>(out var herbivore))
