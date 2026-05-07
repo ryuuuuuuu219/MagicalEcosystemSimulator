@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/FieldMvp.unity
     guid: f9cf810da99e4c138f95436c8c2f55c9
+  - enabled: 0
+    path: Assets/Scenes/swlab.unity
+    guid: ab8b99c8242942bfa85a40d88981d0e8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

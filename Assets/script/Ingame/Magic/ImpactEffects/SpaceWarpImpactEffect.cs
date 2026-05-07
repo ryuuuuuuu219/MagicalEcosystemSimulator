@@ -2,7 +2,14 @@ using UnityEngine;
 
 public static class SpaceWarpImpactEffect
 {
+    const string DefaultShaderName = "MagicalEcosystem/Experiment/SpaceWarp";
+
     public static GameObject CreateWarp(Vector3 point, Vector3 normal, float radius, float lifetime)
+    {
+        return CreateWarp(point, normal, radius, lifetime, DefaultShaderName);
+    }
+
+    public static GameObject CreateWarp(Vector3 point, Vector3 normal, float radius, float lifetime, string shaderName)
     {
         GameObject warp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         warp.name = "Space Warp Impact";
@@ -12,7 +19,7 @@ public static class SpaceWarpImpactEffect
             Object.Destroy(collider);
 
         var renderer = warp.GetComponent<MeshRenderer>();
-        renderer.material = CreateWarpMaterial(radius);
+        renderer.material = CreateWarpMaterial(radius, shaderName);
 
         var visibility = warp.AddComponent<IceShaderVisibilityController>();
         visibility.maxRenderDistance = 100f;
@@ -24,18 +31,19 @@ public static class SpaceWarpImpactEffect
         warp.transform.up = impactNormal;
 
         var controller = warp.AddComponent<SpaceWarpImpactController>();
-        controller.Initialize(renderer.material, Mathf.Max(0.1f, radius), Mathf.Max(0.1f, lifetime));
+        float effectLifetime = SpaceWarpImpactController.ResolveLifetime(Mathf.Max(0.1f, lifetime));
+        controller.Initialize(renderer.material, Mathf.Max(0.1f, radius), effectLifetime);
 
-        Object.Destroy(warp, Mathf.Max(0.1f, lifetime));
+        Object.Destroy(warp, effectLifetime);
         return warp;
     }
 
-    static Material CreateWarpMaterial(float radius)
+    static Material CreateWarpMaterial(float radius, string shaderName)
     {
-        Shader shader = Shader.Find("MagicalEcosystem/Experiment/SpaceWarp");
+        Shader shader = Shader.Find(string.IsNullOrWhiteSpace(shaderName) ? DefaultShaderName : shaderName);
         if (shader == null)
         {
-            Debug.LogWarning("SpaceWarp shader was not found. Falling back to Lit, so background distortion will not be visible.");
+            Debug.LogWarning($"{shaderName} shader was not found. Falling back to Lit, so background distortion will not be visible.");
             shader = Shader.Find("Universal Render Pipeline/Lit");
         }
         if (shader == null)
@@ -72,6 +80,10 @@ public static class SpaceWarpImpactEffect
 
 sealed class SpaceWarpImpactController : MonoBehaviour
 {
+    const float GrowDuration = 0.5f;
+    const float MaxRadiusHoldDuration = 8f;
+    const float ShrinkDuration = 0.8f;
+
     Material material;
     float lifetime;
     float elapsed;
@@ -80,6 +92,11 @@ sealed class SpaceWarpImpactController : MonoBehaviour
     Vector3 startScale;
     int lastGlitchFrame = -1;
     float currentSeed;
+
+    public static float ResolveLifetime(float requestedLifetime)
+    {
+        return GrowDuration + MaxRadiusHoldDuration + ShrinkDuration;
+    }
 
     public void Initialize(Material targetMaterial, float radius, float effectLifetime)
     {
@@ -102,10 +119,10 @@ sealed class SpaceWarpImpactController : MonoBehaviour
     void Update()
     {
         elapsed += Time.deltaTime;
-        float t = lifetime > 0f ? Mathf.Clamp01(elapsed / lifetime) : 1f;
-        float grow = Mathf.SmoothStep(0.35f, 1.05f, Mathf.Clamp01(t * 2.2f));
-        float fade = 1f - Mathf.SmoothStep(0.55f, 1f, t);
-        transform.localScale = startScale * grow;
+        float shrinkStart = Mathf.Max(GrowDuration + MaxRadiusHoldDuration, lifetime - ShrinkDuration);
+        float grow = Mathf.SmoothStep(0.35f, 1f, Mathf.Clamp01(elapsed / GrowDuration));
+        float shrink = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((elapsed - shrinkStart) / ShrinkDuration));
+        transform.localScale = startScale * grow * shrink;
         UpdateObjectRadius();
 
         if (material == null)
