@@ -1,0 +1,20 @@
+taskC: 魔法防御・魔法回避 organ 設計
+
+目的
+`MagicEvasionAction` / `MagicDefenseAction` を、魔法被弾と属性覚醒の設計に合わせて別タスク化する。
+
+理由
+現状では魔法 projectile の発射は接続済みだが、防御・回避側の正本がない。
+被弾イベント、属性相性、迎撃能力、mana cost をまとめて決める必要がある。
+
+検討項目
+- 魔法 projectile を事前検知する Sense organ。
+- 被弾直前の回避行動。
+- mana を消費する防御膜または属性相殺。
+- 被弾覚醒との接続。
+- 火 / 氷 / 雷 / 風 / 空間の防御差。
+- 草食と捕食で防御行動の重みを変えるか。
+
+最小案
+`MagicImpactAction` または projectile 衝突イベントから被弾情報を記録し、一定時間だけ次回の回避 desire / defense action の重みを上げる。
+実際の防御効果は、最初は mana 消費によるダメージ軽減だけにする。

@@ -1,0 +1,203 @@
+メモ上の矛盾と残課題
+
+更新日: 2026-05-08
+
+このファイルは、organ 実装へ切り替えた後にまだ残る不足分だけを整理する。
+解決済みの設計矛盾や移植済み機能はここから削除し、必要なら各専用メモへ退避する。
+
+
+中心課題
+
+残りの問題の中心は、organ 設計に切り替えた後の `herbivoreBehaviour` / `predatorBehaviour` の扱い。
+
+現状の旧 behaviour は以下を同時に持っている。
+
+- Update / FixedUpdate による実行主体
+- 移動、視認、攻撃、摂食、死亡、相進化の実装
+- genome / manager / resource / UI 参照の窓口
+- 外部コードが参照する互換 API
+
+organ 設計では、これらを分解する。
+
+- 実行主体: `AnimalBrain`
+- 移動: `GroundMotor`
+- 感覚: Sense organ
+- 記憶: `AIMemoryStore`
+- 欲求: Desire organ
+- 行動: Action organ
+- 生命状態: lifecycle organ
+- 互換窓口: 旧 behaviour
+- 初期構成と相進化時の organ 配布: `OrganPresetLibrary`
+
+詳細設計:
+`旧behaviour維持設計.md`
+
+
+残る問題
+
+1. AnimalBrain の実行タイミング
+
+`AnimalBrain.TickBrain()` は実装済みだが、まだ旧 behaviour の Update / FixedUpdate から切り替わっていない。
+
+方針:
+最終的には `AnimalBrain` 側を実行主体にする。
+旧 behaviour は削除せず、既存互換 API と `EnsureOrgansForCurrentPhase()` の入口として維持する。
+生成時と相進化時の固定 organ 配布は `OrganPresetLibrary` に集約する。
+
+注意:
+旧 behaviour と `GroundMotor` が同時に移動すると二重移動になる。
+切り替え時は「旧 behaviour が動くモード」と「organ が動くモード」を排他にする。
+
+
+2. Sense organ は既存 AI と完全同等ではない
+
+現在の Sense organ は最小実装。
+以下は未移植。
+
+- 視界首振り波形 `visionWaves`
+- 草への経路安全判定 `IsGrassSafe()`
+- TerrainCollider 遮蔽 Raycast
+- Debug.DrawLine
+- memorytime による記憶失効
+
+方針:
+これらは `FoodVisionSense` に直書きせず、前提 organ または補助 component に分ける。
+依存関係は `organ依存関係.md` に追記していく。
+
+
+3. Memory の正本が未統一
+
+現在は以下が併存している。
+
+- `AIMemoryStore`
+- `FoodMemory`
+- `PreyMemory`
+- `ThreatMemory`
+
+決定:
+長期的には `AIMemoryStore` を正本にする。
+短期的には個別 Memory を typed view として扱う。
+
+必要:
+旧 behaviour の target / memory 系フィールドを `AIMemoryStore` へ移す。
+
+
+4. 未実装 Action organ
+
+近接攻撃、魔法発射、捕食者相進化は最低限移植済み。
+以下はまだ設計または実装が足りない。
+
+- `CounterAttackAction`
+- `RandomEvasionAction`
+- `MagicEvasionAction`
+- `MagicDefenseAction`
+- `RestDesire`
+- `ReproductionDesire`
+
+方針:
+`CounterAttackAction` は taskB として別タスク化。
+`RandomEvasionAction` は当面 noop。空中戦実装時に再検討。
+`MagicEvasionAction` / `MagicDefenseAction` は taskC として別タスク化。
+
+
+5. Combat フォルダの完全 organ 化
+
+現状:
+`PredatorCombatLibrary` は organ から呼べるようになったが、配置は `Assets/script/Ingame/Combat` のまま。
+
+決定:
+`PredatorCombatLibrary` は organ 配下へ移す。
+攻撃可視化は Presentation 系 organ を新設せず、既存の `PredatorCombatLibrary` 側にまとめる。
+
+注意:
+移動時は Unity の参照と `.meta` の扱いを確認する。
+
+
+6. AnimalAIInstaller の依存 organ 自動導入が未実装
+
+方針:
+固定構成は `OrganPresetLibrary` が `AnimalAIInstaller.Ensure<T>()` で配布する。
+確率で入る organ と自動依存 organ は、今後 `AIComponentGene` と合成する。
+捕食者相なら `ThreatPulseEmitter` を自動導入。
+攻撃 organ がある場合も `ThreatPulseEmitter` を自動導入。
+Sense / Memory / Desire / Action の前提関係も解決する。
+
+参照:
+`organ依存関係.md`
+
+・
+C:\なんとかシミュレーター\魔法環境シミュ\Assets\script\Ingame\Creatures\after\organ\Core\AnimalAIInstaller.cs
+に　dictionary(T 前提organ, T 対象organ）のようなマップをつける
+Ensure（）にマップ索引・再帰的な依存organ導入処理をつける
+
+
+7. organ 導入確率は資料のみ
+
+`コンポーネント導入確率表.md` に確率案はあるが、`AnimalAIInstaller` はまだ確率抽選を行わない。
+
+必要:
+
+- species / phase 別 default set
+- random roll
+- `AIComponentGene.enabled`
+- `AIComponentGene.level`
+- 自動導入 organ 解決
+
+
+8. 既存 genome と organ gene の接続が未実装
+
+現状の `HerbivoreGenome` / `PredatorGenome` は float 中心。
+organ 方式では `AIComponentGene` / `AIComponentSet` を manager、世代交代、spawn へ接続する必要がある。
+
+必要:
+旧 behaviour が直接読む genome 値を、段階的に organ gene へ移す。
+
+
+9. isDead の正本が旧 behaviour に残っている
+
+現状:
+`CorpseEatAction` は `herbivoreBehaviour.IsDead` / `predatorBehaviour.IsDead` を参照している。
+
+必要:
+`isDead` または生命状態を `AnimalBrain` / `AIContext` / lifecycle organ 側へ移し、相を追加しても同じ API で参照できるようにする。
+
+
+10. 草食 organ 進化の評価軸が未定
+
+方針:
+草食も organ 進化対象。
+ただし phase 進化はしない。
+
+未決:
+草食 organ の生存適応をどのスコアで選別するか。
+
+候補:
+
+- 生存時間
+- mana 維持量
+- 捕食回避成功
+- 草摂食回数
+- 世代内での平均距離移動
+
+・
+フレームごとにランダムで加減　世代更新時に生存個体を参照して、マネージャーがばらつかせて配布する
+これの高度化は
+
+
+11. CreatureRelationResolver は enum 順序依存のまま
+
+決定:
+`dominant` までしか追加しない予定なので、当面は問題として扱わない。
+
+残留リスク:
+category enum に途中追加が入る場合は見直しが必要。
+
+
+確認済み
+
+`dotnet build Assembly-CSharp.csproj`
+
+結果:
+ビルド成功。
+警告 0。
+エラー 0。

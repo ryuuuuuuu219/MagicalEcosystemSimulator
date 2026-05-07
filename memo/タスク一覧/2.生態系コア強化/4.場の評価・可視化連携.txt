@@ -1,0 +1,40 @@
+﻿4.場の評価・可視化連携
+
+目的
+- 実装済みの threat / heat 場データを、行動判断側が安定して参照できる形に整理する。
+- 生成・可視化の新規実装ではなく、既存基盤と AI 接続・ログ照合の隙間を埋める。
+
+対象ファイル
+- Assets/script/Ingame/AI/ThreatMap/threatmap_calc.cs
+- Assets/script/Ingame/AI/ThreatMap/ThreatMapsGenerator.cs
+- Assets/script/Ingame/Environment/HeatFieldManager.cs
+- Assets/script/Ingame/Environment/ResourceDispenser.cs
+- Assets/Scenes/Ingame.unity
+
+作業項目
+1. データ生成経路の確認
+- threat map と heat field がどこで生成・更新されるかを確認する。
+- `ThreatMapsGenerator` はシーン配置済みで、threat 可視化も有効。
+- `HeatFieldManager` は必要時に `GetOrCreate()` され、代謝・死骸分解から heat が加算される。
+
+2. 行動参照APIの整理
+- AI が参照する値の単位、座標系、更新頻度をそろえる。
+- `threatmap_calc` の `GetThreatScore` / `GetLowThreatDirection` / `EvaluateBestDirection` と、`HeatFieldManager.SampleHeat` の使い分けを決める。
+
+3. 欠損時のフォールバック設計
+- データ未生成時に null やゼロ扱いで破綻しないようにする。
+- `HeatFieldManager.GetOrCreate()` の自動生成と、`FindFirstObjectByType<threatmap_calc>()` が失敗した場合の扱いをそろえる。
+
+4. 可視化確認
+- デバッグ表示やログで場の強弱と行動結果を照合できるようにする。
+- 既存の threat column と heat debug line を使い、AI が参照したスコアと画面上の場が食い違わないか確認する。
+
+5. threat 発生源の反映
+- predator の存在に加えて、攻撃発生時の threat pulse は実装済みとして扱う。
+- 警告パルスを一時的 threat 上昇として扱うか、別レイヤーで扱うか決める。
+- 警告パルス本体は `4.戦闘システム拡張` 側へ回し、このファイルでは場データの受け口だけを定義する。
+
+完了条件
+- AI 側から threat / heat の場を安定して参照できる。
+- 場データと行動変化の対応を確認する手段がある。
+- 既存の `ThreatMapsGenerator` / `HeatFieldManager` と重複する生成処理を追加していない。

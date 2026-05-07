@@ -1,0 +1,15 @@
+﻿X-7-1：検算ツール
+
+目的：
+熱量演算の内部表現と更新式が、想定どおりに動くかを手早く確認できるようにする。
+
+作業項目：
+- `Qbody`、`Qenv`、`Tbody`、`Tenv` の相互変換を確認する簡易ツールを作る
+- 入力した `Qmetabolism`、`Qmovement`、`Qexchange`、`Qexternal` から 1 step 後の `Qbody_next` を検算できるようにする
+- `diffusionRate`、`decayRate`、`solarPower`、`k` を変えたときの平衡点を確認できるようにする
+- UI 表示温度 `Tbody = 25 + Qbody / Cbody`、`Tenv = 25 + Qenv / Cenv` が期待通りの値になるか確認する
+
+想定用途：
+- 係数調整時の破綻確認
+- heat field と個体体温の更新順チェック
+- 温度表示と内部熱量の対応確認

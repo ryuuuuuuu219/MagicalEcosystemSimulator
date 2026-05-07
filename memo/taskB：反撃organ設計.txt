@@ -1,0 +1,19 @@
+taskB: 反撃 organ 設計
+
+目的
+`CounterAttackAction` を、既存 AI の移植ではなく新規設計タスクとして分離する。
+
+理由
+現状スクリプト側に `CounterAttackAction` と同等の既存機能が見当たらない。
+そのため、単純移植ではなく「いつ反撃するか」「何を消費するか」「どの攻撃へ接続するか」を決める必要がある。
+
+検討項目
+- 発動条件: 被弾直後、近距離脅威、逃走不能、mana 余剰など。
+- 対象: 最後に攻撃した相手、ThreatMemory の最大脅威、近接範囲内の敵。
+- 攻撃種類: 近接、噛みつき、魔法迎撃。
+- cost: mana、cooldown、硬直、失敗リスク。
+- organ 依存: ThreatMemory、CreatureLifecycleState、BiteAttackAction、MeleeAttackAction、MagicDefenseAction。
+
+最小案
+被弾イベントを受けた個体が、短時間だけ `ThreatMemory` の相手へ近接攻撃を試す。
+既存攻撃 organ を呼び出し、反撃専用の攻撃判定は作らない。
