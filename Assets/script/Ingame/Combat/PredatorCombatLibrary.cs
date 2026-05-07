@@ -52,6 +52,49 @@ public static class PredatorCombatLibrary
         return result;
     }
 
+    public static CombatResult TryChargeAttackAction(
+        in PredatorGenome genome,
+        in CombatContext context,
+        CombatState state,
+        bool canAttackLivePrey,
+        Collider targetCollider)
+    {
+        CombatResult result = new CombatResult { nextState = state };
+        if (!canAttackLivePrey || context.attacker == null || targetCollider == null)
+            return result;
+
+        TryChargeAttack(genome, context, state, targetCollider, out result);
+        return result;
+    }
+
+    public static CombatResult TryBiteAttackAction(
+        in PredatorGenome genome,
+        in CombatContext context,
+        CombatState state,
+        bool canAttackLivePrey)
+    {
+        CombatResult result = new CombatResult { nextState = state };
+        if (!canAttackLivePrey || context.attacker == null)
+            return result;
+
+        TryBiteAttack(genome, context, state, out result);
+        return result;
+    }
+
+    public static CombatResult TryMeleeAttackAction(
+        in PredatorGenome genome,
+        in CombatContext context,
+        CombatState state,
+        bool canAttackLivePrey)
+    {
+        CombatResult result = new CombatResult { nextState = state };
+        if (!canAttackLivePrey || context.attacker == null)
+            return result;
+
+        TryMeleeAttack(genome, context, state, out result);
+        return result;
+    }
+
     static bool TryChargeAttack(
         in PredatorGenome genome,
         in CombatContext context,

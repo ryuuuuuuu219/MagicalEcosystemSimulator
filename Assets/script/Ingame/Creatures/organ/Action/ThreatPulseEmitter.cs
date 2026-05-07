@@ -22,6 +22,16 @@ public class ThreatPulseEmitter : MonoBehaviour, IAIAction
         return true;
     }
 
+    public bool EmitAttackPulse(Vector3 point)
+    {
+        threatmap_calc threatMap = GetThreatMap();
+        if (threatMap == null)
+            return false;
+
+        threatMap.AddThreatPulse(point, pulseScore, pulseRadius);
+        return true;
+    }
+
     threatmap_calc GetThreatMap()
     {
         if (cachedThreatMap == null)

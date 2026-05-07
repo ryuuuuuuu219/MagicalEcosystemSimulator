@@ -9,6 +9,8 @@ public class ThreatAvoidanceDesire : MonoBehaviour, IAIDesire
         ThreatMemory memory = GetComponent<ThreatMemory>();
         if (context == null || context.Transform == null || memory == null)
             return AIMoveIntent.None("threat missing");
+        if (!memory.hasMemory || (memory.rememberedThreat == null && memory.rememberedPosition == Vector3.zero))
+            return AIMoveIntent.None("threat no memory");
 
         Vector3 threatPosition = memory.rememberedThreat != null
             ? memory.rememberedThreat.transform.position

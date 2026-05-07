@@ -12,6 +12,18 @@ public class GroundMotor : MonoBehaviour
 
     public Vector3 CurrentVelocity => currentVelocity;
 
+    public void InheritVelocity(Vector3 velocity)
+    {
+        currentVelocity = velocity;
+        currentVelocity.y = 0f;
+        currentSpeed = currentVelocity.magnitude;
+        if (currentVelocity.sqrMagnitude > 0.0001f)
+        {
+            inertialMoveVector = currentVelocity.normalized;
+            inertialFacingVector = currentVelocity.normalized;
+        }
+    }
+
     public void Move(AIContext context, Vector3 moveVector, float deltaTime)
     {
         if (context == null || context.Transform == null)

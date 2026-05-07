@@ -4,6 +4,11 @@ public class MagicAttackAction : UnityEngine.MonoBehaviour, IAIAction
 
     public bool TryAct(AIContext context, float deltaTime)
     {
-        return false;
+        MagicProjectileAttackAction projectileAttack = GetComponent<MagicProjectileAttackAction>();
+        if (projectileAttack == null)
+            projectileAttack = gameObject.AddComponent<MagicProjectileAttackAction>();
+
+        projectileAttack.manaCost = manaCost;
+        return projectileAttack.TryAct(context, deltaTime);
     }
 }

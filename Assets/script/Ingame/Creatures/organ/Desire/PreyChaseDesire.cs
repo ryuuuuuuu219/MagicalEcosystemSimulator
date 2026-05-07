@@ -9,6 +9,8 @@ public class PreyChaseDesire : MonoBehaviour, IAIDesire
         PreyMemory memory = GetComponent<PreyMemory>();
         if (context == null || context.Transform == null || memory == null)
             return AIMoveIntent.None("prey missing");
+        if (!memory.hasMemory || (memory.rememberedPrey == null && memory.rememberedPosition == Vector3.zero))
+            return AIMoveIntent.None("prey no memory");
 
         Vector3 target = memory.rememberedPrey != null
             ? memory.rememberedPrey.transform.position

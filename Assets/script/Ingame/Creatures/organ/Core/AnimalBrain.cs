@@ -30,11 +30,13 @@ public class AnimalBrain : MonoBehaviour
 
     public AIContext Context { get; private set; }
     public Vector3 LastMoveVector { get; private set; }
+    GroundMotor groundMotor;
 
     void Awake()
     {
         RefreshOrgans();
         Context = AIContext.From(gameObject);
+        groundMotor = GetComponent<GroundMotor>();
     }
 
     public void RefreshOrgans()
@@ -71,6 +73,9 @@ public class AnimalBrain : MonoBehaviour
             total = steerings[i].Steer(Context, total);
 
         LastMoveVector = total;
+        if (groundMotor != null)
+            groundMotor.Move(Context, LastMoveVector, deltaTime);
+
         return LastMoveVector;
     }
 }
