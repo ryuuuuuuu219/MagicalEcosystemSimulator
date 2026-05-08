@@ -7,6 +7,7 @@ public class AnimalAIInstaller : MonoBehaviour
 
     public void InstallDefaultOrgans()
     {
+        Ensure<OrganFoundation>();
         Ensure<AnimalBrain>();
         Ensure<AIMemoryStore>();
         Ensure<GroundMotor>();
@@ -15,12 +16,20 @@ public class AnimalAIInstaller : MonoBehaviour
 
     public T Ensure<T>() where T : Component
     {
-        if (!TryGetComponent<T>(out var component))
-            component = gameObject.AddComponent<T>();
-        return component;
+        return Ensure(typeof(T)) as T;
     }
 
     public Component Ensure(Type componentType)
+    {
+        if (componentType == null || !typeof(Component).IsAssignableFrom(componentType))
+            return null;
+
+        Component component = EnsureWithoutRelations(componentType);
+        OrganRelationLibrary.EnsureDependencies(this, componentType);
+        return component;
+    }
+
+    public Component EnsureWithoutRelations(Type componentType)
     {
         if (componentType == null || !typeof(Component).IsAssignableFrom(componentType))
             return null;

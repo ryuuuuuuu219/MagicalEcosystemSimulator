@@ -185,10 +185,6 @@ public class herbivoreBehaviour : MonoBehaviour
 
         SyncManaFromResource();
 
-        TryAbsorbManaFromField();
-
-
-
         if (IsDead)
 
         {
@@ -200,6 +196,14 @@ public class herbivoreBehaviour : MonoBehaviour
             return;
 
         }
+
+        if (UsesOrganFoundationRunner())
+        {
+            pendingMoveVector = Vector3.zero;
+            return;
+        }
+
+        TryAbsorbManaFromField();
 
 
 
@@ -1283,7 +1287,7 @@ public class herbivoreBehaviour : MonoBehaviour
 
     {
 
-        if (bodyResource != null && !IsDead)
+        if (bodyResource != null && !IsDead && !UsesOrganFoundationRunner())
 
         {
 
@@ -1295,6 +1299,11 @@ public class herbivoreBehaviour : MonoBehaviour
 
         ClampRotation();
 
+    }
+
+    bool UsesOrganFoundationRunner()
+    {
+        return TryGetComponent<OrganFoundation>(out var foundation) && foundation.IsBrainRunner;
     }
 
 

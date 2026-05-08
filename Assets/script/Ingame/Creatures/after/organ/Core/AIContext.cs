@@ -40,7 +40,9 @@ public class AIContext
             Health = herbivore.health;
             Mana = herbivore.mana;
             MaxMana = herbivore.maxMana;
-            CurrentVelocity = herbivore.CurrentVelocity;
+            CurrentVelocity = self.TryGetComponent<GroundMotor>(out var herbivoreMotor)
+                ? herbivoreMotor.CurrentVelocity
+                : herbivore.CurrentVelocity;
             return;
         }
 
@@ -50,7 +52,9 @@ public class AIContext
             Health = predator.health;
             Mana = predator.mana;
             MaxMana = predator.maxMana;
-            CurrentVelocity = predator.CurrentVelocity;
+            CurrentVelocity = self.TryGetComponent<GroundMotor>(out var predatorMotor)
+                ? predatorMotor.CurrentVelocity
+                : predator.CurrentVelocity;
             return;
         }
 

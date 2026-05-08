@@ -8,20 +8,20 @@ public static class OrganPresetLibrary
         if (installer == null)
             return;
 
-        EnsureCore(installer);
-        installer.Ensure<FoodMemory>();
-        installer.Ensure<ThreatMemory>();
-        installer.Ensure<FoodVisionSense>();
-        installer.Ensure<PredatorVisionSense>();
-        installer.Ensure<ThreatVisionSense>();
-        installer.Ensure<FoodDesire>();
-        installer.Ensure<ThreatAvoidanceDesire>();
-        installer.Ensure<WanderDesire>();
-        installer.Ensure<BoundaryAvoidanceDesire>();
-        installer.Ensure<GrassEatAction>();
-        installer.Ensure<CorpseEatAction>();
-        installer.Ensure<FieldManaAbsorbAction>();
-        installer.Ensure<ManaFieldSense>();
+        OrganFoundation foundation = EnsureCore(installer);
+        foundation.EnsureOrgan<FoodMemory>();
+        foundation.EnsureOrgan<ThreatMemory>();
+        foundation.EnsureOrgan<FoodVisionSense>();
+        foundation.EnsureOrgan<PredatorVisionSense>();
+        foundation.EnsureOrgan<ThreatVisionSense>();
+        foundation.EnsureOrgan<FoodDesire>();
+        foundation.EnsureOrgan<ThreatAvoidanceDesire>();
+        foundation.EnsureOrgan<WanderDesire>();
+        foundation.EnsureOrgan<BoundaryAvoidanceDesire>();
+        foundation.EnsureOrgan<GrassEatAction>();
+        foundation.EnsureOrgan<CorpseEatAction>();
+        foundation.EnsureOrgan<FieldManaAbsorbAction>();
+        foundation.EnsureOrgan<ManaFieldSense>();
         RefreshBrain(target);
     }
 
@@ -37,28 +37,28 @@ public static class OrganPresetLibrary
         if (installer == null)
             return;
 
-        EnsureCore(installer);
-        installer.Ensure<PreyMemory>();
-        installer.Ensure<ThreatMemory>();
-        installer.Ensure<PreyVisionSense>();
-        installer.Ensure<ThreatVisionSense>();
-        installer.Ensure<PreyChaseDesire>();
-        installer.Ensure<ThreatAvoidanceDesire>();
-        installer.Ensure<WanderDesire>();
-        installer.Ensure<BoundaryAvoidanceDesire>();
-        installer.Ensure<BiteAttackAction>();
-        installer.Ensure<MeleeAttackAction>();
-        installer.Ensure<ThreatPulseEmitter>();
-        installer.Ensure<FieldManaAbsorbAction>();
-        installer.Ensure<ManaFieldSense>();
-        installer.Ensure<PredatorPhaseEvolutionAction>();
+        OrganFoundation foundation = EnsureCore(installer);
+        foundation.EnsureOrgan<PreyMemory>();
+        foundation.EnsureOrgan<ThreatMemory>();
+        foundation.EnsureOrgan<PreyVisionSense>();
+        foundation.EnsureOrgan<ThreatVisionSense>();
+        foundation.EnsureOrgan<PreyChaseDesire>();
+        foundation.EnsureOrgan<ThreatAvoidanceDesire>();
+        foundation.EnsureOrgan<WanderDesire>();
+        foundation.EnsureOrgan<BoundaryAvoidanceDesire>();
+        foundation.EnsureOrgan<BiteAttackAction>();
+        foundation.EnsureOrgan<MeleeAttackAction>();
+        foundation.EnsureOrgan<ThreatPulseEmitter>();
+        foundation.EnsureOrgan<FieldManaAbsorbAction>();
+        foundation.EnsureOrgan<ManaFieldSense>();
+        foundation.EnsureOrgan<PredatorPhaseEvolutionAction>();
 
         if (GetPhaseRank(phase) >= GetPhaseRank(category.highpredator))
         {
-            installer.Ensure<ChargeAttackAction>();
-            installer.Ensure<MagicAttackAction>();
-            installer.Ensure<MagicProjectileAttackAction>();
-            installer.Ensure<MagicCooldownState>();
+            foundation.EnsureOrgan<ChargeAttackAction>();
+            foundation.EnsureOrgan<MagicAttackAction>();
+            foundation.EnsureOrgan<MagicProjectileAttackAction>();
+            foundation.EnsureOrgan<MagicCooldownState>();
         }
 
         RefreshBrain(target);
@@ -73,10 +73,13 @@ public static class OrganPresetLibrary
             EnsureHerbivore(target);
     }
 
-    static void EnsureCore(AnimalAIInstaller installer)
+    static OrganFoundation EnsureCore(AnimalAIInstaller installer)
     {
         installer.InstallDefaultOrgans();
         installer.Ensure<CreatureRelationResolver>();
+        OrganFoundation foundation = installer.Ensure<OrganFoundation>();
+        foundation.RefreshInstalledOrganList();
+        return foundation;
     }
 
     static AnimalAIInstaller EnsureInstaller(GameObject target)

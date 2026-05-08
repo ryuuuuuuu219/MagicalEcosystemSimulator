@@ -196,12 +196,6 @@ public class predatorBehaviour : MonoBehaviour
 
         SyncManaFromResource();
 
-        TryAbsorbManaFromField();
-
-        TryPhaseEvolution();
-
-
-
         if (IsDead)
 
         {
@@ -213,6 +207,16 @@ public class predatorBehaviour : MonoBehaviour
             return;
 
         }
+
+        if (UsesOrganFoundationRunner())
+        {
+            pendingMoveVector = Vector3.zero;
+            return;
+        }
+
+        TryAbsorbManaFromField();
+
+        TryPhaseEvolution();
 
         EmitPresenceThreatPulse();
 
@@ -232,7 +236,7 @@ public class predatorBehaviour : MonoBehaviour
 
     {
 
-        if (bodyResource != null && !IsDead)
+        if (bodyResource != null && !IsDead && !UsesOrganFoundationRunner())
 
         {
 
@@ -244,6 +248,11 @@ public class predatorBehaviour : MonoBehaviour
 
         ClampRotation();
 
+    }
+
+    bool UsesOrganFoundationRunner()
+    {
+        return TryGetComponent<OrganFoundation>(out var foundation) && foundation.IsBrainRunner;
     }
 
 
