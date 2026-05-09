@@ -14,7 +14,27 @@ public partial class WorldUIManager
                 phasePopulationText = textRoot.GetComponent<TextMeshProUGUI>();
         }
 
+        KeepPhasePopulationTextVisible();
         UpdatePhasePopulationText(true);
+    }
+
+    void KeepPhasePopulationTextVisible()
+    {
+        if (phasePopulationText == null)
+            return;
+
+        Transform textTransform = phasePopulationText.transform;
+        if (disturbanceTab != null && textTransform.IsChildOf(disturbanceTab.transform))
+        {
+            Transform alwaysVisibleParent = disturbanceTab.transform.parent;
+            if (alwaysVisibleParent != null)
+            {
+                textTransform.SetParent(alwaysVisibleParent, true);
+                textTransform.SetAsLastSibling();
+            }
+        }
+
+        phasePopulationText.gameObject.SetActive(true);
     }
 
     void UpdatePhasePopulationText(bool force = false)
