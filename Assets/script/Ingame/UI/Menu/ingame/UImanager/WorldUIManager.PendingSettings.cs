@@ -4,10 +4,19 @@ using UnityEngine.UI;
 
 public partial class WorldUIManager
 {
+    enum PendingSettingsView
+    {
+        All,
+        GenerationOnly
+    }
+
     GameObject pendingSettingsPanelRoot;
     Transform pendingSettingsContentRoot;
+    TextMeshProUGUI pendingSettingsTitleText;
     LayerMask defaultSelectableLayer;
     bool hasDefaultSelectableLayer;
+    PendingSettingsView pendingSettingsView = PendingSettingsView.All;
+    bool pendingSettingsReturnsToGenerationBranch;
 
     void EnsurePendingSettingsPanel()
     {
@@ -43,19 +52,19 @@ public partial class WorldUIManager
 
         pendingSettingsPanelRoot.GetComponent<LayoutElement>().ignoreLayout = true;
 
-        TextMeshProUGUI title = CreateSettingsLabel(
+        pendingSettingsTitleText = CreateSettingsLabel(
             pendingSettingsPanelRoot.transform,
             "PendingSettingsTitle",
             "Pending Settings",
             20f,
             TextAlignmentOptions.MidlineLeft);
-        RectTransform titleRect = title.GetComponent<RectTransform>();
+        RectTransform titleRect = pendingSettingsTitleText.GetComponent<RectTransform>();
         titleRect.anchorMin = new Vector2(0.02f, 0.93f);
         titleRect.anchorMax = new Vector2(0.82f, 0.99f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
 
-        Button closeButton = CreateSettingsButton(pendingSettingsPanelRoot.transform, "Close", ClosePropertiesBranch);
+        Button closeButton = CreateSettingsButton(pendingSettingsPanelRoot.transform, "Close", ClosePendingSettingsPanel);
         closeButton.name = "PendingSettingsCloseButton";
         RectTransform closeRect = closeButton.GetComponent<RectTransform>();
         closeRect.anchorMin = new Vector2(0.84f, 0.935f);
@@ -124,5 +133,32 @@ public partial class WorldUIManager
             RebuildPendingSettingsContent();
 
         pendingSettingsPanelRoot.SetActive(visible);
+    }
+
+    void OpenAllPendingSettingsPanel()
+    {
+        pendingSettingsView = PendingSettingsView.All;
+        pendingSettingsReturnsToGenerationBranch = false;
+        SetPendingSettingsVisible(true);
+    }
+
+    void OpenGenerationSettingsPanel()
+    {
+        pendingSettingsView = PendingSettingsView.GenerationOnly;
+        pendingSettingsReturnsToGenerationBranch = true;
+        SetPendingSettingsVisible(true);
+    }
+
+    void ClosePendingSettingsPanel()
+    {
+        SetPendingSettingsVisible(false);
+
+        if (pendingSettingsReturnsToGenerationBranch)
+            PushBranch(generationBranch);
+        else
+            PushBranch(menuRootBranch);
+
+        pendingSettingsReturnsToGenerationBranch = false;
+        pendingSettingsView = PendingSettingsView.All;
     }
 }

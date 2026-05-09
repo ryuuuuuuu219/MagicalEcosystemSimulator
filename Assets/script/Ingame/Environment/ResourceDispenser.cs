@@ -31,6 +31,8 @@ public class ResourceDispenser : MonoBehaviour
     public int grassCountPerGeneration = 100;
     public int herbivoreCountPerGeneration = 30;
     public int predatorCountPerGeneration = 10;
+    public int highPredatorCountPerGeneration = 0;
+    public int dominantCountPerGeneration = 0;
 
     [Header("Spawn Safety")]
     public int maxSpawnAttemptsPerEntity = 64;
@@ -209,10 +211,15 @@ public class ResourceDispenser : MonoBehaviour
 
     public void ConfigureManaBudget(int grassCount, int herbivoreCount, int predatorCount)
     {
+        ConfigureManaBudget(grassCount, herbivoreCount, predatorCount, 0, 0);
+    }
+
+    public void ConfigureManaBudget(int grassCount, int herbivoreCount, int predatorCount, int highPredatorCount, int dominantCount)
+    {
         totalMana =
             Mathf.Max(0, grassCount) * Mathf.Max(0f, manaPerGrass) +
             Mathf.Max(0, herbivoreCount) * Mathf.Max(0f, manaPerHerbivore) +
-            Mathf.Max(0, predatorCount) * Mathf.Max(0f, manaPerPredator);
+            Mathf.Max(0, predatorCount + highPredatorCount + dominantCount) * Mathf.Max(0f, manaPerPredator);
         manaPool = 0f;
     }
 
@@ -281,7 +288,12 @@ public class ResourceDispenser : MonoBehaviour
         ResetGenerationManaState();
         HeatFieldManager.GetOrCreate().ClearAllHeat();
         ManaFieldManager.GetOrCreate().ClearAllMana();
-        ConfigureManaBudget(grassCountPerGeneration, herbivoreCountPerGeneration, predatorCountPerGeneration);
+        ConfigureManaBudget(
+            grassCountPerGeneration,
+            herbivoreCountPerGeneration,
+            predatorCountPerGeneration,
+            highPredatorCountPerGeneration,
+            dominantCountPerGeneration);
         SpawnGrassCount(grassCountPerGeneration);
     }
 

@@ -27,10 +27,41 @@ public partial class WorldUIManager
 
         nextPhasePopulationUpdateTime = Time.time + phasePopulationUpdateInterval;
 
-        int herbivoreCount = 0;
-        int predatorCount = 0;
-        int highPredatorCount = 0;
-        int dominantCount = 0;
+        GetPhasePopulationCounts(
+            out int herbivoreCount,
+            out int predatorCount,
+            out int highPredatorCount,
+            out int dominantCount);
+
+        phasePopulationText.text =
+            "phase counts\n" +
+            $"herbivore: {herbivoreCount}\n" +
+            $"predator: {predatorCount}\n" +
+            $"high: {highPredatorCount}\n" +
+            $"dominant: {dominantCount}";
+    }
+
+    string BuildPhasePopulationSummary()
+    {
+        GetPhasePopulationCounts(
+            out int herbivoreCount,
+            out int predatorCount,
+            out int highPredatorCount,
+            out int dominantCount);
+
+        return $"Current Phase Counts: H={herbivoreCount} P={predatorCount} High={highPredatorCount} Dominant={dominantCount}";
+    }
+
+    void GetPhasePopulationCounts(
+        out int herbivoreCount,
+        out int predatorCount,
+        out int highPredatorCount,
+        out int dominantCount)
+    {
+        herbivoreCount = 0;
+        predatorCount = 0;
+        highPredatorCount = 0;
+        dominantCount = 0;
 
         herbivoreBehaviour[] herbivores = FindObjectsByType<herbivoreBehaviour>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < herbivores.Length; i++)
@@ -64,12 +95,5 @@ public partial class WorldUIManager
                     break;
             }
         }
-
-        phasePopulationText.text =
-            "phase counts\n" +
-            $"herbivore: {herbivoreCount}\n" +
-            $"predator: {predatorCount}\n" +
-            $"high: {highPredatorCount}\n" +
-            $"dominant: {dominantCount}";
     }
 }

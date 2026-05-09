@@ -61,7 +61,7 @@ public partial class WorldUIManager
         HideGenerationBranchContent();
         HideExperimentBranchContent();
         PushBranch(propertiesBranch);
-        SetPendingSettingsVisible(true);
+        OpenAllPendingSettingsPanel();
     }
 
     void OpenFieldViewingBranch()
@@ -93,10 +93,8 @@ public partial class WorldUIManager
         PrepareGenerationBranch();
         PushBranch(advanceGenerationBranch);
         if (generationController != null)
-        {
             generationController.HideGenomePanels();
-            generationController.onclickbutton2_1();
-        }
+        OpenGenerationSettingsPanel();
     }
 
     /// <summary>
@@ -268,6 +266,8 @@ public partial class WorldUIManager
 
     void ClosePropertiesBranch()
     {
+        pendingSettingsReturnsToGenerationBranch = false;
+        pendingSettingsView = PendingSettingsView.All;
         SetPendingSettingsVisible(false);
         PushBranch(menuRootBranch);
     }

@@ -72,9 +72,25 @@ public partial class WorldUIManager
         if (source == null)
             return;
 
+        SetGenerationSpawnCounts(
+            grassCount,
+            herbivoreCount,
+            predatorCount,
+            source.highPredatorCountPerGeneration,
+            source.dominantCountPerGeneration);
+    }
+
+    public void SetGenerationSpawnCounts(int grassCount, int herbivoreCount, int predatorCount, int highPredatorCount, int dominantCount)
+    {
+        ResourceDispenser source = SpawnPropertiesSource;
+        if (source == null)
+            return;
+
         source.grassCountPerGeneration = Mathf.Max(0, grassCount);
         source.herbivoreCountPerGeneration = Mathf.Max(0, herbivoreCount);
         source.predatorCountPerGeneration = Mathf.Max(0, predatorCount);
+        source.highPredatorCountPerGeneration = Mathf.Max(0, highPredatorCount);
+        source.dominantCountPerGeneration = Mathf.Max(0, dominantCount);
     }
 
     public void SetVegetationSpawnParameters(float radiusValue, float densityValue, int plantCountValue, float maxSlopeValue)

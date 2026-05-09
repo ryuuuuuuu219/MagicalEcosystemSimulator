@@ -426,7 +426,9 @@ public class AdvanceGenerationController : MonoBehaviour
         RecycleAndDestroyHerbivores();
         RecycleAndDestroyPredators();
         SpawnHerbivores(resourceDispenser.herbivoreCountPerGeneration);
-        SpawnPredators(resourceDispenser.predatorCountPerGeneration);
+        SpawnPredators(resourceDispenser.predatorCountPerGeneration, category.predator);
+        SpawnPredators(resourceDispenser.highPredatorCountPerGeneration, category.highpredator);
+        SpawnPredators(resourceDispenser.dominantCountPerGeneration, category.dominant);
 
         resourceDispenser.FinalizeGenerationManaBudget();
         generationIndex++;
@@ -894,7 +896,7 @@ public class AdvanceGenerationController : MonoBehaviour
         LogSpawnShortfall("generation herbivore", spawned, count);
     }
 
-    void SpawnPredators(int count)
+    void SpawnPredators(int count, category phase)
     {
         int spawned = 0;
         int localIndex = 0;
@@ -905,12 +907,12 @@ public class AdvanceGenerationController : MonoBehaviour
             attempts++;
             if (predatorManager.spownpredator(worldgen, GetGenerationSpawnIndex(localIndex++), out GameObject predator))
             {
-                resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.manaPerPredator, category.predator);
+                resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.manaPerPredator, phase);
                 spawned++;
             }
         }
 
-        LogSpawnShortfall("generation predator", spawned, count);
+        LogSpawnShortfall("generation " + phase, spawned, count);
     }
 
     int GetMaxSpawnAttempts(int targetCount)

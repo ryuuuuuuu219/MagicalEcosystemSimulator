@@ -14,6 +14,17 @@ public partial class WorldUIManager
         for (int i = pendingSettingsContentRoot.childCount - 1; i >= 0; i--)
             Destroy(pendingSettingsContentRoot.GetChild(i).gameObject);
 
+        if (pendingSettingsTitleText != null)
+            pendingSettingsTitleText.text = pendingSettingsView == PendingSettingsView.GenerationOnly
+                ? "Generation"
+                : "Pending Settings";
+
+        if (pendingSettingsView == PendingSettingsView.GenerationOnly)
+        {
+            BuildGenerationSection(pendingSettingsContentRoot);
+            return;
+        }
+
         BuildEnvironmentSection(pendingSettingsContentRoot);
         BuildUiSection(pendingSettingsContentRoot);
         BuildCameraSection(pendingSettingsContentRoot);
@@ -114,6 +125,32 @@ public partial class WorldUIManager
         AddActionRow(section, $"Target Phase: {source.generationPhase}",
             ("Cycle", () => { SetGenerationTargetPhase(GetNextEnumValue(source.generationPhase)); RebuildPendingSettingsContent(); }));
 
+        ResourceDispenser spawnSource = SpawnPropertiesSource;
+        if (spawnSource != null)
+        {
+            AddInfoRow(section, BuildPhasePopulationSummary());
+
+            AddStepperRow(section, "Gen Grass", spawnSource.grassCountPerGeneration.ToString(),
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration - 10, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); },
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration + 10, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); });
+
+            AddStepperRow(section, "Gen Herbivore", spawnSource.herbivoreCountPerGeneration.ToString(),
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration - 5, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); },
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration + 5, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); });
+
+            AddStepperRow(section, "Gen Predator", spawnSource.predatorCountPerGeneration.ToString(),
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration - 2, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); },
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration + 2, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); });
+
+            AddStepperRow(section, "Gen High Predator", spawnSource.highPredatorCountPerGeneration.ToString(),
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration - 1, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); },
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration + 1, spawnSource.dominantCountPerGeneration); RebuildPendingSettingsContent(); });
+
+            AddStepperRow(section, "Gen Dominant", spawnSource.dominantCountPerGeneration.ToString(),
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration - 1); RebuildPendingSettingsContent(); },
+                () => { SetGenerationSpawnCounts(spawnSource.grassCountPerGeneration, spawnSource.herbivoreCountPerGeneration, spawnSource.predatorCountPerGeneration, spawnSource.highPredatorCountPerGeneration, spawnSource.dominantCountPerGeneration + 1); RebuildPendingSettingsContent(); });
+        }
+
         AddActionRow(section, $"Crossover: {ToOnOff(source.enableCrossover)} / {source.crossoverMode}",
             ("Toggle", () => { SetGenerationCrossoverEnabled(!source.enableCrossover); RebuildPendingSettingsContent(); }),
             ("Mode", () => { SetGenerationCrossoverMode(GetNextEnumValue(source.crossoverMode)); RebuildPendingSettingsContent(); }));
@@ -131,8 +168,13 @@ public partial class WorldUIManager
             () => { SetGenerationMutationRange(source.globalMutationMin, source.globalMutationMax, source.parentMutationScale + 0.05f); RebuildPendingSettingsContent(); });
 
         AddActionRow(section, $"Save Output: {ToOnOff(source.saveOutputGenome)}",
-            ("Toggle", () => { SetGenerationSaveOutputEnabled(!source.saveOutputGenome); RebuildPendingSettingsContent(); }),
-            ("Run", () => { source.onclickbutton2_1(); RebuildPendingSettingsContent(); }));
+            ("Toggle", () => { SetGenerationSaveOutputEnabled(!source.saveOutputGenome); RebuildPendingSettingsContent(); }));
+
+        AddFullWidthActionRow(
+            section,
+            "Run Generation",
+            () => { source.onclickbutton2_1(); RebuildPendingSettingsContent(); },
+            new Color(1f, 0.42f, 0.62f, 0.95f));
     }
 
     void BuildDeferredSection(Transform parent)
@@ -184,6 +226,45 @@ public partial class WorldUIManager
         AddActionRow(parent, $"{label}: {value}",
             ("-", () => onDecrease?.Invoke()),
             ("+", () => onIncrease?.Invoke()));
+    }
+
+    void AddInfoRow(Transform parent, string label)
+    {
+        GameObject row = new GameObject("InfoRow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        row.transform.SetParent(parent, false);
+        row.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.025f);
+        LayoutElement layout = row.GetComponent<LayoutElement>();
+        layout.preferredHeight = 34f;
+
+        TextMeshProUGUI rowLabel = CreateSettingsLabel(row.transform, "Label", label, 15f, TextAlignmentOptions.MidlineLeft);
+        rowLabel.textWrappingMode = TextWrappingModes.Normal;
+    }
+
+    void AddFullWidthActionRow(Transform parent, string text, Action action, Color buttonColor)
+    {
+        GameObject row = new GameObject(text.Replace(" ", string.Empty) + "_Row", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        row.transform.SetParent(parent, false);
+        row.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.025f);
+
+        LayoutElement rowLayout = row.GetComponent<LayoutElement>();
+        rowLayout.preferredHeight = 36f;
+
+        Button button = CreateSettingsButton(row.transform, text, action);
+        RectTransform buttonRect = button.GetComponent<RectTransform>();
+        buttonRect.anchorMin = Vector2.zero;
+        buttonRect.anchorMax = Vector2.one;
+        buttonRect.offsetMin = new Vector2(4f, 4f);
+        buttonRect.offsetMax = new Vector2(-4f, -4f);
+
+        if (button.TryGetComponent<Image>(out var image))
+            image.color = buttonColor;
+
+        if (button.TryGetComponent<LayoutElement>(out var buttonLayout))
+        {
+            buttonLayout.ignoreLayout = true;
+            buttonLayout.preferredWidth = 0f;
+            buttonLayout.preferredHeight = 0f;
+        }
     }
 
     void AddActionRow(Transform parent, string label, params (string text, Action action)[] actions)
