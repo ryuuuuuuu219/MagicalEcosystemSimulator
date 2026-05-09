@@ -8,3 +8,4 @@
 - 群れ判断に関する遺伝子候補
 - 魔法適性と役割分担の遺伝子候補
 - 遺伝システムへの統合メモ
+- phase ごとの organ mutation chance 差分。現段階では `AIComponentGene` の mutation chance はコンポーネントごとに持たせ、相ごとの差分は後回しにする。

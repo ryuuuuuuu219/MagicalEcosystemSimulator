@@ -9,6 +9,14 @@ public class GenerationLog
     public int population;
     public string bestGenome;
     public float bestFitness;
+    public string bestOrganCheckpointReason;
+    public int bestOrganGeneCount;
+    public int bestActiveOrganGeneCount;
+    public int bestVestigialOrganCount;
+    public float bestOrganCheckpointScore;
+    public string bestActiveOrgans;
+    public string bestVestigialOrgans;
+    public string generationOrganMutations;
 }
 
 [Serializable]

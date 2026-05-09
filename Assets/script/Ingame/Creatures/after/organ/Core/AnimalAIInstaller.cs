@@ -24,6 +24,7 @@ public class AnimalAIInstaller : MonoBehaviour
         if (componentType == null || !typeof(Component).IsAssignableFrom(componentType))
             return null;
 
+        componentSet.EnsureGene(componentType.Name, true, OrganFoundation.IsVitalOrgan(componentType));
         Component component = EnsureWithoutRelations(componentType);
         OrganRelationLibrary.EnsureDependencies(this, componentType);
         return component;
@@ -34,6 +35,7 @@ public class AnimalAIInstaller : MonoBehaviour
         if (componentType == null || !typeof(Component).IsAssignableFrom(componentType))
             return null;
 
+        componentSet.EnsureGene(componentType.Name, true, OrganFoundation.IsVitalOrgan(componentType));
         Component existing = GetComponent(componentType);
         return existing != null ? existing : gameObject.AddComponent(componentType);
     }

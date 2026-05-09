@@ -7,10 +7,12 @@ public class herbivoreManager : MonoBehaviour
     public List<GenomePhaseBucket> genomes = new();
     public HerbivoreGenome genome;
     public HerbivoreGenome nextGenerationGenome;
+    public AIComponentSet nextGenerationComponentSet;
 
     [Header("Spawn")]
     public bool useManagerGenome = false;
     public bool useNextGenerationGenome = false;
+    public bool useNextGenerationComponentSet = false;
     public GameObject prefub;
 
     public GameObject grassManager;
@@ -84,6 +86,7 @@ public class herbivoreManager : MonoBehaviour
             HerbivoreGenome g = useManagerGenome ? sourceGenome : default;
             g = ValidateOrRandomize(g, rng);
             hb.genome = g;
+            ApplyNextGenerationComponentSet(herbivore);
 
             herbivores.Add(herbivore);
             return true;
@@ -100,9 +103,24 @@ public class herbivoreManager : MonoBehaviour
         if (herbivore != null && herbivore.TryGetComponent<herbivoreBehaviour>(out var hb))
         {
             hb.genome = injectedGenome;
+            ApplyNextGenerationComponentSet(herbivore);
         }
 
         return herbivore != null;
+    }
+
+    void ApplyNextGenerationComponentSet(GameObject herbivore)
+    {
+        if (!useNextGenerationComponentSet || nextGenerationComponentSet == null || herbivore == null)
+            return;
+
+        if (!herbivore.TryGetComponent<AnimalAIInstaller>(out _))
+            herbivore.AddComponent<AnimalAIInstaller>();
+
+        if (!herbivore.TryGetComponent<OrganFoundation>(out var foundation))
+            foundation = herbivore.AddComponent<OrganFoundation>();
+
+        foundation.InstallComponentSet(nextGenerationComponentSet, "next generation herbivore organ set");
     }
 
     public void Unregister(GameObject herbivore)

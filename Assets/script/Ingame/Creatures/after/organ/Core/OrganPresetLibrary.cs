@@ -9,19 +9,7 @@ public static class OrganPresetLibrary
             return;
 
         OrganFoundation foundation = EnsureCore(installer);
-        foundation.EnsureOrgan<FoodMemory>();
-        foundation.EnsureOrgan<ThreatMemory>();
-        foundation.EnsureOrgan<FoodVisionSense>();
-        foundation.EnsureOrgan<PredatorVisionSense>();
-        foundation.EnsureOrgan<ThreatVisionSense>();
-        foundation.EnsureOrgan<FoodDesire>();
-        foundation.EnsureOrgan<ThreatAvoidanceDesire>();
-        foundation.EnsureOrgan<WanderDesire>();
-        foundation.EnsureOrgan<BoundaryAvoidanceDesire>();
-        foundation.EnsureOrgan<GrassEatAction>();
-        foundation.EnsureOrgan<CorpseEatAction>();
-        foundation.EnsureOrgan<FieldManaAbsorbAction>();
-        foundation.EnsureOrgan<ManaFieldSense>();
+        foundation.InstallComponentSet(CreateHerbivorePreset(), "herbivore preset", true);
         RefreshBrain(target);
     }
 
@@ -38,30 +26,112 @@ public static class OrganPresetLibrary
             return;
 
         OrganFoundation foundation = EnsureCore(installer);
-        foundation.EnsureOrgan<PreyMemory>();
-        foundation.EnsureOrgan<ThreatMemory>();
-        foundation.EnsureOrgan<PreyVisionSense>();
-        foundation.EnsureOrgan<ThreatVisionSense>();
-        foundation.EnsureOrgan<PreyChaseDesire>();
-        foundation.EnsureOrgan<ThreatAvoidanceDesire>();
-        foundation.EnsureOrgan<WanderDesire>();
-        foundation.EnsureOrgan<BoundaryAvoidanceDesire>();
-        foundation.EnsureOrgan<BiteAttackAction>();
-        foundation.EnsureOrgan<MeleeAttackAction>();
-        foundation.EnsureOrgan<ThreatPulseEmitter>();
-        foundation.EnsureOrgan<FieldManaAbsorbAction>();
-        foundation.EnsureOrgan<ManaFieldSense>();
-        foundation.EnsureOrgan<PredatorPhaseEvolutionAction>();
+        foundation.InstallComponentSet(CreatePredatorPreset(phase), phase + " preset", true);
+        RefreshBrain(target);
+    }
+
+    public static AIComponentSet CreateHerbivorePreset()
+    {
+        AIComponentSet set = CreateCorePreset();
+        AddActive<FoodMemory>(set);
+        AddActive<ThreatMemory>(set);
+        AddActive<FoodVisionSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<PredatorVisionSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ThreatVisionSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<FoodDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ThreatAvoidanceDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<WanderDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<BoundaryAvoidanceDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<GrassEatAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<CorpseEatAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<FieldManaAbsorbAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ManaFieldSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+
+        AddOptional<ManaFieldAttractionDesire>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<DamageAvoidanceDesire>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<RandomEvasionAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<MagicAttackAction>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
+        AddOptional<MagicProjectileAttackAction>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
+        AddOptional<MagicCooldownState>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
+        return set;
+    }
+
+    public static AIComponentSet CreatePredatorPreset(category phase)
+    {
+        AIComponentSet set = CreateCorePreset();
+        AddActive<PreyMemory>(set);
+        AddActive<ThreatMemory>(set);
+        AddActive<PreyVisionSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ThreatVisionSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<PreyChaseDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ThreatAvoidanceDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<WanderDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<BoundaryAvoidanceDesire>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<BiteAttackAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<MeleeAttackAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ThreatPulseEmitter>(set);
+        AddActive<FieldManaAbsorbAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<ManaFieldSense>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+        AddActive<PredatorPhaseEvolutionAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
 
         if (GetPhaseRank(phase) >= GetPhaseRank(category.highpredator))
         {
-            foundation.EnsureOrgan<ChargeAttackAction>();
-            foundation.EnsureOrgan<MagicAttackAction>();
-            foundation.EnsureOrgan<MagicProjectileAttackAction>();
-            foundation.EnsureOrgan<MagicCooldownState>();
+            AddActive<ChargeAttackAction>(set, mutationChanceT: 0.001f, mutationChanceG: 0.02f);
+            AddActive<MagicAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+            AddActive<MagicProjectileAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+            AddActive<MagicCooldownState>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        }
+        else
+        {
+            AddOptional<ChargeAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+            AddOptional<MagicAttackAction>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
+            AddOptional<MagicProjectileAttackAction>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
+            AddOptional<MagicCooldownState>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
         }
 
-        RefreshBrain(target);
+        AddOptional<ManaFieldAttractionDesire>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<DamageAvoidanceDesire>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<CounterAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<RandomEvasionAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        AddOptional<ProportionalNavigationSteering>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+        return set;
+    }
+
+    static AIComponentSet CreateCorePreset()
+    {
+        AIComponentSet set = new AIComponentSet();
+        AddVital<OrganFoundation>(set);
+        AddVital<AnimalAIInstaller>(set);
+        AddVital<AnimalBrain>(set);
+        AddVital<AIMemoryStore>(set);
+        AddVital<GroundMotor>(set);
+        AddVital<CreatureMotorBootstrap>(set);
+        AddVital<CreatureRelationResolver>(set);
+        return set;
+    }
+
+    static void AddVital<T>(AIComponentSet set) where T : Component
+    {
+        AIComponentGene gene = AIComponentGene.CreateDefault(typeof(T).Name, true, true);
+        gene.mutationChanceT = 0f;
+        gene.mutationChanceG = 0f;
+        set.SetGene(gene);
+    }
+
+    static void AddActive<T>(AIComponentSet set, float mutationChanceT = 0f, float mutationChanceG = 0f) where T : Component
+    {
+        AIComponentGene gene = AIComponentGene.CreateDefault(typeof(T).Name, true, false);
+        gene.mutationChanceT = mutationChanceT;
+        gene.mutationChanceG = mutationChanceG;
+        set.SetGene(gene);
+    }
+
+    static void AddOptional<T>(AIComponentSet set, float mutationChanceT, float mutationChanceG) where T : Component
+    {
+        AIComponentGene gene = AIComponentGene.CreateDefault(typeof(T).Name, false, false);
+        gene.mutationChanceT = mutationChanceT;
+        gene.mutationChanceG = mutationChanceG;
+        set.SetGene(gene);
     }
 
     public static void EnsureForCurrentCategory(GameObject target)

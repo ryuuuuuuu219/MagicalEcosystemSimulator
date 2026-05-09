@@ -31,12 +31,14 @@ public class AnimalBrain : MonoBehaviour
     public AIContext Context { get; private set; }
     public Vector3 LastMoveVector { get; private set; }
     GroundMotor groundMotor;
+    OrganFoundation foundation;
 
     void Awake()
     {
         RefreshOrgans();
         Context = AIContext.From(gameObject);
         groundMotor = GetComponent<GroundMotor>();
+        foundation = GetComponent<OrganFoundation>();
     }
 
     public void RefreshOrgans()
@@ -57,25 +59,46 @@ public class AnimalBrain : MonoBehaviour
         Context.Refresh(gameObject);
 
         for (int i = 0; i < senses.Count; i++)
-            senses[i].TickSense(Context, deltaTime);
+        {
+            if (ShouldRunOrgan(senses[i]))
+                senses[i].TickSense(Context, deltaTime);
+        }
 
         for (int i = 0; i < actions.Count; i++)
-            actions[i].TryAct(Context, deltaTime);
+        {
+            if (ShouldRunOrgan(actions[i]))
+                actions[i].TryAct(Context, deltaTime);
+        }
 
         Vector3 total = Vector3.zero;
         for (int i = 0; i < desires.Count; i++)
         {
+            if (!ShouldRunOrgan(desires[i]))
+                continue;
+
             AIMoveIntent intent = desires[i].Evaluate(Context);
             total += intent.Vector;
         }
 
         for (int i = 0; i < steerings.Count; i++)
-            total = steerings[i].Steer(Context, total);
+        {
+            if (ShouldRunOrgan(steerings[i]))
+                total = steerings[i].Steer(Context, total);
+        }
 
         LastMoveVector = total;
         if (groundMotor != null)
             groundMotor.Move(Context, LastMoveVector, deltaTime);
 
         return LastMoveVector;
+    }
+
+    bool ShouldRunOrgan(object organ)
+    {
+        if (foundation == null)
+            foundation = GetComponent<OrganFoundation>();
+        if (foundation == null || organ is not Component component)
+            return true;
+        return foundation.IsOrganActive(component);
     }
 }

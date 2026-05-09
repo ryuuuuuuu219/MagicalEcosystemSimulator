@@ -208,3 +208,24 @@ public List<string> VestigialOrgans = new();
 - `3.世代更新と遺伝`
 - `organ依存関係.md`
 - `コンポーネント導入確率表.md`
+
+## 実装メモ
+
+### 2026-05-09
+
+- `AIComponentGene` に `isVitalOrgan` / `isVestigialOrgan` / `weight` / `mutationChanceT` / `mutationChanceG` を追加。
+- `AIComponentSet` に runtime mutation と generation mutation copy の入口を追加。
+- `OrganFoundation` に 10 秒 mutation counter、checkpoint、mutation event、`VestigialOrgans` を追加。
+- `OrganFoundation` に手動 checkpoint / 手動 mutation tick の ContextMenu を追加。
+- `OrganPresetLibrary` を `AIComponentSet` preset 生成へ移行。
+- `AnimalBrain` で inactive / vestigial organ を中央スキップ。
+- `OrganRelationLibrary` に componentId 解決と reverse dependency 判定を追加。
+- `herbivoreManager` / `predatorManager` に `nextGenerationComponentSet` を追加。
+- `AdvanceGenerationController` から checkpoint を評価候補に含め、世代更新時 mutation を通した organ set を次世代へ渡す。
+- `GenerationLog` に organ checkpoint / active organ / vestigial organ / generation mutation summary を追加。
+
+残り:
+
+- 実機で runtime mutation、痕跡器官化、次世代継承を確認する。
+- checkpoint ごとの独立 fitness 軸を必要に応じて追加する。
+- genome / DNA への organ gene 永続化は `2.organ構成の遺伝` 側で扱う。

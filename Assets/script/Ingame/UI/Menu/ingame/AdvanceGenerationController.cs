@@ -59,6 +59,8 @@ public class AdvanceGenerationController : MonoBehaviour
     TextMeshProUGUI herbivoreGenomeInjectorTitleText;
     TextMeshProUGUI herbivoreGenomeInjectorPhaseStatusText;
     Button herbivoreGenomeInjectorSpawnButton;
+    string latestGenerationOrganMutationSummary = string.Empty;
+    string pendingGenerationOrganMutationSummary = string.Empty;
 
     readonly List<GameObject> createdGenomeUi = new List<GameObject>();
 
@@ -387,6 +389,8 @@ public class AdvanceGenerationController : MonoBehaviour
         if (wg == null || !wg.isgenerating)
             return;
 
+        latestGenerationOrganMutationSummary = pendingGenerationOrganMutationSummary;
+        pendingGenerationOrganMutationSummary = string.Empty;
         LogCurrentGeneration();
 
         var rng = new System.Random(GetGenerationSeed(wg.seed, 7919));
@@ -397,8 +401,10 @@ public class AdvanceGenerationController : MonoBehaviour
         {
             HerbivoreGenome nextHerbivoreGenome = ResolveHerbivoreGenome(rng);
             herbivoreManager.nextGenerationGenome = nextHerbivoreGenome;
+            herbivoreManager.nextGenerationComponentSet = ResolveHerbivoreComponentSet(rng);
             herbivoreManager.useManagerGenome = true;
             herbivoreManager.useNextGenerationGenome = true;
+            herbivoreManager.useNextGenerationComponentSet = herbivoreManager.nextGenerationComponentSet != null;
             if (saveOutputGenome)
                 savedHerbivoreGenome = nextHerbivoreGenome;
 
@@ -408,8 +414,10 @@ public class AdvanceGenerationController : MonoBehaviour
         {
             PredatorGenome nextPredatorGenome = ResolvePredatorGenome(rng);
             predatorManager.nextGenerationGenome = nextPredatorGenome;
+            predatorManager.nextGenerationComponentSet = ResolvePredatorComponentSet(rng);
             predatorManager.useManagerGenome = true;
             predatorManager.useNextGenerationGenome = true;
+            predatorManager.useNextGenerationComponentSet = predatorManager.nextGenerationComponentSet != null;
             if (saveOutputGenome)
                 savedPredatorGenome = nextPredatorGenome;
 
@@ -743,6 +751,7 @@ public class AdvanceGenerationController : MonoBehaviour
         bool foundBest = false;
         float bestFitness = 0f;
         HerbivoreGenome bestGenome = default;
+        OrganFoundation bestFoundation = null;
         var rng = new System.Random(GetGenerationSeed(GetBaseSeed(), 1223));
 
         for (int i = 0; i < herbivoreManager.herbivores.Count; i++)
@@ -759,8 +768,11 @@ public class AdvanceGenerationController : MonoBehaviour
                 foundBest = true;
                 bestFitness = fitness;
                 bestGenome = behaviour.genome;
+                obj.TryGetComponent(out bestFoundation);
             }
         }
+
+        OrganFoundationCheckpoint bestCheckpoint = SelectBestCheckpoint(bestFoundation, bestFitness);
 
         GenerationLog log = new GenerationLog
         {
@@ -768,7 +780,15 @@ public class AdvanceGenerationController : MonoBehaviour
             timestamp = DateTime.UtcNow.ToString("o"),
             population = population,
             bestGenome = foundBest ? GenomeSerializer.EncodeGenome(bestGenome) : string.Empty,
-            bestFitness = foundBest ? bestFitness : 0f
+            bestFitness = foundBest ? bestFitness : 0f,
+            bestOrganCheckpointReason = bestCheckpoint != null ? bestCheckpoint.reason : string.Empty,
+            bestOrganGeneCount = bestCheckpoint != null && bestCheckpoint.genes != null ? bestCheckpoint.genes.Count : 0,
+            bestActiveOrganGeneCount = bestCheckpoint != null ? bestCheckpoint.activeGeneCount : 0,
+            bestVestigialOrganCount = bestCheckpoint != null && bestCheckpoint.vestigialOrgans != null ? bestCheckpoint.vestigialOrgans.Count : 0,
+            bestOrganCheckpointScore = bestCheckpoint != null ? bestCheckpoint.score : 0f,
+            bestActiveOrgans = bestCheckpoint != null ? BuildOrganSummary(bestCheckpoint.genes, true, 16) : string.Empty,
+            bestVestigialOrgans = bestCheckpoint != null && bestCheckpoint.vestigialOrgans != null ? string.Join(",", bestCheckpoint.vestigialOrgans) : string.Empty,
+            generationOrganMutations = latestGenerationOrganMutationSummary
         };
 
         GenomeLogger.AppendLog(log);
@@ -964,6 +984,234 @@ public class AdvanceGenerationController : MonoBehaviour
         PredatorGenome parentB = candidates.Count > 1 ? candidates[1].Genome : parentA;
         PredatorGenome child = Breed(parentA, parentB, rng);
         return MaybeMutate(child, parentA, parentB, rng);
+    }
+
+    AIComponentSet ResolveHerbivoreComponentSet(System.Random rng)
+    {
+        AIComponentSet selected = SelectBestHerbivoreComponentSet(rng);
+        if (selected == null)
+            selected = OrganPresetLibrary.CreateHerbivorePreset();
+        return MutateComponentSetForGeneration(selected, "herbivore");
+    }
+
+    AIComponentSet ResolvePredatorComponentSet(System.Random rng)
+    {
+        AIComponentSet selected = SelectBestPredatorComponentSet(rng);
+        if (selected == null)
+            selected = OrganPresetLibrary.CreatePredatorPreset(category.predator);
+        return MutateComponentSetForGeneration(selected, "predator");
+    }
+
+    AIComponentSet MutateComponentSetForGeneration(AIComponentSet source, string label)
+    {
+        if (source == null)
+            return null;
+        if (!enableMutation)
+            return CloneComponentSet(source);
+
+        AIComponentSet copy = source.CreateGenerationMutatedCopy(out bool changed, out List<AIComponentGene> mutatedGenes);
+        if (changed)
+            AppendGenerationOrganMutationSummary(label, BuildOrganMutationSummary(mutatedGenes, 16));
+        return copy;
+    }
+
+    void AppendGenerationOrganMutationSummary(string label, string summary)
+    {
+        if (string.IsNullOrEmpty(summary))
+            return;
+
+        string entry = string.IsNullOrEmpty(label) ? summary : label + ":" + summary;
+        pendingGenerationOrganMutationSummary = string.IsNullOrEmpty(pendingGenerationOrganMutationSummary)
+            ? entry
+            : pendingGenerationOrganMutationSummary + " | " + entry;
+    }
+
+    AIComponentSet CloneComponentSet(AIComponentSet source)
+    {
+        AIComponentSet clone = new AIComponentSet();
+        if (source == null)
+            return clone;
+
+        List<AIComponentGene> genes = source.CloneGenes();
+        for (int i = 0; i < genes.Count; i++)
+            clone.SetGene(genes[i]);
+        return clone;
+    }
+
+    AIComponentSet SelectBestHerbivoreComponentSet(System.Random rng)
+    {
+        float bestScore = float.NegativeInfinity;
+        AIComponentSet best = null;
+
+        for (int i = 0; i < herbivoreManager.herbivores.Count; i++)
+        {
+            GameObject obj = herbivoreManager.herbivores[i];
+            if (obj == null) continue;
+            if (!obj.TryGetComponent<herbivoreBehaviour>(out var behaviour)) continue;
+            if (!obj.TryGetComponent<Resource>(out var resource)) continue;
+            if (!obj.TryGetComponent<OrganFoundation>(out var foundation)) continue;
+
+            float score = EvaluateScore(resource.mana, behaviour.health, rng);
+            OrganFoundationCheckpoint checkpoint = SelectBestCheckpoint(foundation, score);
+            AIComponentSet candidate = ComponentSetFromCheckpoint(checkpoint, foundation);
+            if (candidate == null || score <= bestScore)
+                continue;
+
+            bestScore = score;
+            best = candidate;
+        }
+
+        return best;
+    }
+
+    AIComponentSet SelectBestPredatorComponentSet(System.Random rng)
+    {
+        float bestScore = float.NegativeInfinity;
+        AIComponentSet best = null;
+
+        for (int i = 0; i < predatorManager.predators.Count; i++)
+        {
+            GameObject obj = predatorManager.predators[i];
+            if (obj == null) continue;
+            if (!obj.TryGetComponent<predatorBehaviour>(out var behaviour)) continue;
+            if (!obj.TryGetComponent<Resource>(out var resource)) continue;
+            if (!obj.TryGetComponent<OrganFoundation>(out var foundation)) continue;
+
+            float score = EvaluateScore(resource.mana, behaviour.health, rng);
+            OrganFoundationCheckpoint checkpoint = SelectBestCheckpoint(foundation, score);
+            AIComponentSet candidate = ComponentSetFromCheckpoint(checkpoint, foundation);
+            if (candidate == null || score <= bestScore)
+                continue;
+
+            bestScore = score;
+            best = candidate;
+        }
+
+        return best;
+    }
+
+    OrganFoundationCheckpoint SelectBestCheckpoint(OrganFoundation foundation, float currentScore)
+    {
+        if (foundation == null || foundation.checkpoints == null || foundation.checkpoints.Count == 0)
+            return null;
+
+        OrganFoundationCheckpoint best = null;
+        float bestScore = float.NegativeInfinity;
+
+        for (int i = 0; i < foundation.checkpoints.Count; i++)
+        {
+            OrganFoundationCheckpoint checkpoint = foundation.checkpoints[i];
+            float score = ScoreCheckpoint(checkpoint, currentScore);
+            checkpoint.score = score;
+            if (best != null && score <= bestScore)
+                continue;
+
+            best = checkpoint;
+            bestScore = score;
+        }
+
+        return best;
+    }
+
+    float ScoreCheckpoint(OrganFoundationCheckpoint checkpoint, float currentScore)
+    {
+        if (checkpoint == null)
+            return currentScore;
+
+        float score = currentScore;
+        score += checkpoint.activeGeneCount * 0.01f;
+        score += checkpoint.vestigialGeneCount * 0.005f;
+        score += GetPhaseRankForCheckpoint(checkpoint.phase) * 0.05f;
+
+        if (!string.IsNullOrEmpty(checkpoint.reason))
+        {
+            if (checkpoint.reason.Contains("runtime mutation"))
+                score += 0.02f;
+            if (checkpoint.reason.Contains("phase"))
+                score += 0.05f;
+        }
+
+        return score;
+    }
+
+    int GetPhaseRankForCheckpoint(category value)
+    {
+        switch (value)
+        {
+            case category.grass:
+                return 1;
+            case category.herbivore:
+                return 2;
+            case category.predator:
+                return 3;
+            case category.highpredator:
+                return 4;
+            case category.dominant:
+                return 5;
+            default:
+                return 0;
+        }
+    }
+
+    AIComponentSet ComponentSetFromCheckpoint(OrganFoundationCheckpoint checkpoint, OrganFoundation fallbackFoundation)
+    {
+        AIComponentSet set = new AIComponentSet();
+        List<AIComponentGene> genes = null;
+
+        if (checkpoint != null && checkpoint.genes != null && checkpoint.genes.Count > 0)
+            genes = checkpoint.genes;
+        else if (fallbackFoundation != null && fallbackFoundation.TryGetComponent<AnimalAIInstaller>(out var installer))
+            genes = installer.componentSet.CloneGenes();
+
+        if (genes == null || genes.Count == 0)
+            return null;
+
+        for (int i = 0; i < genes.Count; i++)
+            set.SetGene(genes[i]);
+        return set;
+    }
+
+    string BuildOrganSummary(List<AIComponentGene> genes, bool activeOnly, int limit)
+    {
+        if (genes == null || genes.Count == 0)
+            return string.Empty;
+
+        List<string> names = new List<string>();
+        int eligibleCount = 0;
+        for (int i = 0; i < genes.Count; i++)
+        {
+            AIComponentGene gene = genes[i];
+            if (activeOnly && !gene.IsActive)
+                continue;
+
+            eligibleCount++;
+            if (names.Count >= limit)
+                continue;
+
+            names.Add(gene.componentId);
+        }
+
+        if (eligibleCount > names.Count)
+            names.Add("...");
+        return string.Join(",", names);
+    }
+
+    string BuildOrganMutationSummary(List<AIComponentGene> genes, int limit)
+    {
+        if (genes == null || genes.Count == 0)
+            return string.Empty;
+
+        List<string> parts = new List<string>();
+        for (int i = 0; i < genes.Count && parts.Count < limit; i++)
+        {
+            AIComponentGene gene = genes[i];
+            string state = gene.isVestigialOrgan ? "vest" : gene.IsActive ? "on" : "off";
+            parts.Add($"{gene.componentId}:{state}:lv{gene.level:F2}:w{gene.weight:F2}");
+        }
+
+        if (genes.Count > parts.Count)
+            parts.Add("...");
+        return string.Join(",", parts);
     }
 
     bool TryResolveHerbivoreGenomeFromBuckets(System.Random rng, out HerbivoreGenome genome)

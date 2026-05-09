@@ -7,10 +7,12 @@ public class predatorManager : MonoBehaviour
     public List<GenomePhaseBucket> genomes = new();
     public PredatorGenome genome;
     public PredatorGenome nextGenerationGenome;
+    public AIComponentSet nextGenerationComponentSet;
 
     [Header("Spawn")]
     public bool useManagerGenome = false;
     public bool useNextGenerationGenome = false;
+    public bool useNextGenerationComponentSet = false;
     public GameObject prefub;
 
     public GameObject herbivoreManager;
@@ -82,6 +84,7 @@ public class predatorManager : MonoBehaviour
             PredatorGenome g = useManagerGenome ? sourceGenome : default;
             g = ValidateOrRandomize(g, rng);
             pb.genome = g;
+            ApplyNextGenerationComponentSet(predator);
 
             predators.Add(predator);
             return true;
@@ -102,9 +105,26 @@ public class predatorManager : MonoBehaviour
             return false;
 
         if (predator != null && predator.TryGetComponent<predatorBehaviour>(out var pb))
+        {
             pb.genome = injectedGenome;
+            ApplyNextGenerationComponentSet(predator);
+        }
 
         return predator != null;
+    }
+
+    void ApplyNextGenerationComponentSet(GameObject predator)
+    {
+        if (!useNextGenerationComponentSet || nextGenerationComponentSet == null || predator == null)
+            return;
+
+        if (!predator.TryGetComponent<AnimalAIInstaller>(out _))
+            predator.AddComponent<AnimalAIInstaller>();
+
+        if (!predator.TryGetComponent<OrganFoundation>(out var foundation))
+            foundation = predator.AddComponent<OrganFoundation>();
+
+        foundation.InstallComponentSet(nextGenerationComponentSet, "next generation predator organ set");
     }
 
     static PredatorGenome ValidateOrRandomize(PredatorGenome g, System.Random rand)
