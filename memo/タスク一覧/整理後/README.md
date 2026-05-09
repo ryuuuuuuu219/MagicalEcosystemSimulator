@@ -1,6 +1,23 @@
-﻿# 整理後タスク一覧
+# 整理後タスク一覧
 
 `進捗確認.md` と `再構成前_問題点.md` をもとに、現在の実装軸へ合わせて再構成したタスクフォルダ。
+
+## 現在の正本
+
+- phase0 から organ mutation までの正本は、この階層直下の各 `README.md` と `ロードマップ.md`。
+- `_移植元資料` は履歴確認用。本文中の実装状況やパスは古い可能性がある。
+- とくに `Assets/script/Ingame/Creatures/Herbivore/...` と `Assets/script/Ingame/Creatures/Predator/...` は旧パスとして扱う。
+
+## 現行パス読み替え
+
+- 旧 `Assets/script/Ingame/Creatures/Herbivore/...`
+  - 現 `Assets/script/Ingame/Creatures/before/Herbivore/...`
+- 旧 `Assets/script/Ingame/Creatures/Predator/...`
+  - 現 `Assets/script/Ingame/Creatures/before/Predator/...`
+- organ core
+  - `Assets/script/Ingame/Creatures/after/organ/Core/...`
+- organ senses / desires / actions / memories / motors / steering
+  - `Assets/script/Ingame/Creatures/after/organ/...`
 
 ## Active Tasks
 
