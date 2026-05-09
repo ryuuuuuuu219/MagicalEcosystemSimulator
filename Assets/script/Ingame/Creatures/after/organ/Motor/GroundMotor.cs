@@ -4,6 +4,8 @@ public class GroundMotor : MonoBehaviour
 {
     public float forwardForce = 8f;
     public float turnForce = 180f;
+    public float lowSpeedTurnMultiplier = 1.4f;
+    public float highSpeedTurnMultiplier = 0.35f;
     public MovementTelemetry lastTelemetry;
     float currentSpeed;
     Vector3 currentVelocity;
@@ -39,7 +41,9 @@ public class GroundMotor : MonoBehaviour
             ref inertialFacingVector,
             forwardForce,
             turnForce,
-            deltaTime);
+            deltaTime,
+            lowSpeedTurnMultiplier,
+            highSpeedTurnMultiplier);
 
         lastTelemetry = MovementTelemetry.From(telemetry);
     }

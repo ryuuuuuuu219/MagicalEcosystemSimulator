@@ -144,7 +144,9 @@ public static class AnimalAICommon
         ref Vector3 inertialFacingVector,
         float forwardForce,
         float turnForce,
-        float deltaTime)
+        float deltaTime,
+        float lowSpeedTurnMultiplier = 1.4f,
+        float highSpeedTurnMultiplier = 0.35f)
     {
         MovementTelemetry telemetry = default;
         if (actorTransform == null)
@@ -164,7 +166,6 @@ public static class AnimalAICommon
             inertialFacingVector = ProjectDirectionOntoGround(inertialFacingVector, groundNormal, currentForward);
 
         float moveBlend = 1f - Mathf.Exp(-Mathf.Max(1f, forwardForce * 0.35f) * dt);
-        float rotateBlend = 1f - Mathf.Exp(-Mathf.Max(1f, turnForce * 0.02f) * dt);
 
         if (inputMagnitude <= 0.0001f)
         {
@@ -175,7 +176,21 @@ public static class AnimalAICommon
             if (planarVelocity.sqrMagnitude > 0.0001f)
             {
                 Vector3 velocityDir = planarVelocity.normalized;
-                inertialFacingVector = Vector3.Slerp(inertialFacingVector, velocityDir, rotateBlend);
+                float brakingTurnForce = ComputeSpeedScaledTurnForce(
+                    turnForce,
+                    planarVelocity.magnitude,
+                    forwardForce,
+                    lowSpeedTurnMultiplier,
+                    highSpeedTurnMultiplier);
+                inertialFacingVector = RotateTowardOnGround(
+                    currentForward,
+                    velocityDir,
+                    groundNormal,
+                    brakingTurnForce,
+                    dt,
+                    out float brakingYaw);
+                SetGroundRotation(actorTransform, groundNormal, inertialFacingVector);
+                telemetry.turnDemand = Mathf.Abs(brakingYaw);
 
                 float brakeDelta = Mathf.Min(planarVelocity.magnitude, forwardForce * dt);
                 planarVelocity = Vector3.MoveTowards(planarVelocity, Vector3.zero, brakeDelta);
@@ -196,16 +211,20 @@ public static class AnimalAICommon
             ? desiredDir
             : Vector3.Slerp(inertialMoveVector.normalized, desiredDir, moveBlend).normalized;
 
-        inertialFacingVector = Vector3.Slerp(inertialFacingVector, desiredDir, rotateBlend);
-
         Vector3 smoothedDir = ProjectDirectionOntoGround(inertialMoveVector, groundNormal, desiredDir);
-        Vector3 smoothedFacing = ProjectDirectionOntoGround(inertialFacingVector, groundNormal, smoothedDir);
+        Vector3 desiredFacing = ProjectDirectionOntoGround(desiredDir, groundNormal, smoothedDir);
 
-        float signedAngle = Vector3.SignedAngle(currentForward, smoothedFacing, groundNormal);
+        float signedAngle = Vector3.SignedAngle(currentForward, desiredFacing, groundNormal);
         float turnPenalty = Mathf.Clamp01(Mathf.Abs(signedAngle) / 120f);
         float targetSpeed = forwardForce * inputMagnitude * Mathf.Lerp(1f, 0.35f, turnPenalty);
 
         float previousSpeedValue = currentSpeed;
+        float effectiveTurnForce = ComputeSpeedScaledTurnForce(
+            turnForce,
+            previousSpeedValue,
+            forwardForce,
+            lowSpeedTurnMultiplier,
+            highSpeedTurnMultiplier);
         currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, forwardForce * dt);
 
         float speedDelta = currentSpeed - previousSpeedValue;
@@ -217,16 +236,53 @@ public static class AnimalAICommon
         Vector3 desiredVelocity = smoothedDir * currentSpeed;
         currentVelocity = Vector3.MoveTowards(planarVelocity, desiredVelocity, forwardForce * dt);
 
-        float maxYawDelta = Mathf.Max(0f, turnForce) * dt;
-        float appliedYaw = Mathf.Clamp(signedAngle, -maxYawDelta, maxYawDelta);
-        Quaternion yawRotation = Quaternion.AngleAxis(appliedYaw, groundNormal);
-        Vector3 rotatedForward = yawRotation * currentForward;
+        Vector3 rotatedForward = RotateTowardOnGround(
+            currentForward,
+            desiredFacing,
+            groundNormal,
+            effectiveTurnForce,
+            dt,
+            out float appliedYaw);
+        inertialFacingVector = rotatedForward;
 
         SetGroundRotation(actorTransform, groundNormal, rotatedForward);
         telemetry.turnDemand = Mathf.Abs(appliedYaw);
 
         MoveOnGround(actorTransform, terrain, currentVelocity * dt);
         return telemetry;
+    }
+
+    static float ComputeSpeedScaledTurnForce(
+        float turnForce,
+        float currentSpeed,
+        float topSpeed,
+        float lowSpeedTurnMultiplier,
+        float highSpeedTurnMultiplier)
+    {
+        float speedRatio = Mathf.Clamp01(Mathf.Abs(currentSpeed) / Mathf.Max(0.0001f, Mathf.Abs(topSpeed)));
+        float turnScale = Mathf.Lerp(
+            Mathf.Max(0f, lowSpeedTurnMultiplier),
+            Mathf.Max(0f, highSpeedTurnMultiplier),
+            speedRatio);
+        return Mathf.Max(0f, turnForce) * turnScale;
+    }
+
+    static Vector3 RotateTowardOnGround(
+        Vector3 currentForward,
+        Vector3 desiredForward,
+        Vector3 groundNormal,
+        float turnForce,
+        float dt,
+        out float appliedYaw)
+    {
+        Vector3 safeDesired = ProjectDirectionOntoGround(desiredForward, groundNormal, currentForward);
+        float signedAngle = Vector3.SignedAngle(currentForward, safeDesired, groundNormal);
+        float maxYawDelta = Mathf.Max(0f, turnForce) * Mathf.Max(dt, 0.0001f);
+        appliedYaw = Mathf.Clamp(signedAngle, -maxYawDelta, maxYawDelta);
+        return ProjectDirectionOntoGround(
+            Quaternion.AngleAxis(appliedYaw, groundNormal) * currentForward,
+            groundNormal,
+            safeDesired);
     }
 
     public static Vector3 AdjustMovementVectorForTerrain(Terrain terrain, Vector3 position, Vector3 vector)

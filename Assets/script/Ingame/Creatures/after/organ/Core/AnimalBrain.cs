@@ -47,6 +47,7 @@ public class AnimalBrain : MonoBehaviour
         desires.Clear();
         steerings.Clear();
         actions.Clear();
+        groundMotor = GetComponent<GroundMotor>();
 
         senses.AddRange(GetComponents<IAISense>());
         desires.AddRange(GetComponents<IAIDesire>());
@@ -87,6 +88,8 @@ public class AnimalBrain : MonoBehaviour
         }
 
         LastMoveVector = total;
+        if (groundMotor == null)
+            groundMotor = GetComponent<GroundMotor>();
         if (groundMotor != null)
             groundMotor.Move(Context, LastMoveVector, deltaTime);
 
