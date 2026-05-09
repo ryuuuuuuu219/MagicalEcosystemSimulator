@@ -12,6 +12,8 @@ organ 化した AI 部品を本編個体へ配布し、旧 `behaviour` と `Anim
 - `OrganPresetLibrary` は固定 Ensure 群から、`AIComponentSet` preset 生成と導入へ移行した。
 - `OrganRelationLibrary` が component id から Type を解決し、依存 organ の補完と reverse dependency 判定を持つ。
 - `AnimalBrain` は `OrganFoundation.IsOrganActive()` を通して disabled / vestigial / weight 0 の organ を中央でスキップする。
+- 実機プレイで移動、追跡、逃走、攻撃が旧 behaviour と二重実行されないことを確認済み。
+- プレイ時に気になった旋回処理は、速度比に応じた旋回慣性として `AnimalAICommon.ApplyMovement()` / `GroundMotor` 側で対処済み。
 
 ## スコープ
 
@@ -31,9 +33,11 @@ organ 化した AI 部品を本編個体へ配布し、旧 `behaviour` と `Anim
 
 ## 残り
 
-- 実機で移動、追跡、逃走、攻撃が旧 behaviour と二重実行されていないか確認する。
 - 旧 behaviour 側に残る死亡、HP、target、memory の正本をどこまで organ 側へ移すか決める。
-- `_移植元資料` 内の旧パスは履歴資料として残す。参照時は整理後ルート README の読み替え表を使う。
+
+## 資料整理
+
+- `_移植元資料/統合_挙動AI分離_organ設計` に、旧 `0.phase0_organ設計` と `4.挙動AI分離` の資料を統合済み。
 
 ## 対象スクリプト
 
@@ -53,3 +57,7 @@ organ 化した AI 部品を本編個体へ配布し、旧 `behaviour` と `Anim
 - AI 実行主体が `OrganFoundation` + `AnimalBrain` に定まり、二重移動・二重攻撃が起きない。
 - 依存 organ が不足した状態で action / desire だけが有効化されない。
 - README 上で、旧 behaviour に残す責務と organ 側へ委譲した責務が追える。
+
+## 判定
+
+phase0 organ 設計・基盤実装は完了扱い。以後の死亡、HP、target、memory 正本移行は次フェーズの設計対象とする。
