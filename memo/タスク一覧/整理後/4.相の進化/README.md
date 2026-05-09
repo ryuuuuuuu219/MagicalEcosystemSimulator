@@ -17,7 +17,12 @@
 - phase up 条件。
 - phase 変化時の category / speciesID / organ set / checkpoint。
 - 旧 `predatorBehaviour.TryPhaseEvolution()` と `PredatorPhaseEvolutionAction` の責務整理。
-- 支配種到達条件の前提になる phase 表現。
+- 支配種仕様の前提になる phase 表現。
+
+## スコープ外
+
+- genome の項目設計、`ValueGene`、`AIComponentGene` の保存場所は `1.支配種までの遺伝子定義` に置く。
+- `dominant` 到達後の支配種仕様、追加付与 organ、役割、勝利条件、維持時間、制圧判定は `5.支配種仕様・役割定義` に置く。
 
 ## 仕様
 
@@ -25,6 +30,7 @@
 - phase up 条件は mana field、個体 mana、評価値、世代条件のどれを使うか明記する。
 - phase up 時は category、speciesID、organ set、UI 表示対象を同期する。
 - phase up 時の organ set は preset と既存 gene 差分を合成し、必要な依存 organ を再解決する。
+- phase up 時は `GeneDataManager` から `ValueGene` と `AIComponentGene` を再適用する。
 - phase up snapshot は、世代更新時の organ checkpoint 評価候補に含める。
 
 ## 残り
@@ -33,6 +39,7 @@
 - `TryPhaseEvolution()` と `PredatorPhaseEvolutionAction` の重複を整理する。
 - speciesID の採番、継承、表示ルールを決める。
 - phase up 後の魔法 organ / 戦闘 organ 追加を実機で検証する。
+- phase up 後に `GeneDataManager` の値を再配布し、organ 内変数が古いまま残らないようにする。
 
 ## 対象スクリプト
 
@@ -49,4 +56,4 @@
 - phase up が再現可能な条件で発生する。
 - phase 変化後の category / speciesID / organ / UI 表示にずれがない。
 - phase up checkpoint が世代更新時の評価候補として追跡できる。
-- 支配種到達条件タスクが、この phase 仕様を前提として参照できる。
+- 支配種仕様タスクが、この phase 仕様を前提として参照できる。

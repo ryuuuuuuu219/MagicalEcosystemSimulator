@@ -22,6 +22,8 @@
 - 世代ログと検証用ログ。
 - organ checkpoint の評価候補化。
 - 世代更新時 mutation の呼び出し。
+- `ValueGene` と `AIComponentGene` の同時 crossover / mutation。
+- `GeneDataManager` への次世代値保存。
 
 ## 実装済み
 
@@ -34,7 +36,10 @@
 ## 残り
 
 - DNA / genome serializer に `AIComponentSet` を保存・復元する。
-- crossover で organ gene を複数親から混ぜる。
+- `GeneDataSnapshot` として `ValueGene` / `AIComponentGene` を保存・復元する。
+- crossover で `ValueGene` と organ gene を複数親から同時に混ぜる。
+- 生存中 mutation は10秒間隔、世代更新 mutation は世代更新時に実行し、どちらも `ValueGene` と `AIComponentGene` を同時に扱う。
+- 親にない organ の `ValueGene` は `GeneDataManager` の初期値 `genes_v` から補完する。
 - organ checkpoint score の重みを実機結果で調整する。
 - magic aptitude、phase、dominant 判定を同じ評価・ログ系に統合する。
 - DNA 注入時の validation と失敗時表示を整理する。
