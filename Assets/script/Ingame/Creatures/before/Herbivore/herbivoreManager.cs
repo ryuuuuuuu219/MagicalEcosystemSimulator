@@ -87,6 +87,7 @@ public class herbivoreManager : MonoBehaviour
             g = ValidateOrRandomize(g, rng);
             hb.genome = g;
             ApplyNextGenerationComponentSet(herbivore);
+            ApplyGeneData(herbivore, g);
 
             herbivores.Add(herbivore);
             return true;
@@ -104,6 +105,7 @@ public class herbivoreManager : MonoBehaviour
         {
             hb.genome = injectedGenome;
             ApplyNextGenerationComponentSet(herbivore);
+            ApplyGeneData(herbivore, injectedGenome);
         }
 
         return herbivore != null;
@@ -121,6 +123,24 @@ public class herbivoreManager : MonoBehaviour
             foundation = herbivore.AddComponent<OrganFoundation>();
 
         foundation.InstallComponentSet(nextGenerationComponentSet, "next generation herbivore organ set");
+        GeneDataManager.SetStructureGenes(nextGenerationComponentSet.CloneGenes());
+    }
+
+    void ApplyGeneData(GameObject herbivore, HerbivoreGenome sourceGenome)
+    {
+        if (herbivore == null)
+            return;
+
+        category phase = category.herbivore;
+        int speciesID = 0;
+        if (herbivore.TryGetComponent<Resource>(out var resource))
+        {
+            phase = resource.resourceCategory;
+            speciesID = resource.speciesID;
+        }
+
+        ValueGene gene = GeneDataManager.SetCreatureFromHerbivoreGenome(herbivore, sourceGenome, phase, speciesID);
+        GeneDataApplier.Apply(herbivore, gene);
     }
 
     public void Unregister(GameObject herbivore)

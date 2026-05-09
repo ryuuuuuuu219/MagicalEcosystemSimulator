@@ -9,7 +9,7 @@ public class PredatorPhaseEvolutionAction : MonoBehaviour, IAIAction
 
     public bool TryAct(AIContext context, float deltaTime)
     {
-        if (context == null || context.BodyResource == null || context.Health <= 0f)
+        if (context == null || context.BodyResource == null || context.IsDead)
             return false;
 
         EnsurePredatorPhase(context.BodyResource);
@@ -35,6 +35,7 @@ public class PredatorPhaseEvolutionAction : MonoBehaviour, IAIAction
             "organ phase up " + context.BodyResource.resourceCategory + " speciesID=" + context.BodyResource.speciesID,
             0f);
         OrganPresetLibrary.EnsurePredator(gameObject, context.BodyResource.resourceCategory);
+        GeneDataManager.ApplyToCreature(gameObject);
         return true;
     }
 

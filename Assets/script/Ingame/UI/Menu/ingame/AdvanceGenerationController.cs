@@ -402,6 +402,10 @@ public class AdvanceGenerationController : MonoBehaviour
             HerbivoreGenome nextHerbivoreGenome = ResolveHerbivoreGenome(rng);
             herbivoreManager.nextGenerationGenome = nextHerbivoreGenome;
             herbivoreManager.nextGenerationComponentSet = ResolveHerbivoreComponentSet(rng);
+            GeneDataManager.SetFromHerbivoreGenome(nextHerbivoreGenome, category.herbivore);
+            if (herbivoreManager.nextGenerationComponentSet != null)
+                GeneDataManager.SetStructureGenes(herbivoreManager.nextGenerationComponentSet.CloneGenes());
+            GeneDataManager.MutateGenerationValues();
             herbivoreManager.useManagerGenome = true;
             herbivoreManager.useNextGenerationGenome = true;
             herbivoreManager.useNextGenerationComponentSet = herbivoreManager.nextGenerationComponentSet != null;
@@ -415,6 +419,10 @@ public class AdvanceGenerationController : MonoBehaviour
             PredatorGenome nextPredatorGenome = ResolvePredatorGenome(rng);
             predatorManager.nextGenerationGenome = nextPredatorGenome;
             predatorManager.nextGenerationComponentSet = ResolvePredatorComponentSet(rng);
+            GeneDataManager.SetFromPredatorGenome(nextPredatorGenome, category.predator);
+            if (predatorManager.nextGenerationComponentSet != null)
+                GeneDataManager.SetStructureGenes(predatorManager.nextGenerationComponentSet.CloneGenes());
+            GeneDataManager.MutateGenerationValues();
             predatorManager.useManagerGenome = true;
             predatorManager.useNextGenerationGenome = true;
             predatorManager.useNextGenerationComponentSet = predatorManager.nextGenerationComponentSet != null;
@@ -584,7 +592,13 @@ public class AdvanceGenerationController : MonoBehaviour
 
         try
         {
-            HerbivoreGenome genome = GenomeSerializer.DecodeGenome(dna);
+            HerbivoreGenome genome;
+            bool loadedGeneData = GeneDataManager.TryLoadJson(dna);
+            if (loadedGeneData)
+                genome = GeneDataManager.GetValueGene(SpeciesType.Herbivore, category.herbivore).ToHerbivoreGenome(herbivoreManager.genome);
+            else
+                genome = GenomeSerializer.DecodeGenome(dna);
+
             if (!herbivoreManager.SpawnHerbivoreWithGenome(worldgen, injectedHerbivoreSpawnIndex++, genome, out GameObject herbivore))
             {
                 SetHerbivoreGenomeUiStatus("Spawn failed.");
@@ -592,8 +606,9 @@ public class AdvanceGenerationController : MonoBehaviour
             }
 
             resourceDispenser.InitializeCreatureResource(herbivore, resourceDispenser.manaPerHerbivore, category.herbivore);
+            GeneDataManager.ApplyToCreature(herbivore);
             resourceDispenser.AddExternalMana(resourceDispenser.manaPerHerbivore);
-            SetHerbivoreGenomeUiStatus("Spawned herbivore from DNA.");
+            SetHerbivoreGenomeUiStatus(loadedGeneData ? "Spawned herbivore from GeneData JSON." : "Spawned herbivore from DNA.");
 
             if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
                 BuildHerbivoreGenomeViewerList();
@@ -620,7 +635,12 @@ public class AdvanceGenerationController : MonoBehaviour
             return;
         }
 
-        if (!TryDecodePredatorGenome(dna, out PredatorGenome genome))
+        bool loadedGeneData = GeneDataManager.TryLoadJson(dna);
+        PredatorGenome genome = loadedGeneData
+            ? GeneDataManager.GetValueGene(SpeciesType.Predator, category.predator).ToPredatorGenome(predatorManager.genome)
+            : default;
+
+        if (!loadedGeneData && !TryDecodePredatorGenome(dna, out genome))
         {
             SetHerbivoreGenomeUiStatus("Invalid DNA.");
             return;
@@ -633,8 +653,9 @@ public class AdvanceGenerationController : MonoBehaviour
         }
 
         resourceDispenser.InitializeCreatureResource(predator, resourceDispenser.manaPerPredator, category.predator);
+        GeneDataManager.ApplyToCreature(predator);
         resourceDispenser.AddExternalMana(resourceDispenser.manaPerPredator);
-        SetHerbivoreGenomeUiStatus("Spawned predator from DNA.");
+        SetHerbivoreGenomeUiStatus(loadedGeneData ? "Spawned predator from GeneData JSON." : "Spawned predator from DNA.");
 
         if (herbivoreGenomeViewerRoot != null && herbivoreGenomeViewerRoot.activeSelf)
             BuildHerbivoreGenomeViewerList();

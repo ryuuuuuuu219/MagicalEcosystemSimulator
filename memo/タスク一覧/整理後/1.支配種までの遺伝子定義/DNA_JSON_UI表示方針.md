@@ -21,6 +21,7 @@ phase1 では表示仕様の正本を決め、実装タスクは後続の UI・s
 - 新 organ gene の保存形式は `AIComponentGene` のリストとして扱う。
 - runtime配布は `GeneDataManager.genes_v` / `GeneDataManager.genes_s` を使う。
 - JSON保存は `GeneDataSnapshot` のような serializable wrapper を使う。
+- 保存単位は個体別 `GeneDataRecord` とし、checkpoint履歴も含める。
 - DNA表示は「再スポーン・世代更新に必要な正本」に限定する。
 - UI表示は調整しやすさを優先し、内部計算専用値をすべて露出しない。
 
@@ -32,6 +33,8 @@ phase1 では表示仕様の正本を決め、実装タスクは後続の UI・s
 | `ValueGene` | 内部数値遺伝子として保存対象 |
 | `GeneDataSnapshot.genes_v` | `ValueGene` 保存リスト |
 | `GeneDataSnapshot.genes_s` | `AIComponentGene` 保存リスト |
+| `GeneDataSnapshot.records` | 個体別の現在遺伝子データ |
+| `GeneDataSnapshot.checkpoints` | checkpoint化された個体別遺伝子データ |
 | `WaveGene[]` | 個体差として保存対象 |
 | `AttackArcSettings` | 捕食攻撃の個体差として保存対象 |
 | `AIComponentSet.genes` | 新正本として保存対象 |

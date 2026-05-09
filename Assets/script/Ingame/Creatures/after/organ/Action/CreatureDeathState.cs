@@ -4,7 +4,7 @@ public class CreatureDeathState : MonoBehaviour, IAIAction
 {
     public bool IsDead(AIContext context)
     {
-        return context != null && context.Health <= 0f;
+        return context != null && context.IsDead;
     }
 
     public bool TryAct(AIContext context, float deltaTime)

@@ -26,6 +26,15 @@ public class GroundMotor : MonoBehaviour
         }
     }
 
+    public void Stop()
+    {
+        currentSpeed = 0f;
+        currentVelocity = Vector3.zero;
+        inertialMoveVector = Vector3.zero;
+        inertialFacingVector = transform != null ? transform.forward : Vector3.forward;
+        lastTelemetry = default;
+    }
+
     public void Move(AIContext context, Vector3 moveVector, float deltaTime)
     {
         if (context == null || context.Transform == null)

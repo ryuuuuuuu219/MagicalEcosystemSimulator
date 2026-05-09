@@ -58,6 +58,15 @@ public class AnimalBrain : MonoBehaviour
     public Vector3 TickBrain(float deltaTime)
     {
         Context.Refresh(gameObject);
+        if (Context.IsDead)
+        {
+            LastMoveVector = Vector3.zero;
+            if (groundMotor == null)
+                groundMotor = GetComponent<GroundMotor>();
+            if (groundMotor != null)
+                groundMotor.Stop();
+            return LastMoveVector;
+        }
 
         for (int i = 0; i < senses.Count; i++)
         {

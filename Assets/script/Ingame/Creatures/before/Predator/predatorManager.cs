@@ -85,6 +85,7 @@ public class predatorManager : MonoBehaviour
             g = ValidateOrRandomize(g, rng);
             pb.genome = g;
             ApplyNextGenerationComponentSet(predator);
+            ApplyGeneData(predator, g);
 
             predators.Add(predator);
             return true;
@@ -108,6 +109,7 @@ public class predatorManager : MonoBehaviour
         {
             pb.genome = injectedGenome;
             ApplyNextGenerationComponentSet(predator);
+            ApplyGeneData(predator, injectedGenome);
         }
 
         return predator != null;
@@ -125,6 +127,24 @@ public class predatorManager : MonoBehaviour
             foundation = predator.AddComponent<OrganFoundation>();
 
         foundation.InstallComponentSet(nextGenerationComponentSet, "next generation predator organ set");
+        GeneDataManager.SetStructureGenes(nextGenerationComponentSet.CloneGenes());
+    }
+
+    void ApplyGeneData(GameObject predator, PredatorGenome sourceGenome)
+    {
+        if (predator == null)
+            return;
+
+        category phase = category.predator;
+        int speciesID = 0;
+        if (predator.TryGetComponent<Resource>(out var resource))
+        {
+            phase = resource.resourceCategory;
+            speciesID = resource.speciesID;
+        }
+
+        ValueGene gene = GeneDataManager.SetCreatureFromPredatorGenome(predator, sourceGenome, phase, speciesID);
+        GeneDataApplier.Apply(predator, gene);
     }
 
     static PredatorGenome ValidateOrRandomize(PredatorGenome g, System.Random rand)

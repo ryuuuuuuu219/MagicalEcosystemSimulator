@@ -14,6 +14,7 @@ public class OrganFoundationCheckpoint
     public List<string> installedOrgans = new();
     public List<string> vestigialOrgans = new();
     public List<AIComponentGene> genes = new();
+    public GeneDataRecord geneData;
 }
 
 [System.Serializable]
@@ -156,6 +157,7 @@ public class OrganFoundation : MonoBehaviour
             vestigialOrgans = new List<string>(VestigialOrgans),
             genes = installer != null ? installer.componentSet.CloneGenes() : new List<AIComponentGene>()
         };
+        checkpoint.geneData = GeneDataManager.RecordCheckpoint(gameObject, reason, checkpoint.time, checkpoint.genes);
         checkpoint.activeGeneCount = CountActiveGenes(checkpoint.genes);
         checkpoint.vestigialGeneCount = CountVestigialGenes(checkpoint.genes);
         checkpoints.Add(checkpoint);
@@ -238,6 +240,7 @@ public class OrganFoundation : MonoBehaviour
         if (!changed)
             return;
 
+        GeneDataManager.MutateRuntimeValues(gameObject, runtimeMutationChanceScale);
         RefreshOrgansAfterChange("runtime mutation");
     }
 
@@ -260,6 +263,8 @@ public class OrganFoundation : MonoBehaviour
         RefreshInstalledOrganList();
         if (brain != null)
             brain.RefreshOrgans();
+        if (installer != null && installer.componentSet != null)
+            GeneDataManager.SetStructureGenes(installer.componentSet.CloneGenes());
         RecordCheckpoint(reason);
     }
 

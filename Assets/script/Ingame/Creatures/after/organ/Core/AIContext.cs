@@ -13,6 +13,7 @@ public class AIContext
     public float Health;
     public float Mana;
     public float MaxMana;
+    public bool IsDead => Health <= 0f;
 
     public static AIContext From(GameObject self)
     {

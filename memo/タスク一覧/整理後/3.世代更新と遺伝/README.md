@@ -24,6 +24,7 @@
 - 世代更新時 mutation の呼び出し。
 - `ValueGene` と `AIComponentGene` の同時 crossover / mutation。
 - `GeneDataManager` への次世代値保存。
+- 個体別 `GeneDataRecord` と checkpoint record の評価候補化。
 
 ## 実装済み
 
@@ -40,6 +41,7 @@
 - crossover で `ValueGene` と organ gene を複数親から同時に混ぜる。
 - 生存中 mutation は10秒間隔、世代更新 mutation は世代更新時に実行し、どちらも `ValueGene` と `AIComponentGene` を同時に扱う。
 - 親にない organ の `ValueGene` は `GeneDataManager` の初期値 `genes_v` から補完する。
+- checkpoint 化した `GeneDataRecord` を親候補として参照する。
 - organ checkpoint score の重みを実機結果で調整する。
 - magic aptitude、phase、dominant 判定を同じ評価・ログ系に統合する。
 - DNA 注入時の validation と失敗時表示を整理する。

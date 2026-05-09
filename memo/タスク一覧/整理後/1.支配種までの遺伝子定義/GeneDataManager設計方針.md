@@ -7,8 +7,11 @@
 ## 基本方針
 
 - `GeneDataManager` は遺伝子データの配布元にする。
-- 内部数値遺伝子は `genes_v` に保存する。
-- organ構造遺伝子は `genes_s` に保存する。
+- 保存単位は個体別にする。
+- 個体別保存には、現在値と checkpoint 化した値の両方を含める。
+- 内部数値遺伝子の初期値・互換値は `genes_v` に保存する。
+- organ構造遺伝子の初期値・互換値は `genes_s` に保存する。
+- 個体別の正本は `records`、checkpoint 履歴は `checkpoints` に保存する。
 - 欠落している対応表や初期値は、実装時に現行コードから生成する。
 - phase4 までの作業では、この manager を通して genome / organ / phase up の接続を進める。
 
@@ -19,6 +22,8 @@ public static class GeneDataManager
 {
     public static List<ValueGene> genes_v;
     public static List<AIComponentGene> genes_s;
+    public static List<GeneDataRecord> records;
+    public static List<GeneDataRecord> checkpoints;
 }
 ```
 
@@ -30,6 +35,8 @@ public class GeneDataSnapshot
 {
     public List<ValueGene> genes_v = new();
     public List<AIComponentGene> genes_s = new();
+    public List<GeneDataRecord> records = new();
+    public List<GeneDataRecord> checkpoints = new();
 }
 ```
 
@@ -39,6 +46,32 @@ public class GeneDataSnapshot
 - JSON保存: `GeneDataSnapshot`
 - DNA文字列化: `GeneDataSnapshot` を `JsonUtility.ToJson()` する
 - DNA復元: JSONから `GeneDataSnapshot` を復元し、`GeneDataManager` へ流し込む
+
+## 個体別record
+
+```csharp
+[System.Serializable]
+public class GeneDataRecord
+{
+    public int instanceId;
+    public string objectName;
+    public SpeciesType species;
+    public category phase;
+    public int speciesID;
+    public bool fromCheckpoint;
+    public string checkpointReason;
+    public float checkpointTime;
+    public ValueGene valueGene;
+    public List<AIComponentGene> genes_s;
+}
+```
+
+方針:
+
+- `records` は現在の個体別遺伝子データ。
+- `checkpoints` は `OrganFoundation` の checkpoint と同時に保存する履歴データ。
+- checkpoint は現在値を上書きせず、履歴として追加する。
+- 世代更新の親候補に checkpoint を使う場合は、`checkpoints` の `valueGene` と `genes_s` を参照する。
 
 ## 初期値
 
@@ -55,10 +88,11 @@ public class GeneDataSnapshot
 
 | タイミング | 方針 |
 | --- | --- |
-| spawn時 | `GeneDataManager` から `ValueGene` と `AIComponentGene` を適用する |
+| spawn時 | 個体別 `GeneDataRecord` を作り、`ValueGene` と `AIComponentGene` を適用する |
 | phase up時 | phase用 preset 合成後に再適用する |
-| mutation後 | 10秒間隔の生存中 mutation 後に即反映する |
-| 世代更新時 | 世代更新 mutation 後、次世代 manager 値として保存する |
+| mutation後 | 10秒間隔の生存中 mutation 後、個体別 record を更新して即反映する |
+| checkpoint時 | `ValueGene` と `AIComponentGene` を checkpoint record として保存する |
+| 世代更新時 | 世代更新 mutation 後、次世代用の個体別 record / 初期値として保存する |
 | DNA注入時 | JSONから `GeneDataSnapshot` を復元し、`GeneDataManager` へ入れてから spawn へ渡す |
 
 ## 適用処理
@@ -98,6 +132,8 @@ public class GeneDataSnapshot
     public string schema = "GeneDataManager";
     public List<ValueGene> genes_v = new();
     public List<AIComponentGene> genes_s = new();
+    public List<GeneDataRecord> records = new();
+    public List<GeneDataRecord> checkpoints = new();
 }
 ```
 
@@ -116,12 +152,13 @@ phase4までで実装する範囲:
 
 1. `ValueGene` の構造体定義。
 2. 旧 genome から `ValueGene` への対応表生成。
-3. `GeneDataManager` / `GeneDataSnapshot` の定義。
-4. spawn時の `ValueGene` / `AIComponentGene` 適用。
+3. `GeneDataManager` / `GeneDataSnapshot` / `GeneDataRecord` の定義。
+4. spawn時の個体別 `ValueGene` / `AIComponentGene` 適用。
 5. DNA注入時の復元。
 6. 生存中 mutation 後の即反映。
-7. 世代更新時の同時 crossover / mutation。
-8. phase up時の preset 合成と再適用。
+7. checkpointへの個体別 `ValueGene` / `AIComponentGene` 保存。
+8. 世代更新時の同時 crossover / mutation。
+9. phase up時の preset 合成と再適用。
 
 phase5以降へ送る範囲:
 
