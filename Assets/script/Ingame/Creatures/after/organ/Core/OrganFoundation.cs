@@ -383,6 +383,7 @@ public class OrganFoundation : MonoBehaviour
             || behaviour is PreyMemory
             || behaviour is ThreatMemory
             || behaviour is TargetTracker
+            || behaviour is MagicElementAffinityState
             || behaviour is GroundMotor
             || behaviour is CreatureMotorBootstrap
             || behaviour is CreatureRelationResolver;
@@ -428,7 +429,7 @@ public class OrganFoundation : MonoBehaviour
         for (int i = 0; i < genes.Count && shown < limit; i++)
         {
             AIComponentGene gene = genes[i];
-            string state = gene.isVitalOrgan ? "VITAL" : gene.isVestigialOrgan ? "VEST" : gene.IsActive ? "ON" : "OFF";
+            string state = gene.isVitalOrgan ? "VITAL" : gene.isProtectedOrgan ? "PROT" : gene.isVestigialOrgan ? "VEST" : gene.IsActive ? "ON" : "OFF";
             builder.AppendLine($"- {gene.componentId} [{state}] lv:{gene.level:F2} w:{gene.weight:F2} mt:{gene.mutationChanceT:F3} mg:{gene.mutationChanceG:F3}");
             shown++;
         }

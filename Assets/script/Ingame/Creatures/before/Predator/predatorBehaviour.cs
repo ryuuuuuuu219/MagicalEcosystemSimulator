@@ -355,7 +355,7 @@ public class predatorBehaviour : MonoBehaviour
         nextPhaseCheckTime = Time.time + Mathf.Max(0.1f, phaseCheckInterval);
 
         int currentRank = GetPhaseRank(bodyResource.resourceCategory);
-        if (currentRank < 3 || currentRank >= 5)
+        if (currentRank != 3)
             return;
 
         float fieldMana = ManaFieldManager.GetOrCreate().SampleMana(transform.position);
@@ -367,6 +367,8 @@ public class predatorBehaviour : MonoBehaviour
         bodyResource.speciesID = DrawPhaseUpSpeciesID();
         bodyResource.RecordManaEvent("phase up " + bodyResource.resourceCategory + " speciesID=" + bodyResource.speciesID, 0f);
         EnsureOrgansForCurrentPhase();
+        if (bodyResource.resourceCategory == category.highpredator)
+            OrganPresetLibrary.EnsureHighPredatorMagic(gameObject);
     }
 
     public void EnsureOrgansForCurrentPhase()

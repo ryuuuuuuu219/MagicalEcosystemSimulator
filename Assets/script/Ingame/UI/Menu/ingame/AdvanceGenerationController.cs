@@ -919,6 +919,9 @@ public class AdvanceGenerationController : MonoBehaviour
 
     void SpawnPredators(int count, category phase)
     {
+        if (phase == category.dominant)
+            count = DominantLineageTracker.ClampDominantSpawnCount(count);
+
         int spawned = 0;
         int localIndex = 0;
         int attempts = 0;

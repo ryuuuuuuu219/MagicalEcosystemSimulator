@@ -4,6 +4,7 @@ public struct AIComponentGene
     public string componentId;
     public bool enabled;
     public bool isVitalOrgan;
+    public bool isProtectedOrgan;
     public bool isVestigialOrgan;
     public float level;
     public float weight;
@@ -22,6 +23,7 @@ public struct AIComponentGene
             componentId = componentId,
             enabled = enabled,
             isVitalOrgan = isVitalOrgan,
+            isProtectedOrgan = false,
             isVestigialOrgan = false,
             level = 1f,
             weight = 1f,

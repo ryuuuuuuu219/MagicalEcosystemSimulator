@@ -27,6 +27,10 @@ public static class OrganPresetLibrary
 
         OrganFoundation foundation = EnsureCore(installer);
         foundation.InstallComponentSet(CreatePredatorPreset(phase), phase + " preset", true);
+        if (GetPhaseRank(phase) >= GetPhaseRank(category.highpredator))
+            EnsureHighPredatorMagic(target);
+        if (phase == category.dominant)
+            EnsureDominantMagic(target);
         RefreshBrain(target);
     }
 
@@ -53,6 +57,7 @@ public static class OrganPresetLibrary
         AddOptional<MagicAttackAction>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
         AddOptional<MagicProjectileAttackAction>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
         AddOptional<MagicCooldownState>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
+        AddOptional<MagicElementAffinityState>(set, mutationChanceT: 0.0001f, mutationChanceG: 0.003f);
         return set;
     }
 
@@ -80,6 +85,8 @@ public static class OrganPresetLibrary
             AddActive<MagicAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
             AddActive<MagicProjectileAttackAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
             AddActive<MagicCooldownState>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+            AddActive<MagicElementAffinityState>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
+            AddActive<DominantAscensionAction>(set, mutationChanceT: 0f, mutationChanceG: 0f);
         }
         else
         {
@@ -87,6 +94,7 @@ public static class OrganPresetLibrary
             AddOptional<MagicAttackAction>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
             AddOptional<MagicProjectileAttackAction>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
             AddOptional<MagicCooldownState>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
+            AddOptional<MagicElementAffinityState>(set, mutationChanceT: 0.0002f, mutationChanceG: 0.006f);
         }
 
         AddOptional<ManaFieldAttractionDesire>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
@@ -95,6 +103,43 @@ public static class OrganPresetLibrary
         AddOptional<RandomEvasionAction>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
         AddOptional<ProportionalNavigationSteering>(set, mutationChanceT: 0.0005f, mutationChanceG: 0.01f);
         return set;
+    }
+
+    public static void EnsureHighPredatorMagic(GameObject target)
+    {
+        AnimalAIInstaller installer = EnsureInstaller(target);
+        if (installer == null)
+            return;
+
+        installer.Ensure<MagicAttackAction>();
+        installer.Ensure<MagicProjectileAttackAction>();
+        installer.Ensure<MagicCooldownState>();
+        MagicElementAffinityState affinity = installer.Ensure<MagicElementAffinityState>();
+        affinity.EnsureAtLeastOneNormalElement();
+
+        installer.componentSet.ProtectGene(nameof(MagicAttackAction), true);
+        installer.componentSet.ProtectGene(nameof(MagicProjectileAttackAction), true);
+        installer.componentSet.ProtectGene(nameof(MagicCooldownState), true);
+        installer.componentSet.ProtectGene(nameof(MagicElementAffinityState), true);
+
+        MagicProjectileAttackAction projectile = target.GetComponent<MagicProjectileAttackAction>();
+        if (projectile != null && projectile.element == MagicElement.Space)
+            projectile.element = affinity.GetPreferredNormalElement();
+    }
+
+    public static void EnsureDominantMagic(GameObject target)
+    {
+        EnsureHighPredatorMagic(target);
+        AnimalAIInstaller installer = EnsureInstaller(target);
+        if (installer == null)
+            return;
+
+        MagicElementAffinityState affinity = installer.Ensure<MagicElementAffinityState>();
+        affinity.EnsureAtLeastNormalElementCount(2);
+        installer.Ensure<DominantAscensionAction>();
+        SpaceMagicAction.Ensure(target);
+        installer.componentSet.ProtectGene(nameof(DominantAscensionAction), true);
+        installer.componentSet.ProtectGene(nameof(SpaceMagicAction), true);
     }
 
     static AIComponentSet CreateCorePreset()

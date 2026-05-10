@@ -6,7 +6,12 @@ public class MagicAttackAction : UnityEngine.MonoBehaviour, IAIAction
     {
         MagicProjectileAttackAction projectileAttack = GetComponent<MagicProjectileAttackAction>();
         if (projectileAttack == null)
-            projectileAttack = gameObject.AddComponent<MagicProjectileAttackAction>();
+        {
+            AnimalAIInstaller installer = GetComponent<AnimalAIInstaller>();
+            projectileAttack = installer != null
+                ? installer.Ensure<MagicProjectileAttackAction>()
+                : gameObject.AddComponent<MagicProjectileAttackAction>();
+        }
 
         projectileAttack.manaCost = manaCost;
         return projectileAttack.TryAct(context, deltaTime);

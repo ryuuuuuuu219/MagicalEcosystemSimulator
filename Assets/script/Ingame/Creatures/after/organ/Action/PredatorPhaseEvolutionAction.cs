@@ -19,7 +19,7 @@ public class PredatorPhaseEvolutionAction : MonoBehaviour, IAIAction
         nextPhaseCheckTime = Time.time + Mathf.Max(0.1f, phaseCheckInterval);
 
         int currentRank = GetPhaseRank(context.BodyResource.resourceCategory);
-        if (currentRank < 3 || currentRank >= 5)
+        if (currentRank != 3)
             return false;
 
         float fieldMana = ManaFieldManager.GetOrCreate().SampleMana(context.Transform.position);
@@ -35,6 +35,8 @@ public class PredatorPhaseEvolutionAction : MonoBehaviour, IAIAction
             "organ phase up " + context.BodyResource.resourceCategory + " speciesID=" + context.BodyResource.speciesID,
             0f);
         OrganPresetLibrary.EnsurePredator(gameObject, context.BodyResource.resourceCategory);
+        if (context.BodyResource.resourceCategory == category.highpredator)
+            OrganPresetLibrary.EnsureHighPredatorMagic(gameObject);
         GeneDataManager.ApplyToCreature(gameObject);
         return true;
     }

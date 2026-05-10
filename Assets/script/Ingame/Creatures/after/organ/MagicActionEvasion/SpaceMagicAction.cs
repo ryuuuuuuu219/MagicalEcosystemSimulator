@@ -1,22 +1,42 @@
 using UnityEngine;
 
-public class MagicProjectileAttackAction : MonoBehaviour, IAIAction
+public enum SpaceMagicMode
 {
-    public MagicElement element = MagicElement.Fire;
+    Distortion,
+    Teleport
+}
+
+public class SpaceMagicAction : MonoBehaviour, IAIAction
+{
+    public SpaceMagicMode mode;
+    public bool hasAssignedMode;
+    public float manaCost = 18f;
     public float spawnOffset = 1.5f;
-    public float projectileScale = 0.45f;
-    public MagicProjectileLaunchSettings projectileSettings = new MagicProjectileLaunchSettings(
-        new Color(1f, 0.35f, 0.08f, 0.85f),
-        55f,
-        5f,
-        3f,
-        0f,
-        0f,
-        false,
-        4f,
-        0.2f);
+    public float projectileScale = 0.6f;
     public MagicCircleLaunchSettings spellCircleSettings = MagicCircleLaunchSettings.Default;
-    public float manaCost = 10f;
+
+    public static SpaceMagicAction Ensure(GameObject target)
+    {
+        if (target == null)
+            return null;
+
+        AnimalAIInstaller installer = target.GetComponent<AnimalAIInstaller>();
+        SpaceMagicAction action = installer != null
+            ? installer.Ensure<SpaceMagicAction>()
+            : target.GetComponent<SpaceMagicAction>();
+        if (action == null)
+            action = target.AddComponent<SpaceMagicAction>();
+
+        if (installer != null)
+            installer.componentSet.ProtectGene(nameof(SpaceMagicAction), true);
+
+        if (!action.hasAssignedMode)
+        {
+            action.mode = Random.value < 0.5f ? SpaceMagicMode.Distortion : SpaceMagicMode.Teleport;
+            action.hasAssignedMode = true;
+        }
+        return action;
+    }
 
     public bool TryAct(AIContext context, float deltaTime)
     {
@@ -25,20 +45,22 @@ public class MagicProjectileAttackAction : MonoBehaviour, IAIAction
         if (TryGetComponent<MagicCooldownState>(out var cooldown) && !cooldown.CanCast(context.Mana, manaCost))
             return false;
 
-        MagicElement launchElement = ResolveElement();
         Vector3 direction = ResolveDirection(context);
-        MagicProjectileLaunchSettings settings = projectileSettings.WithFallbackEffectLifetime(4f);
+        MagicProjectileLaunchSettings settings = MagicProjectileLaunchSettings
+            .ForElement(MagicElement.Space, 7f, mode == SpaceMagicMode.Distortion ? 5f : 4f)
+            .WithFallbackEffectLifetime(mode == SpaceMagicMode.Distortion ? 5f : 4f);
         settings.magicManaCost = manaCost;
+
         GameObject projectile = MagicLaunchApi.LaunchImmediate(new MagicLaunchRequest
         {
-            element = launchElement,
-            origin = context.Transform.position + Vector3.up * 0.7f,
+            element = MagicElement.Space,
+            origin = context.Transform.position + Vector3.up * 0.9f,
             direction = direction,
             spawnOffset = spawnOffset,
             projectileScale = projectileScale,
             projectileSettings = settings,
             spellCircleSettings = spellCircleSettings,
-            projectileName = "Organ Magic Projectile",
+            projectileName = "Dominant Space Magic",
             casterResource = context.BodyResource
         });
 
@@ -48,17 +70,6 @@ public class MagicProjectileAttackAction : MonoBehaviour, IAIAction
         if (cooldown != null)
             cooldown.MarkCast();
         return true;
-    }
-
-    MagicElement ResolveElement()
-    {
-        if (!TryGetComponent<MagicElementAffinityState>(out var affinity))
-            return element;
-        if (element != MagicElement.Space && affinity.HasElement(element))
-            return element;
-
-        element = affinity.EnsureAtLeastOneNormalElement();
-        return element;
     }
 
     Vector3 ResolveDirection(AIContext context)

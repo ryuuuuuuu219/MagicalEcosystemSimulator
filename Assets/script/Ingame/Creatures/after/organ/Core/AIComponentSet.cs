@@ -55,7 +55,7 @@ public class AIComponentSet
                 existing.isVitalOrgan = true;
             }
 
-            if (enabled || existing.isVitalOrgan)
+            if (enabled || existing.isVitalOrgan || existing.isProtectedOrgan)
             {
                 existing.enabled = true;
                 existing.isVestigialOrgan = false;
@@ -69,6 +69,22 @@ public class AIComponentSet
 
         AIComponentGene gene = AIComponentGene.CreateDefault(componentId, enabled, isVitalOrgan);
         genes.Add(gene);
+        return gene;
+    }
+
+    public AIComponentGene ProtectGene(string componentId, bool enabled = true)
+    {
+        AIComponentGene gene = EnsureGene(componentId, enabled, false);
+        gene.isProtectedOrgan = true;
+        if (enabled)
+        {
+            gene.enabled = true;
+            gene.isVestigialOrgan = false;
+            gene.level = Mathf.Max(1f, gene.level);
+            gene.weight = Mathf.Max(1f, gene.weight);
+        }
+
+        SetGene(gene);
         return gene;
     }
 
@@ -96,9 +112,19 @@ public class AIComponentSet
                 continue;
 
             AIComponentGene existing = ClampGene(genes[i]);
+            if (presetGene.isProtectedOrgan)
+                existing.isProtectedOrgan = true;
+
             if (presetGene.isVitalOrgan)
             {
                 existing.isVitalOrgan = true;
+                existing.enabled = true;
+                existing.isVestigialOrgan = false;
+                existing.level = Mathf.Max(1f, existing.level, presetGene.level);
+                existing.weight = Mathf.Max(1f, existing.weight, presetGene.weight);
+            }
+            else if (presetGene.isProtectedOrgan)
+            {
                 existing.enabled = true;
                 existing.isVestigialOrgan = false;
                 existing.level = Mathf.Max(1f, existing.level, presetGene.level);
@@ -130,7 +156,7 @@ public class AIComponentSet
 
     public bool TryMutateRuntime(string componentId, float chanceScale, out AIComponentGene mutatedGene)
     {
-        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan)
+        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan || gene.isProtectedOrgan)
         {
             mutatedGene = default;
             return false;
@@ -163,7 +189,7 @@ public class AIComponentSet
         for (int i = 0; i < genes.Count; i++)
         {
             AIComponentGene gene = genes[i];
-            if (!gene.isVitalOrgan && Mathf.Clamp01(gene.mutationChanceG) > 0f && Random.value <= Mathf.Clamp01(gene.mutationChanceG))
+            if (!gene.isVitalOrgan && !gene.isProtectedOrgan && Mathf.Clamp01(gene.mutationChanceG) > 0f && Random.value <= Mathf.Clamp01(gene.mutationChanceG))
             {
                 gene = MutateGene(gene);
                 mutatedGenes.Add(gene);
@@ -178,7 +204,7 @@ public class AIComponentSet
 
     public bool TryMutateGeneration(string componentId, out AIComponentGene mutatedGene)
     {
-        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan)
+        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan || gene.isProtectedOrgan)
         {
             mutatedGene = default;
             return false;
@@ -199,7 +225,7 @@ public class AIComponentSet
 
     public void MarkVestigial(string componentId)
     {
-        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan)
+        if (!TryGetGene(componentId, out AIComponentGene gene) || gene.isVitalOrgan || gene.isProtectedOrgan)
             return;
 
         gene.enabled = false;
@@ -255,14 +281,34 @@ public class AIComponentSet
         gene.mutationChanceG = Mathf.Clamp01(gene.mutationChanceG);
         gene.installChance = Mathf.Clamp01(gene.installChance);
 
-        if (gene.isVitalOrgan)
+        if (gene.isVitalOrgan || gene.isProtectedOrgan)
         {
-            gene.enabled = true;
+            if (gene.isVitalOrgan || gene.enabled)
+                gene.enabled = true;
             gene.isVestigialOrgan = false;
             gene.level = Mathf.Max(1f, gene.level);
             gene.weight = Mathf.Max(1f, gene.weight);
         }
 
+        if (gene.IsActive && IsMagicProtectedOrganId(gene.componentId))
+            gene.isProtectedOrgan = true;
+
         return gene;
+    }
+
+    static bool IsMagicProtectedOrganId(string componentId)
+    {
+        switch (componentId)
+        {
+            case nameof(MagicAttackAction):
+            case nameof(MagicProjectileAttackAction):
+            case nameof(MagicCooldownState):
+            case nameof(MagicElementAffinityState):
+            case nameof(DominantAscensionAction):
+            case nameof(SpaceMagicAction):
+                return true;
+            default:
+                return false;
+        }
     }
 }
