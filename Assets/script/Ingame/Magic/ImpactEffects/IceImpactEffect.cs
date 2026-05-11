@@ -18,14 +18,15 @@ public static class IceImpactEffect
         visibility.checkInterval = 0.2f;
         visibility.disableOutsideFrustum = true;
 
-        var collider = spike.AddComponent<MeshCollider>();
-        collider.sharedMesh = meshFilter.sharedMesh;
-        collider.convex = true;
-        collider.isTrigger = true;
-
         spike.name = "Ice Spike Impact";
         spike.transform.position = point + normal.normalized * (height * 0.5f);
         spike.transform.up = normal.sqrMagnitude > 0.001f ? normal.normalized : Vector3.up;
+
+        var collider = spike.AddComponent<CapsuleCollider>();
+        collider.direction = 1;
+        collider.radius = Mathf.Max(0.05f, radius * 0.65f);
+        collider.height = Mathf.Max(collider.radius * 2f, height);
+        collider.isTrigger = true;
 
         Object.Destroy(spike, Mathf.Max(0.1f, lifetime));
         return spike;

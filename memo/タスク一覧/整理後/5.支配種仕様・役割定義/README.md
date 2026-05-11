@@ -65,7 +65,7 @@
 4. dominant 化時に空間魔法が一種自動付与される。
 5. dominant 化後も捕食系主要 organ、魔法攻撃 organ、mana 系 organ が active である。
 
-通常属性魔法二種以上の判定には、属性保持 organ / state が必要になる。現状の `MagicProjectileAttackAction.element` 固定値だけでは、複数属性の会得数を正確に判定できない。
+通常属性魔法二種以上の判定は `MagicElementAffinityState` を正本とする。`MagicProjectileAttackAction` は固定属性ではなく、`MagicElementAffinityState` の会得済み通常属性から発射属性を解決する。
 
 ## 空間魔法
 
@@ -88,27 +88,41 @@
 
 - 魔法 organ は痕跡器官化しない。
 - `MagicAttackAction`、`MagicProjectileAttackAction`、`MagicCooldownState`、属性選択・属性保持 organ、空間魔法 organ は mutation による欠落対象から除外する。
-- 実装時は `isVitalOrgan` とは別に、進化段階や魔法獲得を守る protected / mutationProtected 相当のフラグを設ける。
+- `isVitalOrgan` とは別に、進化段階や魔法獲得を守る `isProtectedOrgan` を使う。
 - `isVitalOrgan` は AI 基盤や生命維持系、protected organ は上位捕食者・支配種の定義を守る用途として分ける。
 
-## 現状コード上の注意
+## 実装状態
 
-- 現在は mana field 確率による phase up が `predatorBehaviour` と `PredatorPhaseEvolutionAction` の二系統にある。支配種条件を厳密化する前に、相進化処理の正本を一つに寄せる。
-- 現在は `highpredator` 以上の preset で `MagicAttackAction`、`MagicProjectileAttackAction`、`MagicCooldownState` が active になる。新仕様では、これは「上位捕食者化時の最低一種保証」として扱う。
-- `MagicAttackAction` が `MagicProjectileAttackAction` を直接 `AddComponent` する経路は、organ 管理を迂回する。実装時は `AnimalAIInstaller` / `OrganFoundation` 経由へ寄せる。
-- `dominantCountPerGeneration` は自然到達数を上限にする記録がまだ必要。
+- `predatorBehaviour.TryPhaseEvolution()` と `PredatorPhaseEvolutionAction` は、どちらも `predator -> highpredator` までに制限済み。二系統の正本統合は将来整理だが、支配種到達条件の抜け道ではない。
+- `highpredator -> dominant` は `DominantAscensionAction` が担当する。条件は `category.highpredator` かつ通常属性魔法二種以上。
+- `DominantAscensionAction` は dominant 化、空間魔法 organ の導入、通常属性二種の保証、到達ログ、自然到達数の記録を担当する。
+- `MagicElementAffinityState` は通常属性の会得状態を保持し、上位捕食者への相進化時に最低一種、支配種化時に最低二種を保証する。
+- `SpaceMagicAction` は支配種専用 organ として導入され、初回導入時に空間歪曲または空間転移の mode を抽選する。
+- `MagicAttackAction` から `MagicProjectileAttackAction` を直接 `AddComponent` する経路は、`AnimalAIInstaller` / `OrganFoundation` 経由に整理済み。
+- `dominantCountPerGeneration` は `DominantLineageTracker` が記録する自然到達数を上限にして、世代更新時の dominant 直接スポーン数を制限する。
+- 魔法 organ 保護は `AIComponentGene.isProtectedOrgan` と `AIComponentSet` 側の mutation / vestigial 除外で扱う。
+
+## 残る確認
+
+- 実ゲーム内で `highpredator` が通常属性二種を会得した瞬間に `dominant` 化するか確認する。
+- 空間歪曲 / 空間転移の mode 差分は導入済み。座標攻撃、マナ生成、座標操作の演出・効果量は今後の調整対象とする。
+- `DominantLineageTracker` は実行中の自然到達数を扱う。セーブをまたぐ永続化が必要になった場合は別タスクで扱う。
 
 ## 対象スクリプト
 
 - `Assets/script/Shared/Enums/SimulationEnums.cs`
 - `Assets/script/Ingame/Creatures/before/Predator/predatorBehaviour.cs`
 - `Assets/script/Ingame/Creatures/after/organ/Action/PredatorPhaseEvolutionAction.cs`
+- `Assets/script/Ingame/Creatures/after/organ/Action/DominantAscensionAction.cs`
 - `Assets/script/Ingame/Creatures/after/organ/Core/AIComponentGene.cs`
 - `Assets/script/Ingame/Creatures/after/organ/Core/AIComponentSet.cs`
+- `Assets/script/Ingame/Creatures/after/organ/Core/DominantLineageTracker.cs`
 - `Assets/script/Ingame/Creatures/after/organ/Core/OrganPresetLibrary.cs`
 - `Assets/script/Ingame/Creatures/after/organ/Core/OrganRelationLibrary.cs`
+- `Assets/script/Ingame/Creatures/after/organ/MagicActionEvasion/MagicElementAffinityState.cs`
 - `Assets/script/Ingame/Creatures/after/organ/MagicActionEvasion/MagicAttackAction.cs`
 - `Assets/script/Ingame/Creatures/after/organ/MagicActionEvasion/MagicProjectileAttackAction.cs`
+- `Assets/script/Ingame/Creatures/after/organ/MagicActionEvasion/SpaceMagicAction.cs`
 - `Assets/script/Ingame/UI/Menu/ingame/AdvanceGenerationController.cs`
 
 ## 完了条件
@@ -118,3 +132,4 @@
 - `predator -> highpredator` と `highpredator -> dominant` の条件差が明確である。
 - 空間魔法が支配種専用で、dominant 化時の自動導入に限定されている。
 - `dominantCountPerGeneration` が自然到達数を上限とする再配置枠として定義されている。
+- コード上では `DominantAscensionAction`、`MagicElementAffinityState`、`SpaceMagicAction`、`DominantLineageTracker` により、上記仕様の MVP が実装済みである。
